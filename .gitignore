@@ -1,0 +1,16 @@
+__pycache__/*
+
+tests/*
+saves/*
+
+*.txt
+
+*.png
+*.npy
+*.json
+*.fits
+*.pkl
+*.py
+
+!export_vectorfield.py
+
