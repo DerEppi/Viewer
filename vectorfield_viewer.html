@@ -76,7 +76,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 #meta-info span{color:var(--accent);}
 #data-filename{font-size:7px;color:var(--text3);letter-spacing:.08em;margin-top:2px;font-style:italic;}
 
-#controls{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:14px;scrollbar-width:none;-ms-overflow-style:none;}
+#controls{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 14px;display:flex;flex-direction:column;gap:14px;scrollbar-width:none;-ms-overflow-style:none;}
 #controls::-webkit-scrollbar{display:none;}
 
 .ctrl-section{display:flex;flex-direction:column;gap:5px;padding-bottom:14px;border-bottom:1.5px solid var(--section-divider);}
@@ -363,14 +363,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
 /* reference lines: chip per line (inline, next to "+ line"), config in #pline-pop */
 .p-lchips{display:flex;gap:4px;flex-wrap:wrap;flex:1;min-width:0;align-items:center;}
 .p-lchips .tog{font-size:8px;padding:2px 7px;}
-#pline-pop,#axrange-pop{display:none;position:fixed;z-index:80;pointer-events:auto;background:var(--bg2);
+#pline-pop,#axrange-pop,#pspec-pop,#iso-pop{display:none;position:fixed;z-index:80;pointer-events:auto;background:var(--bg2);
   border:1px solid var(--border2);border-radius:4px;padding:8px;box-shadow:0 4px 14px rgba(0,0,0,.4);
   flex-direction:column;gap:6px;width:172px;}
-#pline-pop .prow,#axrange-pop .prow{display:flex;align-items:center;gap:6px;}
-#pline-pop label,#axrange-pop label{font-size:8px;color:var(--text2);letter-spacing:.06em;width:34px;flex-shrink:0;}
-#pline-pop select,#pline-pop input[type=text],#axrange-pop input[type=text]{font-family:var(--mono);font-size:8px;background:var(--bg3);
+#pline-pop .prow,#axrange-pop .prow,#pspec-pop .prow,#iso-pop .prow{display:flex;align-items:center;gap:6px;}
+#pline-pop label,#axrange-pop label,#pspec-pop label,#iso-pop label{font-size:8px;color:var(--text2);letter-spacing:.06em;width:34px;flex-shrink:0;}
+#pline-pop select,#pline-pop input[type=text],#axrange-pop input[type=text],#pspec-pop select,#pspec-pop input[type=text],#iso-pop select,#iso-pop input[type=text]{font-family:var(--mono);font-size:8px;background:var(--bg3);
   color:var(--text);border:1px solid var(--border2);border-radius:2px;padding:3px 6px;outline:none;flex:1;min-width:0;}
-#pline-pop .tog,#axrange-pop .tog{font-size:8px;padding:2px 7px;}
+#pline-pop .tog,#axrange-pop .tog,#pspec-pop .tog,#iso-pop .tog{font-size:8px;padding:2px 7px;}
 #axrange-pop label{width:auto;}
 #pline-pop .tog:disabled{opacity:.65;cursor:default;}
 /* floating style-preset list (opened by the small "Style" button) */
@@ -443,9 +443,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
 .cdrop-btn{flex:1;min-width:0;font-family:var(--mono);font-size:8px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:2px;padding:3px 16px 3px 6px;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;}
 .cdrop-btn::after{content:'▾';position:absolute;right:5px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:7px;}
 .cdrop-btn:hover{border-color:var(--accent);}
-#cdrop-popup{position:fixed;z-index:300;background:var(--bg2);border:1px solid var(--border2);border-radius:3px;box-shadow:0 6px 24px rgba(0,0,0,.45);max-height:250px;overflow-y:auto;min-width:130px;padding:3px 0;font-family:var(--mono);}
-#cdrop-popup::-webkit-scrollbar{width:4px;}
-#cdrop-popup::-webkit-scrollbar-thumb{background:var(--border2);}
+#cdrop-popup{position:fixed;z-index:300;background:var(--bg2);border:1px solid var(--border2);border-radius:3px;box-shadow:0 6px 24px rgba(0,0,0,.45);max-height:250px;overflow-y:auto;overflow-x:hidden;min-width:130px;padding:3px 0;font-family:var(--mono);scrollbar-width:none;-ms-overflow-style:none;}
+#cdrop-popup::-webkit-scrollbar{display:none;}
 #cdrop-popup .cd-group{font-size:7px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;padding:5px 8px 2px;}
 #cdrop-popup .cd-item{font-size:8px;color:var(--text);padding:3px 10px;cursor:pointer;white-space:nowrap;}
 #cdrop-popup .cd-item:hover{background:rgba(26,111,212,.14);}
@@ -537,8 +536,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
         <canvas id="field-cb-handles" class="cb-ihandles" title="Drag the two handles to show only arrows in that value range"></canvas>
       </div>
       <canvas id="field-cb-kde" width="240" height="8" style="width:100%;height:8px;display:block;margin:0 0 2px;"></canvas>
-      <div id="colorbar-ticks" style="position:relative;height:16px;margin-bottom:0;"></div>
-      <div class="hint" style="letter-spacing:.08em;text-align:center;margin-bottom:4px;" id="colorbar-unit">km/s</div>
+      <div class="cb-labels">
+        <span id="field-cb-min">–</span>
+        <span id="colorbar-unit">km/s</span>
+        <span id="field-cb-max">–</span>
+      </div>
       <div class="slider-row cb-filter-row">
         <button class="tog" id="field-cb-clip" onclick="toggleCbFilterGray('field')" title="Out-of-range arrows: hidden or greyed out">hidden</button>
         <button class="tog" id="field-cb-reset" onclick="resetCbFilterSel('field')" style="margin-left:auto;display:none;" title="Reset the range handles to full">⟲ full</button>
@@ -617,7 +619,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
     <div class="ctrl-section" id="section-stars" style="display:none">
       <div class="ctrl-title">Stars</div>
       <div class="toggle-row" style="margin-top:2px;margin-bottom:6px;">
-        <button class="tog" id="tog-star-uvw" onclick="toggleStarVectors()" title="Show U/V/W galactic velocity as 3D arrows">UVW vectors</button>
+        <button class="tog" id="star-vec-mode-btn" onclick="cycleStarVectorMode()"
+          title="Cycle the star display: Dots (coloured by the field below) → UVW vectors (full 3D velocity, needs a measured RV) → PM vectors (tangential-only velocity from the proper motion, no RV needed)">Dots</button>
         <button class="tog" id="tog-plot-window" onclick="togglePlotWindow('star')" title="Open star data plotting window">◱ Data plots</button>
       </div>
       <div class="slider-row" id="star-mask-row" style="gap:6px;margin-top:2px;">
@@ -668,6 +671,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
         </div>
       </div>
       <div id="star-info"></div>
+      <div class="slider-row" id="star-vec-shape-row" style="margin-top:6px;display:none;gap:6px;">
+        <label style="font-size:8px;color:var(--text3);width:100px;">Marker</label>
+        <button class="tog" id="star-vec-glyph-btn" onclick="toggleStarVectorGlyph()" style="flex:0 0 auto;font-size:8px;padding:3px 6px;"
+          title="Vector marker shape: arrows (shaft + head) ↔ plain cones">Arrows</button>
+      </div>
       <div class="slider-row" id="star-arrow-size-row" style="margin-top:6px;display:none;">
         <label style="font-size:8px;color:var(--text3);width:100px;">Vector size</label>
         <input type="range" min="5" max="120" value="40" oninput="setParam('starArrowScale',+this.value/100,this)">
@@ -713,10 +721,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       </div>
       <div class="slider-row cb-filter-row">
         <button class="tog" id="cloud-cb-clip" onclick="toggleCbFilterGray('cloud')" title="Out-of-range voxels: hidden or greyed out">hidden</button>
+        <span id="cloud-ekin" class="hint" style="display:none;flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+          title="Total kinetic energy of the field in the active reference frame — integrated over the FIXED exported default mask (independent of the mask-level slider, so the value stays comparable and box-edge artefacts are excluded)"></span>
         <button class="tog" id="cloud-cb-reset" onclick="resetCbFilterSel('cloud')" style="margin-left:auto;display:none;" title="Reset the range handles to full">⟲ full</button>
       </div>
-      <div id="cloud-ekin" class="hint" style="display:none;text-align:center;margin-bottom:4px;"
-        title="Total kinetic energy of the field in the active reference frame — integrated over the FIXED exported default mask (independent of the mask-level slider, so the value stays comparable and box-edge artefacts are excluded)"></div>
       <div class="slider-row cb-minmax" data-cbl="cloud"></div>
       <!-- NOT an opacity in the 0–100% sense (hence the rename, July 2026): it is a
            GAIN on each sprite's alpha (glow × density^gamma × this), and that product
@@ -878,6 +886,41 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       <div class="prow" style="justify-content:space-between;">
         <button class="tog" onclick="_plineRemove()" title="Remove this line">✕ remove</button>
         <button class="tog" onclick="closePlotLineEditor()">done</button>
+      </div>
+    </div>
+
+    <!-- floating power-spectrum overlay editor (field window); pick the field and
+         its curve colour, opened by "+ spectrum" / a chip -->
+    <div id="pspec-pop">
+      <div class="prow">
+        <label>Field</label>
+        <select id="pspec-field" onchange="_pspecApply('field', this.value)"></select>
+      </div>
+      <div class="prow">
+        <label>Color</label>
+        <div id="pspec-color-swatch" class="color-swatch-btn" title="Click to open the color picker" onclick="openColorPicker('pspec', this)" style="width:26px;height:18px;border:1px solid var(--border2);border-radius:2px;flex-shrink:0;cursor:pointer;"></div>
+        <input type="text" id="pspec-hex" spellcheck="false" placeholder="auto" onchange="_pspecApply('color', this.value)">
+      </div>
+      <div class="prow" style="justify-content:space-between;">
+        <button class="tog" onclick="_pspecRemove()" title="Remove this spectrum">✕ remove</button>
+        <button class="tog" onclick="closePsEditor()">done</button>
+      </div>
+    </div>
+
+    <!-- floating isochrone editor (star window CMD); pick the age and colour -->
+    <div id="iso-pop">
+      <div class="prow">
+        <label>Age</label>
+        <select id="iso-age" onchange="_isoApply('age', this.value)"></select>
+      </div>
+      <div class="prow">
+        <label>Color</label>
+        <div id="iso-color-swatch" class="color-swatch-btn" title="Click to open the color picker" onclick="openColorPicker('iso', this)" style="width:26px;height:18px;border:1px solid var(--border2);border-radius:2px;flex-shrink:0;cursor:pointer;"></div>
+        <input type="text" id="iso-hex" spellcheck="false" placeholder="auto" onchange="_isoApply('color', this.value)">
+      </div>
+      <div class="prow" style="justify-content:space-between;">
+        <button class="tog" onclick="_isoRemove()" title="Remove this isochrone">✕ remove</button>
+        <button class="tog" onclick="closeIsoEditor()">done</button>
       </div>
     </div>
 
@@ -1140,6 +1183,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       <div id="plot-lines-chips" class="p-lchips"></div>
       <button class="tog" id="plot-lines-clear" onclick="clearPlotLines('star')" style="margin-left:auto;flex-shrink:0;display:none;" title="Remove all reference lines">✕ all</button>
     </div>
+    <!-- BHAC15 pre-main-sequence isochrones (Baraffe et al. 2015, Gaia system):
+         only shown in a colour-magnitude diagram (x = BP−RP or G−RP, y = abs G) -->
+    <div class="prow sub" id="plot-iso-row" style="display:none;">
+      <label>Isochrones</label>
+      <button class="tog" onclick="addIso()" title="Overlay a BHAC15 pre-main-sequence isochrone (Baraffe+ 2015) of a chosen age">+ isochrone</button>
+      <div id="plot-iso-chips" class="p-lchips"></div>
+      <button class="tog" id="plot-iso-clear" onclick="clearIso()" style="margin-left:auto;flex-shrink:0;display:none;" title="Remove all isochrones">✕ all</button>
+    </div>
     <div id="plot-canvas-wrap" class="p-cwrap">
       <canvas id="plot-canvas" class="p-canvas" width="492" height="320"></canvas>
       <div id="plot-tooltip" class="p-tip"></div>
@@ -1268,6 +1319,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       <div id="fplot-lines-chips" class="p-lchips"></div>
       <button class="tog" id="fplot-lines-clear" onclick="clearPlotLines('field')" style="margin-left:auto;flex-shrink:0;display:none;" title="Remove all reference lines">✕ all</button>
     </div>
+    <!-- power-spectrum overlays: add more fields' spectra as extra curves on the
+         same plot (like the reference-line chips). Shown only in power mode. -->
+    <div class="prow sub" id="fplot-spec-row" style="display:none;">
+      <label>Spectra</label>
+      <button class="tog" onclick="addPsOverlay()" title="Overlay another field's power spectrum on the same plot">+ spectrum</button>
+      <div id="fplot-spec-chips" class="p-lchips"></div>
+      <button class="tog" id="fplot-spec-clear" onclick="clearPsOverlays()" style="margin-left:auto;flex-shrink:0;display:none;" title="Remove all overlaid spectra">✕ all</button>
+    </div>
     <div class="p-cwrap">
       <canvas id="fplot-canvas" class="p-canvas" width="492" height="320"></canvas>
       <div id="fplot-tooltip" class="p-tip"></div>
@@ -1393,7 +1452,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       <div class="help-section">
         <div class="help-section-title">Stars</div>
         <p>Appears when <em>Stars</em> is active. Choose a field from the <em>Color by</em> dropdown to color stars by that property (age, rv, pmra, …). A colorbar shows the min/max range. Stars <strong>without</strong> a value for that field are drawn grey; the <strong>∅</strong> button next to the dropdown hides them (and brings them back). The colorbar's range handles never touch them — they filter only stars that do have a value.</p>
-        <p style="margin-top:4px;"><strong>UVW vectors</strong> draws each star's U/V/W galactic velocity as a 3D arrow. The <strong>Mask</strong> dropdown (All stars / Has RV / RV used in inference) filters which stars are shown — it applies to both the dots and the UVW arrows.</p>
+        <p style="margin-top:4px;">The button at the top of the section cycles the star display through three modes: <strong>Dots</strong> (coloured by the field above), <strong>UVW vectors</strong> (the full 3D velocity as a 3D arrow — needs a measured radial velocity) and <strong>PM vectors</strong> (tangential velocity from the proper motion alone, radial velocity set to zero — shown for every star with a proper motion, no RV needed). In either vector mode a <strong>Marker</strong> button switches the shape between arrows (shaft + head) and plain cones, and the <strong>Vector size</strong> slider scales either shape. The <strong>Mask</strong> dropdown (All stars / Has RV / RV used in inference) filters which stars are shown — it applies to the dots and both vector modes.</p>
         <p style="margin-top:4px;"><strong>Find ID</strong> (end of the section) flies the camera to a star by its Gaia source ID (several IDs comma-separated) and marks it with an orange ring; clicking a star opens its full data card.</p>
         <p style="margin-top:4px;"><strong>Noise estimate η</strong> is the per-star rv noise factor of the Bayesian inference (inverse-gamma prior): the fit worked with the inflated uncertainty σ<sub>eff</sub> = σ<sub>rv</sub>·√η, so η ≈ 1 means "rv error as quoted", η ≫ 1 means the rv had to be down-weighted (potential outlier/binary). Only stars whose rv entered the fit carry a value; use <em>log₁₀ η</em> for 3D colouring (η is heavy-tailed). The <em>Residuals</em> group also offers the residuals in units of the measurement error ("/ σ") and, for rv, of the η-inflated error ("/ σ·√η").</p>
       </div>
@@ -1408,9 +1467,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
           <tr><td>⟲ (axis)</td><td>The circular arrow left of each axis dropdown resets everything about that axis: manual range, log and flip (for the histogram x also the drag-selected range).</td></tr>
           <tr><td>Color by</td><td>The colour field gets the same controls as the 3D colorbars: two range handles (<em>hidden/greyed</em> for the rest), a min/max row directly under the colorbar with <em>⇄</em>, <em>⤓</em> (adopt the handle window) and <em>Auto</em>, and the <strong>∅</strong> button — points with no value for that field are grey, ∅ hides them.</td></tr>
           <tr><td>Star positions</td><td>The stars' galactic coordinates x/y/z [pc] are available as plot axes and as a colour field (2D windows only — in 3D they would just paint a gradient across the scene).</td></tr>
-          <tr><td>Power spec.</td><td>(Field window) Spherically averaged 3D FFT power spectrum, always log-log. <em>|v|</em> gives the total kinetic-energy spectrum E(k) = ½ Σ|FFT(v<sub>c</sub>)|²; <em>vx/vy/vz</em> give that component's E<sub>c</sub>(k) separately (they sum to the total); scalar fields give their power |FFT(f)|².</td></tr>
+          <tr><td>Power spec.</td><td>(Field window) Spherically averaged 3D FFT power spectrum, always log-log, on logarithmically spaced k-shells (smooth curves, Hutschenreuter et al. 2026 style). <em>|v|</em> gives the total kinetic-energy spectrum E(k) = ½ Σ|FFT(v<sub>c</sub>)|²; <em>vx/vy/vz</em> give that component's E<sub>c</sub>(k) separately (they sum to the total); scalar fields give their power |FFT(f)|². <em>+ spectrum</em> overlays another field's spectrum as an extra colour-coded curve (a legend then names each curve) — compare vx/vy/vz/|v| on one plot; <em>✕ all</em> clears the overlays.</td></tr>
           <tr><td>⇄ / log</td><td>Per-axis flip and log-scale toggles. Log only engages for strictly positive data; an active log axis is marked <em>(log)</em> in its axis label.</td></tr>
           <tr><td>Lines</td><td><em>+ line</em> adds a dashed reference line and opens its settings: ONE value field with an <em>x =</em>/<em>y =</em> toggle to its left, colour via the colour picker (empty hex = auto). In the power spectrum the line is a <strong>slope line</strong> instead (value = the log-log slope, default Kolmogorov −11/3), drawn through the spectrum's low-k end — Hutschenreuter et al. 2026 style. Closing leaves a <em>lineN</em> chip next to the button — click it to edit again, ✕ inside removes one line, <em>✕ all</em> (far right) removes all. Every mode keeps its own line set. Lines follow zoom/flip/log and appear in exports.</td></tr>
+          <tr><td>Isochrones</td><td>(Star window) In a colour-magnitude diagram — a scatter with <em>BP−RP</em> or <em>G−RP</em> on x and <em>abs. G mag</em> on y — an <em>Isochrones</em> row appears. <em>+ isochrone</em> overlays a BHAC15 pre-main-sequence isochrone (Baraffe et al. 2015, Gaia bands) of a chosen age (0.5–15 Myr) as a colour-coded curve; a chip lets you change the age/colour, <em>✕ all</em> clears them. The curves follow the axis flip/log/zoom and are labelled in a legend, so they carry into PNG/PDF exports.</td></tr>
           <tr><td>Style</td><td>The small <em>Style</em> button next to <em>Grid</em> opens the preset list (theme, seaborn, matplotlib-light, …; the active one is marked). The colormap select sits directly under the <em>Color by</em> dropdown; grid toggle, bin count and plot colour keep their rows.</td></tr>
         </table>
       </div>
@@ -1457,9 +1517,18 @@ let vis = { arrows:true, streams:false, box:false, axes:true, cloud:false, objec
 let cloudColormap = 'plasma';
 let cloudField = 'density';  // 'density' | 'energy_density'
 let starsVisible = false;
-let showStarVectors = false;  // UVW velocity arrows instead of plain dots
-// (the former starVecFiltered "Inference only" toggle is gone — the UVW arrows
-// now honour the same display mask as the dots, starDisplayMask)
+// Star display mode, cycled by ONE button (cycleStarVectorMode): 'dots' = plain
+// dots coloured by the "Color by" field; 'uvw' = full 3D U/V/W velocity vectors
+// (needs a measured RV, like the dots' Has-RV/RV-used masks); 'pm' = PM-only
+// tangential velocity vectors (rv=0 in the ICRS->Galactic transform, à la
+// plot_data.py's U_star_pm_only — available for every star with a proper motion,
+// no RV required). Replaces the former showStarVectors boolean + starVectorSource
+// pair. TDZ: read by SETTINGS_TABLE — must live here in the STATE block.
+// (the former starVecFiltered "Inference only" toggle is gone — the vectors
+// honour the same display mask as the dots, starDisplayMask)
+let starVectorMode = 'dots';     // 'dots' | 'uvw' | 'pm'
+let starVectorGlyph = 'arrow';   // 'arrow' (cone+shaft) | 'cone' (plain cone) — same shapes as fieldVectorGlyph
+function starVectorsOn(){ return starVectorMode !== 'dots'; }
 // Reference-object sub-toggles and parameters (Sun, Per-Tau shell, regions).
 let objVis = { sun:true, taurus:false, shell:true, orionEridanus:false, regions:true, regionVectors:true, labels:true, localBubble:true, dustmap:false, extraClouds:false };
 // Manual colorbar min/max overrides, independent per layer AND per end.
@@ -1517,10 +1586,11 @@ function effectiveColorRange(layer){
     // both modes honour the display mask so this range matches the on-screen
     // colorbar buildStars()/buildStarVectorArrows() computes
     const dotMask = starMaskPred(starDisplayMask);
+    const { kU, kV, kW } = _starVecFields();
     (DATA?.real_stars || []).forEach(s=>{
       if(!dotMask(s)) return;
-      const v = showStarVectors
-        ? ((s.U==null||s.V==null||s.W==null) ? null : Math.hypot(s.U,s.V,s.W))
+      const v = starVectorsOn()
+        ? ((s[kU]==null||s[kV]==null||s[kW]==null) ? null : Math.hypot(s[kU],s[kV],s[kW]))
         : (starColorField !== 'none' ? s[starColorField] : null);
       if(v == null) return;
       if(v < mn) mn = v; if(v > mx) mx = v;
@@ -1670,20 +1740,24 @@ const PLOT_STATE = {
            cSel:{ t0:0, t1:1 }, cGray:false, cAx:null,   // interactive colour-range: handles (session) + grey/hide mode (always linear)
            cMin:null, cMax:null, cNoData:true,
            axOv:{ xmn:null, xmx:null, ymn:null, ymx:null },   // manual scatter axis ends (null = auto) — plot2d blob
-           lines:{ hist:[], scatter:[] } },     // reference lines PER MODE: {axis:'x'|'y', val, color|null} — plot2d blob
+           lines:{ hist:[], scatter:[] },       // reference lines PER MODE: {axis:'x'|'y', val, color|null} — plot2d blob
+           isochrones:[] },     // BHAC15 CMD isochrones (star scatter, colour-magnitude axes only): {age, color|null} — plot2d blob
   field: { type:'hist', grid:false, color:null, style:'theme', fit:'none', cmap:'viridis', flipX:false, flipY:false, logX:false, logY:false,
            range:null, view:null, drag:null, hoverPt:null, histHover:-1, screenPts:[], histBars:[], ax:null, fitCache:null, fitInfo:null,
            xf:{ hist:null, scatter:null }, _pY:null, _pC:null, _prefsPending:false,
            cSel:{ t0:0, t1:1 }, cGray:false, cAx:null,
            cMin:null, cMax:null, cNoData:true,
            axOv:{ xmn:null, xmx:null, ymn:null, ymx:null },
-           lines:{ hist:[], scatter:[], power:[] } },
+           lines:{ hist:[], scatter:[], power:[] },
+           psOverlays:[] },     // extra power-spectrum curves overlaid on the primary (x-select): {field, color|null} — fieldPlot blob
 };
 // Plot-window id helpers + style sheets — up HERE (not in the plot section)
 // because the SETTINGS_TABLE setters (fieldPlot/plotStyle/plotFit) touch them
 // via loadSettings() at parse time: TDZ rule, same as PLOT_STATE itself.
 // _plineTarget too: renderPlotLinesUI (called by the blob setters) reads it.
 let _plineTarget = null;   // {w, idx} of the reference line open in #pline-pop
+let _pspecTarget = null;   // idx of the power-spectrum overlay open in #pspec-pop (field window only)
+let _isoTarget = null;     // idx of the isochrone open in #iso-pop (star window CMD only)
 let _axrangeTarget = null; // {w, axis, btn} while #axrange-pop (manual axis range) is open
 let _stylePopTarget = null;// {w, btn} while #style-pop (style-preset list) is open
 const _pid = w => w === 'field' ? 'fplot' : 'plot';
@@ -1715,6 +1789,7 @@ const STAR_UNITS = {
   age: 'Myr', rv: 'km/s',
   pmra: 'mas/yr', pmdec: 'mas/yr', mass: 'M☉', mass_err: 'M☉',
   U: 'km/s', V: 'km/s', W: 'km/s', extinction: 'mag',
+  U_pm: 'km/s', V_pm: 'km/s', W_pm: 'km/s',
   "pmra error": 'mas/yr', "pmdec error": 'mas/yr', "rv error": 'km/s',
   "pmra residual": 'mas/yr', "pmdec residual": 'mas/yr', "rv residual": 'km/s',
   // weighted residuals and eta are dimensionless (units of sigma / pure factor)
@@ -1881,7 +1956,6 @@ function animate(){
 function updateColorbar(){
   // Field colorbar: always reflects the currently selected arrow field/component.
   const [minMag, maxMag] = arrowFieldRange();
-  const range  = maxMag - minMag || 1;
   const cv = document.getElementById('colorbar-canvas'); if(!cv) return;
   const W = cv.width, H = cv.height, ctx = cv.getContext('2d'), img = ctx.createImageData(W, H);
   for(let px = 0; px < W; px++){
@@ -1893,16 +1967,11 @@ function updateColorbar(){
     }
   }
   ctx.putImageData(img, 0, 0);
-  const td = document.getElementById('colorbar-ticks'); if(td){ td.innerHTML = '';
-    for(let i = 0; i <= 5; i++){
-      const t = i/5;
-      const val = minMag + t * range;
-      const sp = document.createElement('span');
-      sp.style.cssText = `position:absolute;font-size:7px;color:var(--text2);transform:translateX(-50%);left:${t*100}%;white-space:nowrap;`;
-      sp.textContent = val.toFixed(Math.abs(val) < 10 ? 2 : 1); td.appendChild(sp);
-      ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(Math.round(t*(W-1)), H-3, 1, 3);
-    }
-  }
+  // end-only labels (min / centered unit / max), same .cb-labels row as the
+  // stream & cloud colorbars — no intermediate ticks
+  const fmt = v => v.toFixed(Math.abs(v) < 10 ? 2 : 1);
+  const mnEl = document.getElementById('field-cb-min'); if(mnEl) mnEl.textContent = fmt(minMag);
+  const mxEl = document.getElementById('field-cb-max'); if(mxEl) mxEl.textContent = fmt(maxMag);
   const unitEl = document.getElementById('colorbar-unit');
   if(unitEl) unitEl.textContent = arrowFieldUnit();
   drawColorbarKde('field-cb-kde', fieldKdeValues(), minMag, maxMag);
@@ -2235,7 +2304,7 @@ function resetMaskLevel(){ maskLevel = null; _applyMaskChange(); }
 function _applyMaskChange(){
   applyMaskLevel();
   _syncMaskSliders();
-  _magCache.sig = null; _obsCache.sig = null; _energyCache.sig = null; _psCache = null;
+  _magCache.sig = null; _obsCache.sig = null; _energyCache.sig = null; _psCache = {};
   _derivedCache.lv = undefined;
   buildLookup();
   buildArrows(); buildStreamlines(); buildCloud();
@@ -3856,6 +3925,7 @@ const STAR_FIELD_LABELS = {
   rv_used: 'rv used in inference',
   pmra: 'pmRA', pmdec: 'pmDec', rv: 'rv',
   U: 'U', V: 'V', W: 'W',
+  U_pm: 'U (PM only)', V_pm: 'V (PM only)', W_pm: 'W (PM only)',
   'pmra error': 'pmRA error', 'pmdec error': 'pmDec error', 'rv error': 'rv error',
   'pmra residual': 'pmRA residual', 'pmdec residual': 'pmDec residual', 'rv residual': 'rv residual',
   'pmra residual weighted': 'pmRA residual / σ', 'pmdec residual weighted': 'pmDec residual / σ',
@@ -3869,7 +3939,7 @@ function starFieldLabel(field){ return STAR_FIELD_LABELS[field] || field; }
 // Grouping for the "Color by" dropdown and the plot-window axis selects.
 // Order = display order; only fields that actually carry values are shown.
 const STAR_FIELD_GROUPS = [
-  { label: 'Velocity',   fields: ['rv', 'pmra', 'pmdec', 'U', 'V', 'W'] },
+  { label: 'Velocity',   fields: ['rv', 'pmra', 'pmdec', 'U', 'V', 'W', 'U_pm', 'V_pm', 'W_pm'] },
   { label: 'Errors',     fields: ['rv error', 'pmra error', 'pmdec error'] },
   { label: 'Residuals',  fields: ['rv residual', 'pmra residual', 'pmdec residual',
                                   'rv residual weighted', 'pmra residual weighted',
@@ -3879,7 +3949,9 @@ const STAR_FIELD_GROUPS = [
   { label: 'Noise estimate', fields: ['log10 eta', 'eta', 'eta std'] },
   { label: 'Stellar',    fields: ['age', 'mass', 'mass_err', 'extinction'] },
   { label: 'Photometry', fields: ['BP-RP', 'G-RP', 'abs_g_mag'] },
-  { label: 'Quality',    fields: ['ruwe'] },
+  // rv_used = boolean flag (0/1): was this star's radial velocity used in the
+  // inference likelihood? Colour-only (no plot axis, see STAR_AXIS_EXCLUDE).
+  { label: 'Quality',    fields: ['ruwe', 'rv_used'] },
   // heliocentric galactic cartesian position, same coordinates as the 3D view —
   // 2D-plot axes and colour only (see STAR_3D_COLOR_EXCLUDE): colouring the 3D
   // dots by their own coordinate just paints a gradient across the scene
@@ -3888,14 +3960,15 @@ const STAR_FIELD_GROUPS = [
 // Fields excluded from the 2D-plot AXIS selects only (kept for 2D/3D COLOUR).
 // Currently empty (binary_suspect, the only 0/1-flag that belonged here, was
 // removed on user request); the mechanism stays for future flag fields.
-const STAR_AXIS_EXCLUDE = new Set();
+const STAR_AXIS_EXCLUDE = new Set(['rv_used']);   // 0/1 flag: colour-only, not a plot axis
 // Fields kept OUT of the 3D "Color by" dropdown but still available in the 2D
 // plots (as colour AND axes): the UVW components (their magnitude drives the 3D
 // UVW-arrow colouring already, per-component 3D colour is rarely useful) and the
 // photometry / mass-error fields (better explored in 2D scatters/CMDs).
 // 'eta' and 'eta std' additionally: eta is heavy-tailed (1…~10³) — on the linear
 // 3D colorbar everything collapses onto one colour; 'log10 eta' is the 3D view.
-const STAR_3D_COLOR_EXCLUDE = new Set(['U', 'V', 'W', 'BP-RP', 'G-RP', 'abs_g_mag', 'mass_err',
+const STAR_3D_COLOR_EXCLUDE = new Set(['U', 'V', 'W', 'U_pm', 'V_pm', 'W_pm',
+                                       'BP-RP', 'G-RP', 'abs_g_mag', 'mass_err',
                                        'x', 'y', 'z', 'eta', 'eta std']);
 // numeric fields to expose as colour / plot fields (never x/y/z/ids). axisOnly
 // drops the axis-excluded ones (2D X/Y selects); for3d drops the 3D-only-excluded
@@ -3972,24 +4045,64 @@ function applyStarAlpha(){
   });
 }
 
-function toggleStarVectors(){
-  showStarVectors=!showStarVectors;
-  document.getElementById('tog-star-uvw').classList.toggle('on',showStarVectors);
-  document.getElementById('star-arrow-size-row').style.display = showStarVectors ? 'flex' : 'none';
-  // "Color by" / uniform picker have no effect in UVW mode (colour always
-  // encodes |UVW| there) — hide them so the panel doesn't show controls that
-  // silently do nothing. The display mask applies to BOTH modes; the colormap
-  // row shows in UVW mode too (it drives the |UVW| colouring), otherwise it
-  // follows the dot-mode Color-by field.
-  document.getElementById('star-colorby-row').style.display = showStarVectors ? 'none' : 'block';
-  const cmapRow = document.getElementById('star-cmap-row');
-  if(cmapRow) cmapRow.style.display = (showStarVectors || starColorField!=='none') ? 'flex' : 'none';
-  if(showStarVectors){
+// One button cycles the star display: dots → uvw → pm → dots. Each step
+// rebuilds the stars (dots vs. vectors) and re-syncs the panel.
+function cycleStarVectorMode(){
+  setStarVectorMode(starVectorMode === 'dots' ? 'uvw'
+                  : starVectorMode === 'uvw'  ? 'pm'
+                  : 'dots');
+}
+// Set the star display mode directly (used by the cycle button, the settings
+// restore and the tests). Syncs the panel, closes the now-irrelevant colour
+// picker in a vector mode, then rebuilds.
+function setStarVectorMode(m){
+  if(m !== 'dots' && m !== 'uvw' && m !== 'pm') return;
+  starVectorMode = m;
+  _applyStarVectorModeUI();
+  if(starVectorsOn()){
     const picker = document.getElementById('star-color-picker');
     if(picker) picker.style.display = 'none';
     if(_pickerTarget === 'star') closeColorPicker();
   }
   buildStars();
+  saveSettings();
+}
+// Panel sync for the current star mode (button label/state + which rows show).
+// Safe to call during settings-restore: touches only DOM + reads state, never
+// the colour picker (see setStarVectorMode) so it can't trip a TDZ.
+function _applyStarVectorModeUI(){
+  const on = starVectorsOn();
+  const btn = document.getElementById('star-vec-mode-btn');
+  if(btn){
+    btn.textContent = starVectorMode === 'uvw' ? 'UVW vectors'
+                    : starVectorMode === 'pm'  ? 'PM vectors' : 'Dots';
+    btn.classList.toggle('on', on);
+    // colour the button by which velocity it draws, so the three states read
+    // apart at a glance (dots = neutral accent handled by .tog.on default)
+  }
+  // Marker-shape + size rows belong to the vector modes; the "Color by" block and
+  // uniform picker have no effect there (colour always encodes |velocity|), so
+  // hide them. The colormap row shows in a vector mode too (it drives the
+  // |velocity| colouring), otherwise it follows the dot-mode Color-by field.
+  const shapeRow = document.getElementById('star-vec-shape-row'); if(shapeRow) shapeRow.style.display = on ? 'flex' : 'none';
+  const sizeRow  = document.getElementById('star-arrow-size-row'); if(sizeRow)  sizeRow.style.display  = on ? 'flex' : 'none';
+  const cbyRow   = document.getElementById('star-colorby-row');    if(cbyRow)   cbyRow.style.display   = on ? 'none' : 'block';
+  const cmapRow  = document.getElementById('star-cmap-row');       if(cmapRow)  cmapRow.style.display  = (on || starColorField!=='none') ? 'flex' : 'none';
+  _syncStarVecGlyphButton();
+}
+// Marker shape for the UVW/PM star vectors — same two shapes as the field
+// arrows (fieldVectorGlyph), independent toggle so switching one doesn't
+// affect the other.
+function toggleStarVectorGlyph(){
+  starVectorGlyph = (starVectorGlyph === 'arrow') ? 'cone' : 'arrow';
+  _syncStarVecGlyphButton();
+  if(starVectorsOn()) buildStarVectorArrows();
+  saveSettings();
+}
+function _syncStarVecGlyphButton(){
+  const b = document.getElementById('star-vec-glyph-btn');
+  if(!b) return;
+  b.textContent = starVectorGlyph === 'cone' ? 'Cones' : 'Arrows';
 }
 
 function setStarColorField(field){
@@ -4060,6 +4173,14 @@ function _pickerColor(){
     const ln = _plineTarget && _plotLines(_plineTarget.w)[_plineTarget.idx];
     hex = (ln && ln.color) || _cssVar('--accent3');
   }
+  else if(_pickerTarget === 'pspec'){
+    const ov = _pspecTarget != null && PLOT_STATE.field.psOverlays[_pspecTarget];
+    hex = (ov && ov.color) || _psAutoColor(_pspecTarget);
+  }
+  else if(_pickerTarget === 'iso'){
+    const o = _isoTarget != null && PLOT_STATE.star.isochrones[_isoTarget];
+    hex = (o && o.color) || _isoAutoColor(_isoTarget);
+  }
   else hex = uniformStarColor;
   let h = String(hex || '').trim().replace(/^#/, '');
   if(/^[0-9a-fA-F]{3}$/.test(h)) h = h.split('').map(c=>c+c).join('');
@@ -4070,6 +4191,8 @@ function _pickerApply(hex){
   if(_pickerTarget === 'plot') setPlotColor(hex, 'star');
   else if(_pickerTarget === 'fplot') setPlotColor(hex, 'field');
   else if(_pickerTarget === 'pline') _plineApply('color', hex);
+  else if(_pickerTarget === 'pspec') _pspecApply('color', hex);
+  else if(_pickerTarget === 'iso') _isoApply('color', hex);
   else setUniformStarColor(hex);
 }
 
@@ -4223,10 +4346,21 @@ function initStarColorPicker(){
 }
 initStarColorPicker();
 
-// ── Stars as UVW velocity arrows ─────────────────────────────────────────────
+// ── Stars as UVW / PM velocity arrows ────────────────────────────────────────
 // Same cone+shaft InstancedMesh style as the field arrows (buildArrows), but
-// one arrow per star, direction/length from its U/V/W galactic velocity
-// components (km/s) instead of from a grid field. Colour encodes |UVW|.
+// one arrow per star, direction/length from its velocity components (km/s)
+// instead of from a grid field. Colour encodes |velocity|. Which triplet is
+// drawn is picked by starVectorMode: 'uvw' = full 3D velocity (needs a
+// measured RV, like plot_data.py's U_star/V_star/W_star), 'pm' = tangential-
+// only velocity from the proper motion with rv=0 in the ICRS->Galactic
+// transform (plot_data.py's U_star_pm_only) — available for every star with a
+// PM, no RV required. The marker SHAPE (cone+shaft "arrow" or plain cone) is
+// the independent starVectorGlyph toggle, same two shapes as the field arrows.
+function _starVecFields(){
+  return starVectorMode === 'pm'
+    ? { kU:'U_pm', kV:'V_pm', kW:'W_pm', label:'PM',  missing:'no PM'  }
+    : { kU:'U',    kV:'V',    kW:'W',    label:'UVW', missing:'no UVW' };
+}
 let starArrowConeMesh = null, starArrowShaftMesh = null;
 let _starVectorStars = [];   // gefilterte Sterne in Instanz-Reihenfolge, für Hover via instanceId
 function buildStarVectorArrows(){
@@ -4236,31 +4370,32 @@ function buildStarVectorArrows(){
   if(starArrowConeMesh){  starArrowConeMesh.geometry.dispose();  starArrowConeMesh.material.dispose();  starArrowConeMesh=null; }
   if(starArrowShaftMesh){ starArrowShaftMesh.geometry.dispose(); starArrowShaftMesh.material.dispose(); starArrowShaftMesh=null; }
 
+  const { kU, kV, kW, label:_srcLabel, missing:_srcMissing } = _starVecFields();
   let stars = DATA.real_stars.filter(s =>
-    s.x!=null && s.y!=null && s.z!=null && s.U!=null && s.V!=null && s.W!=null);
-  const nWithUVW = stars.length;
+    s.x!=null && s.y!=null && s.z!=null && s[kU]!=null && s[kV]!=null && s[kW]!=null);
+  const nWithVec = stars.length;
   // same display mask as the dots (all / has RV / RV used in inference)
   stars = stars.filter(starMaskPred(starDisplayMask));
   _starVectorStars = stars;   // instance index i ↔ stars[i], used by hover
 
-  const maskedOut = nWithUVW - stars.length;
+  const maskedOut = nWithVec - stars.length;
   const nTotal = DATA.real_stars.length;
-  const noUVW  = nTotal - nWithUVW;
+  const noVec  = nTotal - nWithVec;
   // Readout, same scheme as the dots (see buildStars): how many arrows are on
   // screen out of ALL stars, then why the rest is missing and how many of the
   // drawn ones are only grey. Called again at the END, once the range filter's
   // greyed / hidden counts exist.
   const _uvwInfo = (drawn, grey, hidden) => {
-    const parts = [ drawn === nTotal ? `${drawn} stars (UVW)` : `${drawn} of ${nTotal} stars (UVW)` ];
+    const parts = [ drawn === nTotal ? `${drawn} stars (${_srcLabel})` : `${drawn} of ${nTotal} stars (${_srcLabel})` ];
     if(grey)          parts.push(`${grey} greyed (out of range)`);
     if(hidden)        parts.push(`${hidden} hidden (out of range)`);
-    if(noUVW)         parts.push(`${noUVW} hidden (no UVW)`);
+    if(noVec)         parts.push(`${noVec} hidden (${_srcMissing})`);
     if(maskedOut > 0) parts.push(`${maskedOut} masked out`);
     document.getElementById('star-info').textContent = parts.join(' · ');
   };
   _uvwInfo(stars.length, 0, 0);
 
-  // colour/length both driven by |UVW| — show its own colorbar, like the
+  // colour/length both driven by |velocity| — show its own colorbar, like the
   // cloud/field panels, rather than reusing the starColorField machinery.
   const cbWrap=document.getElementById('star-colorbar-wrap');
   const picker=document.getElementById('star-color-picker');
@@ -4270,7 +4405,7 @@ function buildStarVectorArrows(){
 
   let magMin=Infinity, magMax=-Infinity;
   stars.forEach(s=>{
-    const mag=Math.hypot(s.U,s.V,s.W);
+    const mag=Math.hypot(s[kU],s[kV],s[kW]);
     if(mag<magMin) magMin=mag; if(mag>magMax) magMax=mag;
   });
   if(colorMaxOverride.star != null) magMax = colorMaxOverride.star;
@@ -4286,62 +4421,74 @@ function buildStarVectorArrows(){
   const inSel = mag => { const f = cbNorm(mag, magMin, magMax, _log); return f >= selLo - 1e-6 && f <= selHi + 1e-6; };
   const greyMode = starColorClipGray;
   let built = stars;
-  if(filtering && !greyMode) built = stars.filter(s => inSel(Math.hypot(s.U,s.V,s.W)));
+  if(filtering && !greyMode) built = stars.filter(s => inSel(Math.hypot(s[kU],s[kV],s[kW])));
   _starVectorStars = built;   // instance i ↔ built[i]
 
   const sp = DATA.meta.spacing;
   const maxLen = Math.min(...sp) * params.starArrowScale * 3;
-  const coneH=0.38, coneR=0.22*0.5, shaftH=0.62, shaftR=0.03;
-  const coneGeo  = new THREE.ConeGeometry(coneR, coneH, 7);
-  const shaftGeo = new THREE.CylinderGeometry(shaftR, shaftR, shaftH, 5);
-  coneGeo.translate(0, shaftH+coneH*0.5, 0);
-  shaftGeo.translate(0, shaftH*0.5, 0);
+  // Marker shape: cone+shaft "arrow" (default) or a single plain cone —
+  // same two geometries as the field arrows' fieldVectorGlyph (buildArrows),
+  // both point along +Y with their base on the star, so the same quaternion +
+  // scale drives either; the cone glyph simply has no shaft mesh.
+  let coneGeo, shaftGeo = null;
+  if(starVectorGlyph === 'cone'){
+    coneGeo = new THREE.ConeGeometry(0.17, 1.0, 10);
+    coneGeo.translate(0, 0.5, 0);
+  } else {
+    const coneH=0.38, coneR=0.22*0.5, shaftH=0.62, shaftR=0.03;
+    coneGeo  = new THREE.ConeGeometry(coneR, coneH, 7);
+    shaftGeo = new THREE.CylinderGeometry(shaftR, shaftR, shaftH, 5);
+    coneGeo.translate(0, shaftH+coneH*0.5, 0);
+    shaftGeo.translate(0, shaftH*0.5, 0);
+  }
 
   const _grey = new THREE.Color(0x666666);
   let greyed = 0;
   if(built.length > 0){
     const mat = new THREE.MeshBasicMaterial({ transparent:true, opacity:params.starAlpha, vertexColors:false });
     starArrowConeMesh  = new THREE.InstancedMesh(coneGeo,  mat.clone(), built.length);
-    starArrowShaftMesh = new THREE.InstancedMesh(shaftGeo, mat.clone(), built.length);
+    starArrowShaftMesh = shaftGeo ? new THREE.InstancedMesh(shaftGeo, mat.clone(), built.length) : null;
     starArrowConeMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    starArrowShaftMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    if(starArrowShaftMesh) starArrowShaftMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 
     const _d = new THREE.Object3D();
     const _yAxis = new THREE.Vector3(0,1,0);
     const _q = new THREE.Quaternion();
     built.forEach((s, i)=>{
-      const mag = Math.hypot(s.U,s.V,s.W);
+      const mag = Math.hypot(s[kU],s[kV],s[kW]);
       const frac = normFrac(mag, magMax, magMin);   // linear → arrow LENGTH (physical-ish)
-      // sqrt-rescale, same reasoning as the field arrows: keeps low-|UVW| stars
+      // sqrt-rescale, same reasoning as the field arrows: keeps low-|velocity| stars
       // visible instead of shrinking to near-nothing next to a few fast outliers.
       const len = Math.min(Math.sqrt(frac)*maxLen*1.4, maxLen);
-      const dir = new THREE.Vector3(s.U, s.V, s.W).normalize();
+      const dir = new THREE.Vector3(s[kU], s[kV], s[kW]).normalize();
       _q.setFromUnitVectors(_yAxis, dir.lengthSq()>0 ? dir : _yAxis);
       _d.position.set(s.x, s.y, s.z);
       _d.quaternion.copy(_q);
       _d.scale.setScalar(Math.max(len, 0.01));
       _d.updateMatrix();
       starArrowConeMesh.setMatrixAt(i, _d.matrix);
-      starArrowShaftMesh.setMatrixAt(i, _d.matrix);
+      if(starArrowShaftMesh) starArrowShaftMesh.setMatrixAt(i, _d.matrix);
       // colour on the (possibly log) scale; grey when out of range in grey mode
       let c;
       if(greyMode && filtering && !inSel(mag)){ c = _grey; greyed++; }
       else c = sampleColormap(cbNorm(mag, magMin, magMax, _log), starColormap);
       starArrowConeMesh.setColorAt(i, c);
-      starArrowShaftMesh.setColorAt(i, c);
+      if(starArrowShaftMesh) starArrowShaftMesh.setColorAt(i, c);
     });
     starArrowConeMesh.instanceMatrix.needsUpdate = true;
-    starArrowShaftMesh.instanceMatrix.needsUpdate = true;
     if(starArrowConeMesh.instanceColor)  starArrowConeMesh.instanceColor.needsUpdate  = true;
-    if(starArrowShaftMesh.instanceColor) starArrowShaftMesh.instanceColor.needsUpdate = true;
     G.stars.add(starArrowConeMesh);
-    G.stars.add(starArrowShaftMesh);
+    if(starArrowShaftMesh){
+      starArrowShaftMesh.instanceMatrix.needsUpdate = true;
+      if(starArrowShaftMesh.instanceColor) starArrowShaftMesh.instanceColor.needsUpdate = true;
+      G.stars.add(starArrowShaftMesh);
+    }
   }
   G.stars.visible = starsVisible;
 
   _uvwInfo(built.length, greyed, stars.length - built.length);
 
-  // colorbar: |UVW| magnitude, star colormap, km/s
+  // colorbar: |velocity| magnitude, star colormap, km/s
   cbWrap.style.display='block';
   const cv=document.getElementById('star-colorbar');
   cv.width=240; cv.height=12;
@@ -4353,8 +4500,8 @@ function buildStarVectorArrows(){
   ctx.putImageData(img,0,0);
   document.getElementById('star-val-min').textContent=magMin.toFixed(2);
   document.getElementById('star-val-max').textContent=magMax.toFixed(2);
-  document.getElementById('star-cb-field').textContent = '|UVW| [km/s]';
-  drawColorbarKde('star-cb-kde', stars.map(s=>Math.hypot(s.U,s.V,s.W)), magMin, magMax, _log);
+  document.getElementById('star-cb-field').textContent = `|${_srcLabel}| [km/s]`;
+  drawColorbarKde('star-cb-kde', stars.map(s=>Math.hypot(s[kU],s[kV],s[kW])), magMin, magMax, _log);
   _starCbAx = { mn: magMin, mx: magMax, log: _log };
   drawStarCbHandles();
 }
@@ -4371,7 +4518,7 @@ function buildStars(){
   if(!DATA||!DATA.real_stars||DATA.real_stars.length===0){
     G.stars.visible=starsVisible; return;
   }
-  if(showStarVectors){ buildStarVectorArrows(); return; }
+  if(starVectorsOn()){ buildStarVectorArrows(); return; }
   // apply the display mask (all / has RV / RV used in inference)
   const stars=DATA.real_stars.filter(starMaskPred(starDisplayMask));
   const nTotal=DATA.real_stars.length;
@@ -5066,10 +5213,8 @@ const SETTINGS_TABLE = [
       ['raw','taurus','lsr','custom'].forEach(m => _togSync('tog-rf-'+m, m===refFrameMode));
       document.getElementById('refframe-custom-row').style.display = (refFrameMode==='custom') ? 'flex' : 'none'; } },
   { key:'starsVisible', get:()=>starsVisible,          set:v=>{ starsVisible = v; _togSync('tog-stars', starsVisible); } },
-  { key:'showStarVectors', get:()=>showStarVectors,    set:v=>{ showStarVectors = v;
-      _togSync('tog-star-uvw', showStarVectors);
-      const sizeRow = document.getElementById('star-arrow-size-row'); if(sizeRow) sizeRow.style.display = showStarVectors ? 'flex' : 'none';
-      const cbyRow  = document.getElementById('star-colorby-row');    if(cbyRow)  cbyRow.style.display  = showStarVectors ? 'none' : 'block'; } },
+  { key:'starVectorMode', get:()=>starVectorMode, set:v=>{ if(v==='dots'||v==='uvw'||v==='pm'){ starVectorMode=v; _applyStarVectorModeUI(); } } },
+  { key:'starVectorGlyph', get:()=>starVectorGlyph, set:v=>{ if(v==='arrow'||v==='cone'){ starVectorGlyph=v; _syncStarVecGlyphButton(); } } },
   { key:'colorMaxOverride', get:()=>({ ...colorMaxOverride }), set:v=>{ Object.assign(colorMaxOverride, v);
       ['field','cloud','star','stream'].forEach(l => _selSync(l+'-cmax-input', colorMaxOverride[l] != null ? colorMaxOverride[l] : '')); } },
   { key:'colorMinOverride', get:()=>({ ...colorMinOverride }), set:v=>{ Object.assign(colorMinOverride, v);
@@ -5118,7 +5263,8 @@ const SETTINGS_TABLE = [
                y:_pEl('star','y-select')?.value||null, c:_pEl('star','c-select')?.value||null,
                cMin:s.cMin, cMax:s.cMax, cNoData:s.cNoData,
                axOv:{ ...s.axOv },
-               lines:s.lines }; },
+               lines:s.lines,
+               isochrones:s.isochrones.map(o=>({ age:o.age, color:o.color })) }; },
     set:v=>{ if(!v||typeof v!=='object') return; const s=PLOT_STATE.star;
       // store only — PLOT_SRC/renderPlot aren't defined yet at loadSettings time
       // (TDZ). The DOM (type UI, selects) is applied lazily when the window opens.
@@ -5133,6 +5279,11 @@ const SETTINGS_TABLE = [
       if(v.axOv && typeof v.axOv === 'object')
         ['xmn','xmx','ymn','ymx'].forEach(k => s.axOv[k] = (typeof v.axOv[k] === 'number') ? v.axOv[k] : null);
       if(v.lines && typeof v.lines === 'object'){ s.lines = _restoreLines(v.lines); renderPlotLinesUI('star'); }
+      // isochrones: state only — chips render on window open (setPlotType), since
+      // renderIsoChips → _isoAutoColor reads _ISO_PALETTE, still in TDZ here
+      if(Array.isArray(v.isochrones)) s.isochrones = v.isochrones
+        .filter(o => o && typeof o.age === 'string')
+        .map(o => ({ age:o.age, color:/^#[0-9a-f]{6}$/i.test(o.color||'') ? o.color.toLowerCase() : null }));
       s._prefsPending = true;
       _syncAxisLogButtons('star'); _syncPlotOverrideInputs('star'); _syncPlotAxisInputs('star'); } },
   // star plot window — interactive colour-range: log scale + hide/grey mode
@@ -5146,7 +5297,8 @@ const SETTINGS_TABLE = [
                xHist:f.xf.hist, xScatter:f.xf.scatter, xPower:f.xf.power, y:_pEl('field','y-select')?.value||null, c:_pEl('field','c-select')?.value||null,
                cMin:f.cMin, cMax:f.cMax, cNoData:f.cNoData,
                axOv:{ ...f.axOv },
-               lines:f.lines }; },
+               lines:f.lines,
+               psOverlays:f.psOverlays.map(o=>({ field:o.field, color:o.color })) }; },
     set:v=>{ if(!v || typeof v !== 'object') return;
       const f = PLOT_STATE.field;
       if(typeof v.grid === 'boolean') f.grid = v.grid;
@@ -5169,6 +5321,11 @@ const SETTINGS_TABLE = [
       if(v.axOv && typeof v.axOv === 'object')
         ['xmn','xmx','ymn','ymx'].forEach(k => f.axOv[k] = (typeof v.axOv[k] === 'number') ? v.axOv[k] : null);
       if(v.lines && typeof v.lines === 'object'){ f.lines = _restoreLines(v.lines); renderPlotLinesUI('field'); }
+      // psOverlays: state only — chips render on window open (setPlotType), since
+      // renderPsChips reads FPLOT_FIELDS which is still in TDZ during loadSettings
+      if(Array.isArray(v.psOverlays)) f.psOverlays = v.psOverlays
+        .filter(o => o && typeof o.field === 'string')
+        .map(o => ({ field:o.field, color:/^#[0-9a-f]{6}$/i.test(o.color||'') ? o.color.toLowerCase() : null }));
       f._prefsPending = true;
       _togSync('fplot-grid-btn', f.grid);
       _selSync('fplot-style-select', f.style);
@@ -5249,11 +5406,12 @@ function _postRestoreSync(){
   _syncPlotOverrideInputs('star');
   _syncPlotOverrideInputs('field');
   ['field','stream','cloud'].forEach(_syncCbFilterButtons);
-  // colormap-row vs uniform-picker visibility follows the restored field AND
-  // the restored UVW mode (UVW arrows always colour by |UVW| via the colormap)
-  { const cmapRow=document.getElementById('star-cmap-row'); const picker=document.getElementById('star-color-picker');
-    if(cmapRow) cmapRow.style.display=(showStarVectors || starColorField!=='none')?'flex':'none';
-    if(picker)  picker.style.display =(!showStarVectors && starColorField==='none')?'block':'none'; }
+  // star display mode (dots/uvw/pm): button label + which rows show. This also
+  // sets the colormap-row visibility; still handle the uniform-picker here since
+  // _applyStarVectorModeUI deliberately never touches the picker (TDZ-safe).
+  _applyStarVectorModeUI();
+  { const picker=document.getElementById('star-color-picker');
+    if(picker) picker.style.display =(!starVectorsOn() && starColorField==='none')?'block':'none'; }
   // sync all sliders to the loaded param values
   const scaled100 = ['stepSize','animSpeed','arrowScale','arrowAlpha','streamAlpha',
                      'starAlpha','cloudAlpha','cloudStrength','starArrowScale'];
@@ -5283,6 +5441,10 @@ function loadSettings(){
   _restoringSettings = true;
   try {
     if(s){
+      // migrate the old star-vector keys (showStarVectors boolean + starVectorSource)
+      // into the unified starVectorMode before the table pass
+      if(s.starVectorMode === undefined && s.showStarVectors !== undefined)
+        s.starVectorMode = s.showStarVectors ? (s.starVectorSource === 'pm' ? 'pm' : 'uvw') : 'dots';
       SETTINGS_TABLE.forEach(e => {
         if(s[e.key] === undefined) return;
         try{ e.set(s[e.key]); }
@@ -5642,16 +5804,17 @@ canvas.addEventListener('mousemove', e => {
     // UVW vector mode: stars are two shared InstancedMeshes (cone + shaft).
     // The raycast hit carries an instanceId we map back to the star, so hover
     // shows that star's velocity components and speed.
-    if(showStarVectors && hit.instanceId != null && _starVectorStars[hit.instanceId]){
+    if(starVectorsOn() && hit.instanceId != null && _starVectorStars[hit.instanceId]){
       const s = _starVectorStars[hit.instanceId];
-      const mag = Math.hypot(s.U, s.V, s.W);
+      const { kU, kV, kW, label:_srcLabel } = _starVecFields();
+      const mag = Math.hypot(s[kU], s[kV], s[kW]);
       _ring.position.set(s.x, s.y, s.z);
       _ring.scale.setScalar(Math.min(...DATA.meta.spacing)*0.25);
       _ring.quaternion.copy(camera.quaternion);
       _ring.visible = true;
       _hoveredMesh = null;
       _tooltip.innerHTML =
-        `|UVW| ${mag.toFixed(2)} km/s<br>U ${s.U.toFixed(2)}  V ${s.V.toFixed(2)}  W ${s.W.toFixed(2)}`;
+        `|${_srcLabel}| ${mag.toFixed(2)} km/s<br>U ${s[kU].toFixed(2)}  V ${s[kV].toFixed(2)}  W ${s[kW].toFixed(2)}`;
       const tx = Math.min(e.clientX - rect.left + 14, rect.width  - 170);
       const ty = Math.max(e.clientY - rect.top  - 34, 4);
       _tooltip.style.left = tx + 'px'; _tooltip.style.top = ty + 'px';
@@ -5661,7 +5824,7 @@ canvas.addEventListener('mousemove', e => {
     }
 
     // Dot mode: each star is its own Mesh carrying userData.starValue.
-    if(showStarVectors){ _tooltip.style.display='none'; _ring.visible=false; clearStarCbMarker(); return; }
+    if(starVectorsOn()){ _tooltip.style.display='none'; _ring.visible=false; clearStarCbMarker(); return; }
     const r = mesh.geometry.parameters?.radius ?? Math.min(...DATA.meta.spacing)*0.18;
     _ring.position.copy(mesh.position);
     _ring.scale.setScalar(r);
@@ -5732,7 +5895,7 @@ function handleViewerClick(e){
   if(starsVisible) starHit = _raycaster.intersectObjects(G.stars.children, false)[0] || null;
   if(starHit && (!arrowHit || starHit.distance <= arrowHit.distance)){
     let star = null;
-    if(showStarVectors && starHit.instanceId != null) star = _starVectorStars[starHit.instanceId];
+    if(starVectorsOn() && starHit.instanceId != null) star = _starVectorStars[starHit.instanceId];
     else if(starHit.object.userData && starHit.object.userData.star) star = starHit.object.userData.star;
     if(star){ showStarInfo(star, px, py); return; }
   }
@@ -6027,7 +6190,7 @@ const PLOT_SRC = {
     noun:'stars', noun1:'star',
     records(){ const m = _plotMaskFn(); return (DATA?.real_stars || []).filter(m); },
     inMask(s){ return _plotMaskFn()(s); },
-    val:(s,f)=>{ const v = s[f]; return (v == null || !isFinite(v)) ? null : v; },
+    val:(s,f)=>{ const v = s[f]; if(v == null) return null; const n = +v; return isFinite(n) ? n : null; },  // +v maps boolean flags (rv_used) to 0/1
     label:f=>starFieldLabel(f),
     unit:f=>STAR_UNITS[f],
     fill(sel){ fillStarFieldOptgroups(sel, true); },        // X/Y axes: honour STAR_AXIS_EXCLUDE
@@ -6245,6 +6408,183 @@ document.addEventListener('mousedown', e => {
   if(pop.contains(e.target) || (picker && picker.contains(e.target)) ||
      (e.target.id||'').includes('-line-chip-')) return;
   closePlotLineEditor();
+});
+// ── Power-spectrum overlays (field window) ───────────────────────────────────
+// Extra spectra drawn on top of the primary (x-select) one, managed like the
+// reference-line chips: "+ spectrum" adds a field, each chip opens #pspec-pop
+// (field select + colour), "✕ all" clears them. Persisted in the fieldPlot blob.
+// Auto colours (distinct from the primary's plot colour) when no colour is set.
+const _PS_PALETTE = ['#e6550d','#31a354','#3182bd','#756bb1','#d6616b','#8ca252','#e7ba52','#843c39'];
+function _psAutoColor(i){ return _PS_PALETTE[((i%_PS_PALETTE.length)+_PS_PALETTE.length)%_PS_PALETTE.length]; }
+// fields whose spectrum can be overlaid = all field-plot quantities
+function _psSpecFields(){ return Object.keys(FPLOT_FIELDS); }
+// first field not already plotted (primary x-select + existing overlays),
+// preferring the velocity family so vx/vy/vz/|v| stack up naturally
+function _psNextField(){
+  const used = new Set([_pEl('field','x-select')?.value, ...PLOT_STATE.field.psOverlays.map(o=>o.field)]);
+  const order = ['vx','vy','vz','vmag', ..._psSpecFields()];
+  return order.find(f => FPLOT_FIELDS[f] && !used.has(f)) || _psSpecFields()[0] || null;
+}
+function addPsOverlay(){
+  const f = _psNextField(); if(!f) return;
+  PLOT_STATE.field.psOverlays.push({ field:f, color:null });
+  renderPsChips(); renderPlot('field'); saveSettings();
+  const chip = document.getElementById('fplot-spec-chips')?.lastElementChild;
+  if(chip) openPsEditor(PLOT_STATE.field.psOverlays.length-1, chip);
+}
+function removePsOverlay(i){
+  PLOT_STATE.field.psOverlays.splice(i, 1);
+  if(_pspecTarget === i) closePsEditor();
+  renderPsChips(); renderPlot('field'); saveSettings();
+}
+function clearPsOverlays(){
+  PLOT_STATE.field.psOverlays.length = 0;
+  closePsEditor();
+  renderPsChips(); renderPlot('field'); saveSettings();
+}
+function setPsOverlay(i, prop, val){
+  const ov = PLOT_STATE.field.psOverlays[i]; if(!ov) return;
+  if(prop === 'field'){ if(FPLOT_FIELDS[val]) ov.field = val; }
+  else if(prop === 'color'){ const h = String(val||'').trim();
+    ov.color = /^#[0-9a-fA-F]{6}$/.test(h) ? h.toLowerCase() : null; }
+  renderPsChips(); renderPlot('field'); saveSettings();
+}
+// (re)build the chip row; TDZ-safe (no renderPlot/PLOT_SRC), called from restore
+function renderPsChips(){
+  const host = document.getElementById('fplot-spec-chips'); if(!host) return;
+  const ov = PLOT_STATE.field.psOverlays;
+  host.innerHTML = ov.map((o,i)=>{
+    const open = _pspecTarget === i, c = o.color || _psAutoColor(i);
+    const lbl = FPLOT_FIELDS[o.field]?.lbl || o.field;
+    return `<button class="tog${open?' on':''}" id="fplot-spec-chip-${i}" style="color:${c};border-color:${c};"
+      onclick="togglePsEditor(${i},this)" title="${lbl} spectrum — click to edit">${lbl}</button>`;
+  }).join('');
+  const clr = document.getElementById('fplot-spec-clear');
+  if(clr) clr.style.display = ov.length ? '' : 'none';
+}
+function togglePsEditor(i, btn){
+  if(_pspecTarget === i){ closePsEditor(); return; }
+  openPsEditor(i, btn);
+}
+function openPsEditor(i, btn){
+  if(!PLOT_STATE.field.psOverlays[i]) return;
+  _pspecTarget = i;
+  const sel = document.getElementById('pspec-field');
+  if(sel) sel.innerHTML = _psSpecFields().map(f =>
+    `<option value="${f}">${FPLOT_FIELDS[f]?.lbl || f}</option>`).join('');
+  _pspecSyncWidgets();
+  if(_pickerTarget === 'pspec') syncPickerWidgets();
+  const pop = document.getElementById('pspec-pop');
+  pop.style.display = 'flex';
+  const r = btn.getBoundingClientRect();
+  const pw = pop.offsetWidth || 172, ph = pop.offsetHeight || 120;
+  let x = Math.min(Math.max(4, r.left), window.innerWidth - pw - 4);
+  let y = r.bottom + 4;
+  if(y + ph > window.innerHeight - 4) y = Math.max(4, r.top - ph - 4);
+  pop.style.left = x + 'px'; pop.style.top = y + 'px';
+  renderPsChips();
+}
+function closePsEditor(){
+  _pspecTarget = null;
+  if(_pickerTarget === 'pspec') closeColorPicker();
+  const pop = document.getElementById('pspec-pop'); if(pop) pop.style.display = 'none';
+  renderPsChips();
+}
+function _pspecSyncWidgets(){
+  const ov = _pspecTarget != null && PLOT_STATE.field.psOverlays[_pspecTarget]; if(!ov) return;
+  const sel = document.getElementById('pspec-field'); if(sel) sel.value = ov.field;
+  document.getElementById('pspec-hex').value = ov.color || '';
+  document.getElementById('pspec-color-swatch').style.background = ov.color || _psAutoColor(_pspecTarget);
+}
+function _pspecApply(prop, val){
+  if(_pspecTarget == null) return;
+  setPsOverlay(_pspecTarget, prop, val);
+  _pspecSyncWidgets();
+}
+function _pspecRemove(){ if(_pspecTarget != null) removePsOverlay(_pspecTarget); }
+document.addEventListener('mousedown', e => {
+  if(_pspecTarget == null) return;
+  const pop = document.getElementById('pspec-pop');
+  const picker = document.getElementById('color-picker-pop');
+  if(pop.contains(e.target) || (picker && picker.contains(e.target)) ||
+     (e.target.id||'').includes('-spec-chip-')) return;
+  closePsEditor();
+});
+// ── CMD isochrones (star window) ─────────────────────────────────────────────
+// BHAC15 pre-main-sequence isochrones (Baraffe et al. 2015) in the Gaia system,
+// extracted from Chronos' BHAC15_iso.GAIA for ages ≤ 15 Myr. Each age → a
+// polyline of [BP−RP, G−RP, abs G] over the model mass grid, so the curve maps
+// onto whichever colour index is on x (BP−RP or G−RP) with the absolute G on y.
+// Overlaid only in a colour-magnitude diagram; managed like the other chips.
+const ISOCHRONES={"0.5":[[5.163,1.589,13.412],[4.787,1.552,12.473],[4.546,1.528,11.915],[4.332,1.505,11.127],[4.144,1.484,10.698],[4.082,1.477,10.234],[3.969,1.463,9.967],[3.929,1.458,9.762],[3.94,1.459,9.687],[3.938,1.459,9.614],[3.946,1.461,9.463],[3.911,1.457,9.284],[3.778,1.437,9.252],[3.743,1.433,9.041],[3.624,1.417,8.614],[3.442,1.387,8.202],[3.314,1.365,7.838],[3.171,1.338,7.453],[2.698,1.23,6.388],[2.26,1.103,5.763],[1.909,0.979,5.202],[1.719,0.904,4.835],[1.629,0.865,4.49],[1.525,0.822,4.173],[1.45,0.79,3.914],[1.395,0.766,3.695],[1.349,0.745,3.501],[1.311,0.729,3.323],[1.278,0.714,3.165],[1.251,0.702,3.018]],"1":[[5.283,1.6,14.083],[4.839,1.555,13.011],[4.541,1.525,12.376],[4.192,1.487,11.502],[3.999,1.464,10.985],[3.906,1.453,10.528],[3.848,1.445,10.199],[3.806,1.441,9.902],[3.812,1.442,9.85],[3.813,1.442,9.778],[3.818,1.443,9.662],[3.807,1.442,9.452],[3.747,1.433,9.282],[3.716,1.429,9.08],[3.597,1.412,8.683],[3.423,1.383,8.314],[3.294,1.361,7.956],[3.131,1.33,7.704],[2.738,1.241,7.055],[2.268,1.106,6.39],[1.985,1.009,5.876],[1.767,0.924,5.434],[1.662,0.88,5.065],[1.559,0.836,4.752],[1.477,0.801,4.482],[1.414,0.774,4.251],[1.363,0.752,4.046],[1.319,0.732,3.867],[1.281,0.716,3.698],[1.248,0.701,3.55]],"2":[[5.504,1.625,15.02],[5.031,1.572,13.693],[4.661,1.536,12.957],[4.213,1.488,11.918],[3.986,1.462,11.201],[3.893,1.451,10.702],[3.836,1.444,10.314],[3.789,1.438,9.99],[3.78,1.437,9.929],[3.769,1.436,9.844],[3.752,1.433,9.707],[3.738,1.431,9.497],[3.647,1.418,9.419],[3.596,1.41,9.275],[3.485,1.392,9.078],[3.36,1.371,8.885],[3.249,1.352,8.615],[3.093,1.322,8.395],[2.667,1.223,7.59],[2.303,1.119,6.964],[2.048,1.033,6.455],[1.834,0.952,6.03],[1.699,0.896,5.654],[1.607,0.856,5.323],[1.512,0.817,5.039],[1.441,0.785,4.796],[1.384,0.761,4.588],[1.335,0.739,4.396],[1.292,0.72,4.218],[1.253,0.702,4.054]],"3":[[5.522,1.637,15.639],[5.185,1.587,14.145],[4.764,1.545,13.293],[4.219,1.488,11.997],[3.984,1.461,11.245],[3.887,1.449,10.754],[3.827,1.442,10.396],[3.769,1.435,10.114],[3.76,1.434,10.057],[3.744,1.431,9.985],[3.721,1.428,9.864],[3.667,1.42,9.697],[3.548,1.402,9.799],[3.494,1.393,9.668],[3.389,1.375,9.43],[3.281,1.357,9.207],[3.199,1.342,8.975],[3.061,1.314,8.723],[2.674,1.225,7.929],[2.334,1.128,7.295],[2.097,1.051,6.8],[1.891,0.974,6.381],[1.725,0.907,5.995],[1.646,0.873,5.666],[1.541,0.829,5.375],[1.461,0.794,5.123],[1.394,0.765,4.891],[1.339,0.74,4.684],[1.29,0.719,4.49],[1.245,0.699,4.293]],"5":[[5.478,1.649,16.83],[5.391,1.608,14.756],[4.822,1.55,13.455],[4.224,1.489,12.068],[3.981,1.46,11.383],[3.86,1.445,11.005],[3.755,1.43,10.843],[3.666,1.417,10.672],[3.653,1.415,10.625],[3.63,1.412,10.569],[3.597,1.407,10.46],[3.525,1.397,10.276],[3.413,1.378,10.208],[3.338,1.365,10.04],[3.2,1.341,9.739],[3.127,1.327,9.51],[3.067,1.315,9.296],[2.966,1.294,9.042],[2.667,1.223,8.308],[2.38,1.143,7.705],[2.14,1.066,7.208],[1.945,0.996,6.789],[1.774,0.928,6.408],[1.683,0.889,6.081],[1.577,0.844,5.779],[1.481,0.803,5.497],[1.399,0.767,5.23],[1.328,0.736,4.968],[1.263,0.707,4.718],[1.196,0.675,4.461]],"10":[[4.739,1.535,18.273],[5.515,1.624,15.209],[4.872,1.555,13.585],[4.315,1.497,12.669],[4.057,1.465,12.294],[3.857,1.44,11.913],[3.693,1.42,11.622],[3.586,1.403,11.354],[3.566,1.4,11.3],[3.537,1.396,11.227],[3.491,1.39,11.094],[3.394,1.373,10.878],[3.296,1.356,10.729],[3.216,1.342,10.555],[3.101,1.321,10.25],[3.022,1.305,10.007],[2.951,1.29,9.769],[2.871,1.272,9.507],[2.651,1.219,8.809],[2.406,1.151,8.233],[2.18,1.079,7.74],[1.997,1.015,7.332],[1.833,0.952,6.947],[1.711,0.902,6.586],[1.593,0.851,6.218],[1.448,0.788,5.816],[1.32,0.732,5.418],[1.201,0.678,4.994],[1.078,0.62,4.513],[0.953,0.558,3.955]],"15":[[5.319,1.573,18.535],[5.548,1.629,15.364],[4.968,1.565,13.819],[4.665,1.526,13.413],[4.189,1.48,12.838],[3.943,1.446,12.35],[3.715,1.42,12.006],[3.582,1.401,11.714],[3.561,1.399,11.66],[3.529,1.394,11.585],[3.479,1.387,11.449],[3.368,1.368,11.223],[3.254,1.348,11.039],[3.153,1.33,10.839],[3.044,1.309,10.531],[2.971,1.294,10.282],[2.9,1.279,10.05],[2.818,1.26,9.771],[2.603,1.206,9.052],[2.4,1.149,8.515],[2.205,1.087,8.055],[2.03,1.027,7.642],[1.853,0.96,7.22],[1.709,0.901,6.795],[1.533,0.825,6.304],[1.337,0.74,5.758],[1.163,0.66,5.168],[0.991,0.577,4.481],[0.825,0.493,3.655],[0.625,0.385,2.886]]};
+const _ISO_AGES = Object.keys(ISOCHRONES);
+const _ISO_PALETTE = ['#d62728','#ff7f0e','#2ca02c','#1f77b4','#9467bd','#17becf','#8c564b'];
+function _isoAutoColor(i){ const n=_ISO_PALETTE.length; return _ISO_PALETTE[((i%n)+n)%n]; }
+// CMD axes? star scatter with a Gaia colour (BP−RP / G−RP) on x and abs G on y
+function _isCMD(){
+  return PLOT_STATE.star.type === 'scatter'
+    && ['BP-RP','G-RP'].includes(_pEl('star','x-select')?.value)
+    && _pEl('star','y-select')?.value === 'abs_g_mag';
+}
+function _isoXVal(pt){ return _pEl('star','x-select')?.value === 'G-RP' ? pt[1] : pt[0]; }   // which colour on x
+function _isoNextAge(){ const used=new Set(PLOT_STATE.star.isochrones.map(o=>o.age)); return _ISO_AGES.find(a=>!used.has(a)) || _ISO_AGES[0]; }
+// show/hide the Isochrones row when the axes enter/leave a CMD (called on axis
+// change + setPlotType). An open editor is closed when the row disappears.
+function _refreshIsoRow(){
+  const on=_isCMD(), row=document.getElementById('plot-iso-row');
+  if(row) row.style.display = on ? 'flex' : 'none';
+  if(!on && _isoTarget != null) closeIsoEditor();
+}
+function addIso(){
+  if(!_isCMD()) return;
+  PLOT_STATE.star.isochrones.push({ age:_isoNextAge(), color:null });
+  renderIsoChips(); renderPlot('star'); saveSettings();
+  const chip=document.getElementById('plot-iso-chips')?.lastElementChild;
+  if(chip) openIsoEditor(PLOT_STATE.star.isochrones.length-1, chip);
+}
+function removeIso(i){ PLOT_STATE.star.isochrones.splice(i,1); if(_isoTarget===i) closeIsoEditor(); renderIsoChips(); renderPlot('star'); saveSettings(); }
+function clearIso(){ PLOT_STATE.star.isochrones.length=0; closeIsoEditor(); renderIsoChips(); renderPlot('star'); saveSettings(); }
+function setIso(i,prop,val){
+  const o=PLOT_STATE.star.isochrones[i]; if(!o) return;
+  if(prop==='age'){ if(ISOCHRONES[val]) o.age=val; }
+  else if(prop==='color'){ const h=String(val||'').trim(); o.color=/^#[0-9a-fA-F]{6}$/.test(h)?h.toLowerCase():null; }
+  renderIsoChips(); renderPlot('star'); saveSettings();
+}
+function renderIsoChips(){
+  const host=document.getElementById('plot-iso-chips'); if(!host) return;
+  const iso=PLOT_STATE.star.isochrones;
+  host.innerHTML=iso.map((o,i)=>{ const open=_isoTarget===i, c=o.color||_isoAutoColor(i);
+    return `<button class="tog${open?' on':''}" id="plot-iso-chip-${i}" style="color:${c};border-color:${c};"
+      onclick="toggleIsoEditor(${i},this)" title="${o.age} Myr isochrone — click to edit">${o.age} Myr</button>`; }).join('');
+  const clr=document.getElementById('plot-iso-clear'); if(clr) clr.style.display=iso.length?'':'none';
+}
+function toggleIsoEditor(i,btn){ if(_isoTarget===i){ closeIsoEditor(); return; } openIsoEditor(i,btn); }
+function openIsoEditor(i,btn){
+  if(!PLOT_STATE.star.isochrones[i]) return;
+  _isoTarget=i;
+  const sel=document.getElementById('iso-age');
+  if(sel) sel.innerHTML=_ISO_AGES.map(a=>`<option value="${a}">${a} Myr</option>`).join('');
+  _isoSyncWidgets();
+  if(_pickerTarget==='iso') syncPickerWidgets();
+  const pop=document.getElementById('iso-pop'); pop.style.display='flex';
+  const r=btn.getBoundingClientRect(); const pw=pop.offsetWidth||172, ph=pop.offsetHeight||120;
+  let x=Math.min(Math.max(4,r.left),window.innerWidth-pw-4); let y=r.bottom+4;
+  if(y+ph>window.innerHeight-4) y=Math.max(4,r.top-ph-4);
+  pop.style.left=x+'px'; pop.style.top=y+'px';
+  renderIsoChips();
+}
+function closeIsoEditor(){ _isoTarget=null; if(_pickerTarget==='iso') closeColorPicker(); const p=document.getElementById('iso-pop'); if(p) p.style.display='none'; renderIsoChips(); }
+function _isoSyncWidgets(){ const o=_isoTarget!=null&&PLOT_STATE.star.isochrones[_isoTarget]; if(!o) return;
+  const sel=document.getElementById('iso-age'); if(sel) sel.value=o.age;
+  document.getElementById('iso-hex').value=o.color||'';
+  document.getElementById('iso-color-swatch').style.background=o.color||_isoAutoColor(_isoTarget); }
+function _isoApply(prop,val){ if(_isoTarget==null) return; setIso(_isoTarget,prop,val); _isoSyncWidgets(); }
+function _isoRemove(){ if(_isoTarget!=null) removeIso(_isoTarget); }
+document.addEventListener('mousedown', e=>{
+  if(_isoTarget==null) return;
+  const pop=document.getElementById('iso-pop'); const picker=document.getElementById('color-picker-pop');
+  if(pop.contains(e.target)||(picker&&picker.contains(e.target))||(e.target.id||'').includes('-iso-chip-')) return;
+  closeIsoEditor();
 });
 // Fits behave like the sidebar toggle groups: at most one active, clicking the
 // active one turns the fit off again.
@@ -6773,6 +7113,7 @@ function onPlotAxisFieldChange(w, axis){
     _syncPlotAxisInputs(w);
   }
   _resetRangeForNewData(w);
+  if(w === 'star') _refreshIsoRow();   // CMD axes may have changed → toggle the Isochrones row
   renderPlot(w);
   saveSettings();
 }
@@ -6854,6 +7195,10 @@ function setPlotType(t, w='star'){
   // open editor would point into the OLD mode's array → close it)
   if(_plineTarget && _plineTarget.w === w) closePlotLineEditor();
   renderPlotLinesUI(w);
+  // power-spectrum overlays (field window only): row visible in power mode
+  if(w === 'field'){ show('spec-row', t === 'power'); if(t !== 'power' && _pspecTarget != null) closePsEditor(); renderPsChips(); }
+  // CMD isochrones (star window only): row visible in a colour-magnitude scatter
+  if(w === 'star'){ _refreshIsoRow(); renderIsoChips(); }
   syncPlotColorWidgets(w);   // theme auto colour differs between hist/scatter
   updatePlotColorControls(w);
   st.hoverPt = null; st.histHover = -1; st.drag = null;
@@ -7056,7 +7401,13 @@ function _syncFitInfo(w){
 // power |FFT(f)|². The mean subtraction makes velocity spectra independent of
 // the reference frame. The FFT is the expensive step, so the result is cached
 // per field+frame signature.
-let _psCache = null;
+let _psCache = {};   // field → { sig, k, P, mode, comp, ... }; one entry per field, replaced when its frame/mask signature changes
+function _getPowerSpectrum(field){
+  const sig = field + '|' + _rangeSig();     // frame-dependent for velocity fields
+  const c = _psCache[field];
+  if(c && c.sig === sig) return c;
+  return (_psCache[field] = Object.assign({ sig }, _powerSpectrum(field) || { k:[], P:[] }));
+}
 function _nextPow2(n){ let p=1; while(p<n) p<<=1; return p; }
 // in-place iterative radix-2 FFT (forward, sign −1). n must be a power of two.
 function _fft1d(re, im, n){
@@ -7113,15 +7464,24 @@ function _powerSpectrum(field){
   for(let i=0;i<Ny;i++) fyk[i]=(i<=Ny/2? i : i-Ny)/Ly;
   for(let i=0;i<Nz;i++) fzk[i]=(i<=Nz/2? i : i-Nz)/Lz;
   const kmax = Math.sqrt((0.5/dx)**2 + (0.5/dy)**2 + (0.5/dz)**2);   // grid Nyquist corner
-  const nsh = Math.max(8, Math.round(Math.min(Nx,Ny,Nz)/2));
-  const shP=new Float64Array(nsh), shN=new Float64Array(nsh);
+  // LOGARITHMICALLY-spaced k-shells (July 2026): the fundamental mode 1/Lmax up
+  // to the Nyquist corner, ~evenly spaced in log k. Linear shells bunch up at
+  // high k on the log-log axis (crowded) and leave the low-k end sparse; log
+  // shells spread the points evenly and average many more modes per bin at high
+  // k, giving the smooth spectra of Hutschenreuter et al. 2026 (Sco-Cen, Fig. 4).
+  // Geometric-mean k per bin (mode-weighted); empty bins dropped.
+  const kmin = 1 / Math.max(Lx, Ly, Lz);                  // longest-axis fundamental
+  const lkmin = Math.log(kmin), lkmax = Math.log(kmax), lspan = lkmax - lkmin;
+  const nsh = Math.min(40, Math.max(8, Math.round(2.5 * Math.log2(kmax / kmin))));
+  const shP=new Float64Array(nsh), shN=new Float64Array(nsh), shLk=new Float64Array(nsh);
   for(let z=0;z<Nz;z++){ const kz2=fzk[z]*fzk[z]; for(let y=0;y<Ny;y++){ const kyz2=kz2+fyk[y]*fyk[y];
     const base=(z*Ny+y)*Nx;
     for(let x=0;x<Nx;x++){ const kk=Math.sqrt(kyz2+fxk[x]*fxk[x]); if(kk<=0) continue;
-      let b=Math.floor(kk/kmax*nsh); if(b<0)b=0; if(b>=nsh)b=nsh-1;
-      shP[b]+=power[base+x]*efac; shN[b]++; } } }
+      let b = lspan>0 ? Math.floor((Math.log(kk)-lkmin)/lspan*nsh) : 0;
+      if(b<0)b=0; if(b>=nsh)b=nsh-1;
+      shP[b]+=power[base+x]*efac; shN[b]++; shLk[b]+=Math.log(kk); } } }
   const k=[], P=[];
-  for(let b=0;b<nsh;b++) if(shN[b]>0){ k.push((b+0.5)/nsh*kmax); P.push(shP[b]/shN[b]); }
+  for(let b=0;b<nsh;b++) if(shN[b]>0){ k.push(Math.exp(shLk[b]/shN[b])); P.push(shP[b]/shN[b]); }
   return { k, P, mode: velFamily?'energy':'scalar', field, kmax,
            comp: velFamily && field !== 'vmag' ? field : null };   // single-component E_c(k)?
 }
@@ -7254,42 +7614,70 @@ function drawDataPlot(w, ctx, W, H, interactive){
   };
 
   if(stw.type === 'power'){
-    // spherically-averaged 3-D FFT power spectrum (field window only), log-log.
+    // spherically-averaged 3-D FFT power spectra (field window only), log-log.
+    // Primary = the x-select field; extra overlays (stw.psOverlays) draw as more
+    // curves in their own colours (July 2026), so several component spectra can
+    // be compared on one plot (Hutschenreuter+ 2026 Fig. 4). k-shells are
+    // log-spaced (see _powerSpectrum) so the curves read smoothly on log-log.
     const xf = _pEl(w,'x-select').value;
-    const sig = xf + '|' + _rangeSig();     // frame-dependent for velocity fields
-    if(!_psCache || _psCache.sig !== sig) _psCache = Object.assign({ sig }, _powerSpectrum(xf) || { k:[], P:[] });
-    const ps = _psCache;
-    if(!ps.k || ps.k.length === 0){ drawFrame(); axLabel('k [1/pc]', 'x'); return `0 modes${src.note ? '' : ''}`; }
-    let xmn=Infinity, xmx=-Infinity, ymn=Infinity, ymx=-Infinity;
-    ps.k.forEach((kv,i)=>{ const pv=ps.P[i];
+    const defs = [{ field:xf, primary:true }];
+    (stw.psOverlays||[]).forEach((o,i)=>{ if(o.field && !defs.some(d=>d.field===o.field))
+      defs.push({ field:o.field, primary:false, color:o.color, ci:i }); });
+    const series = defs.map(d => Object.assign({}, d, _getPowerSpectrum(d.field)));
+    const prim = series[0];
+    if(!prim.k || prim.k.length === 0){ drawFrame(); axLabel('k [1/pc]', 'x'); return `0 modes`; }
+    let xmn=Infinity, xmx=-Infinity, ymn=Infinity, ymx=-Infinity;   // combined over ALL series
+    series.forEach(s => s.k.forEach((kv,i)=>{ const pv=s.P[i];
       if(kv>0){ if(kv<xmn)xmn=kv; if(kv>xmx)xmx=kv; }
-      if(pv>0){ if(pv<ymn)ymn=pv; if(pv>ymx)ymx=pv; } });
+      if(pv>0){ if(pv<ymn)ymn=pv; if(pv>ymx)ymx=pv; } }));
+    if(!(xmx>0)){ drawFrame(); axLabel('k [1/pc]', 'x'); return `0 modes`; }
     if(!(ymn>0)) ymn = ymx>0 ? ymx/1e6 : 1;   // all-zero guard
     if(xmn===xmx){ xmn*=0.9; xmx*=1.1; } if(ymn===ymx){ ymn*=0.9; ymx*=1.1; }
-    // slope-line anchor: the spectrum's first plotted shell (low-k end)
+    // slope-line anchor: the PRIMARY spectrum's first plotted shell (low-k end)
     let ak = null, aP = null;
-    ps.k.forEach((kv,i)=>{ if(ak === null && kv > 0 && ps.P[i] > 0){ ak = kv; aP = ps.P[i]; } });
+    prim.k.forEach((kv,i)=>{ if(ak === null && kv > 0 && prim.P[i] > 0){ ak = kv; aP = prim.P[i]; } });
     // power spectra are read log-log; force it (positive by construction)
     stw.ax = { mode:'power', x0, x1, y0, y1, xmn, xmx, ymn, ymx, flipX:false, flipY:false, axLogX:true, axLogY:true, k0:ak, P0:aP };
     drawFrame(); gridLines(); xTicks(xmn, xmx, false, true); yTicks(ymn, ymx, false, true);
     const sxk = kv => x0 + _axFrac(kv, xmn, xmx, true)*(x1-x0);
     const syp = pv => y1 - _axFrac(pv, ymn, ymx, true)*(y1-y0);
-    // curve in the PLOT colour like its dots (col.pin drew it orange while the
-    // auto swatch showed the style's blue); pin stays for fits/ref-lines only
-    ctx.strokeStyle = col.pt; ctx.lineWidth = 1.6; ctx.globalAlpha = 0.95;
-    ctx.beginPath(); let started=false;
-    ps.k.forEach((kv,i)=>{ const pv=ps.P[i]; if(!(kv>0)||!(pv>0)){ started=false; return; }
-      const sx=sxk(kv), sy=syp(pv); if(!started){ ctx.moveTo(sx,sy); started=true; } else ctx.lineTo(sx,sy); });
-    ctx.stroke(); ctx.globalAlpha = 1;
-    ctx.fillStyle = col.pt;
-    ps.k.forEach((kv,i)=>{ const pv=ps.P[i]; if(!(kv>0)||!(pv>0)) return;
-      const sx=sxk(kv), sy=syp(pv); ctx.beginPath(); ctx.arc(sx, sy, 2.1, 0, 2*Math.PI); ctx.fill(); });
+    // primary in the PLOT colour like its dots; overlays in their own colour
+    const scol = s => s.primary ? col.pt : (s.color || _psAutoColor(s.ci));
+    series.forEach(s => {
+      const c = scol(s);
+      ctx.strokeStyle = c; ctx.lineWidth = 1.6; ctx.globalAlpha = 0.95;
+      ctx.beginPath(); let started=false;
+      s.k.forEach((kv,i)=>{ const pv=s.P[i]; if(!(kv>0)||!(pv>0)){ started=false; return; }
+        const sx=sxk(kv), sy=syp(pv); if(!started){ ctx.moveTo(sx,sy); started=true; } else ctx.lineTo(sx,sy); });
+      ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.fillStyle = c;
+      s.k.forEach((kv,i)=>{ const pv=s.P[i]; if(!(kv>0)||!(pv>0)) return;
+        const sx=sxk(kv), sy=syp(pv); ctx.beginPath(); ctx.arc(sx, sy, 2.0, 0, 2*Math.PI); ctx.fill(); });
+    });
     drawPlotRefLines(w, ctx, col);
+    // legend (only with overlays) — swatch + field label, so PNG/PDF exports say
+    // which curve is which
+    if(series.length > 1){
+      ctx.font = '9px "IBM Plex Mono", monospace'; ctx.textBaseline = 'middle';
+      const rows = series.map(s => ({ c:scol(s), t:src.label(s.field) }));
+      let tw = 0; rows.forEach(r => tw = Math.max(tw, ctx.measureText(r.t).width));
+      const lw = 28 + tw + 8, lh = rows.length*13 + 8, lx = x1 - lw - 6, ly = y0 + 6;
+      ctx.globalAlpha = _lum(col.bg) > 0.5 ? 0.82 : 0.7; ctx.fillStyle = col.bg;
+      ctx.fillRect(lx, ly, lw, lh); ctx.globalAlpha = 1;
+      ctx.strokeStyle = col.axis; ctx.globalAlpha = 0.5; ctx.strokeRect(lx+0.5, ly+0.5, lw, lh); ctx.globalAlpha = 1;
+      rows.forEach((r,i)=>{ const ry = ly + 10 + 13*i;
+        ctx.strokeStyle = r.c; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(lx+6, ry); ctx.lineTo(lx+22, ry); ctx.stroke();
+        ctx.fillStyle = col.lab; ctx.textAlign = 'left'; ctx.fillText(r.t, lx+28, ry); });
+    }
     // energy spectra: E(k) for the |v| total, E_x/E_y/E_z(k) for one component
-    const yl = ps.mode==='energy' ? (ps.comp ? 'E_'+ps.comp.slice(1)+'(k)' : 'E(k)') : 'P(k)';
+    const allEnergy = series.every(s => s.mode === 'energy');
+    const allScalar = series.every(s => s.mode === 'scalar');
+    const yl = allEnergy ? (series.length===1 && prim.comp ? 'E_'+prim.comp.slice(1)+'(k)' : 'E(k)')
+             : allScalar ? 'P(k)' : 'E(k), P(k)';
     axLabel('k [1/pc] (log)', 'x'); axLabel(yl + ' (log)', 'y');
-    return `${ps.k.length} k-shells · ${ps.mode==='energy' ? 'kinetic-energy' : 'power'} spectrum of ${src.label(xf)}`
-         + `${ps.mode==='energy' ? (ps.comp ? ' (single component)' : ' (Σ components)') : ''} · mask · ${refFrameMode} frame`;
+    const extra = series.length>1 ? ` + ${series.length-1} overlay${series.length>2?'s':''}` : '';
+    return `${prim.k.length} k-shells · ${prim.mode==='energy' ? 'kinetic-energy' : 'power'} spectrum of ${src.label(xf)}${extra}`
+         + `${series.length===1 && prim.mode==='energy' ? (prim.comp ? ' (single component)' : ' (Σ components)') : ''} · mask · ${refFrameMode} frame`;
   }
 
   if(stw.type === 'hist'){
@@ -7568,6 +7956,35 @@ function drawDataPlot(w, ctx, W, H, interactive){
     ctx.fillText(src.label(cf) + (cunit ? ' ['+cunit+']' : ''), lx-8, ly+lh/2);
   }
   drawPlotRefLines(w, ctx, col);
+  // BHAC15 pre-main-sequence isochrones over a colour-magnitude diagram (star
+  // window only): each curve maps the model [colour, abs G] polyline through the
+  // same axis transform as the points, so it follows flip/log/zoom.
+  if(w === 'star' && _isCMD() && stw.isochrones.length){
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x0, y0, x1-x0, y1-y0); ctx.clip();
+    ctx.lineWidth = 1.6; ctx.globalAlpha = 0.9;
+    stw.isochrones.forEach((iso,ii)=>{
+      const pts0 = ISOCHRONES[iso.age]; if(!pts0) return;
+      ctx.strokeStyle = iso.color || _isoAutoColor(ii);
+      ctx.beginPath(); let started=false;
+      pts0.forEach(pt=>{ const a=_isoXVal(pt), b=pt[2];
+        if(!isFinite(a)||!isFinite(b)||(lgX&&a<=0)||(lgY&&b<=0)){ started=false; return; }
+        const s=toScreen({a,b});
+        if(!started){ ctx.moveTo(s.x,s.y); started=true; } else ctx.lineTo(s.x,s.y); });
+      ctx.stroke();
+    });
+    ctx.restore(); ctx.globalAlpha = 1;
+    // legend (age labels) top-left inside the plot, so PNG/PDF exports name each curve
+    ctx.font = '9px "IBM Plex Mono", monospace'; ctx.textBaseline = 'middle';
+    const rows = stw.isochrones.map((iso,ii)=>({ c:iso.color||_isoAutoColor(ii), t:iso.age+' Myr' }));
+    let tw=0; rows.forEach(r=>tw=Math.max(tw,ctx.measureText(r.t).width));
+    const lw=28+tw+8, lh=rows.length*13+8, lx=x0+6, ly=y0+6;
+    ctx.globalAlpha=_lum(col.bg)>0.5?0.82:0.7; ctx.fillStyle=col.bg; ctx.fillRect(lx,ly,lw,lh); ctx.globalAlpha=1;
+    ctx.strokeStyle=col.axis; ctx.globalAlpha=0.5; ctx.strokeRect(lx+0.5,ly+0.5,lw,lh); ctx.globalAlpha=1;
+    rows.forEach((r,i)=>{ const ry=ly+10+13*i;
+      ctx.strokeStyle=r.c; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(lx+6,ry); ctx.lineTo(lx+22,ry); ctx.stroke();
+      ctx.fillStyle=col.lab; ctx.textAlign='left'; ctx.fillText(r.t,lx+28,ry); });
+  }
   axLabel(unitLbl(xf) + (lgX ? ' (log)' : ''), 'x'); axLabel(unitLbl(yf) + (lgY ? ' (log)' : ''), 'y');
   // Caption, same scheme as the 3D star panel: "x of y" whenever the colour
   // controls dropped points (range handles in hide mode / ∅ on the no-value
@@ -7969,17 +8386,18 @@ function getAvailableColorbars(){
     bars.push({ id:'cloud', label:`Density cloud (${cloudField==='energy_density'?'½ρv²':'ρ'})`, unit:def.unit,
                 min:cloudFieldMin(), max:cloudFieldMax(), cmap:cloudColormap });
   }
-  if(starsVisible && showStarVectors){
+  if(starsVisible && starVectorsOn()){
     let vMin=Infinity, vMax=-Infinity;
     const uvwMask = starMaskPred(starDisplayMask);   // match the displayed arrows
+    const { kU, kV, kW, label:_srcLabel } = _starVecFields();
     (DATA?.real_stars||[]).forEach(s=>{
-      if(s.U==null||s.V==null||s.W==null || !uvwMask(s)) return;
-      const m=Math.hypot(s.U,s.V,s.W); if(m<vMin)vMin=m; if(m>vMax)vMax=m;
+      if(s[kU]==null||s[kV]==null||s[kW]==null || !uvwMask(s)) return;
+      const m=Math.hypot(s[kU],s[kV],s[kW]); if(m<vMin)vMin=m; if(m>vMax)vMax=m;
     });
     if(colorMaxOverride.star != null) vMax = colorMaxOverride.star;
     if(colorMinOverride.star != null) vMin = colorMinOverride.star;
     if(vMin!==Infinity){
-      bars.push({ id:'star', label:'Stars (|UVW|)', unit:'km/s', min:vMin, max:vMax, cmap:starColormap });
+      bars.push({ id:'star', label:`Stars (|${_srcLabel}|)`, unit:'km/s', min:vMin, max:vMax, cmap:starColormap });
     }
   } else if(starsVisible && starColorField !== 'none'){
     let vMin=Infinity, vMax=-Infinity;

@@ -149,6 +149,25 @@ def _sid(v):
     s = str(v).strip() if v is not None else ""
     return s if s and s.lower() != "nan" else None
 
+def _icrs_to_gal_uvw(ra_deg, dec_deg, dist_pc, pmra, pmdec, rv):
+    """ICRS (ra,dec,dist,pmra,pmdec,rv) -> Galactic Cartesian velocity U,V,W [km/s].
+    Self-contained (statt aus simple_functions importiert — das Claude-Repo hat
+    kein icrs_to_gal), identische astropy-Transformation wie
+    TaurusVelocityField/simple_functions.py:icrs_to_gal. Mit rv=0 liefert das
+    die reine PM-Geschwindigkeit (tangential, ohne Radialanteil) — s.
+    plot_data.py U_star_pm_only."""
+    coords = ICRS(
+        ra=ra_deg * u_ap.deg, dec=dec_deg * u_ap.deg, distance=dist_pc * u_ap.pc,
+        pm_ra_cosdec=pmra * (u_ap.mas/u_ap.yr), pm_dec=pmdec * (u_ap.mas/u_ap.yr),
+        radial_velocity=rv * (u_ap.km/u_ap.s),
+    )
+    gal = coords.transform_to(Galactic())
+    gal.representation_type = "cartesian"
+    gal.differential_type = "cartesian"
+    return (gal.U.to(u_ap.km/u_ap.s).value,
+            gal.V.to(u_ap.km/u_ap.s).value,
+            gal.W.to(u_ap.km/u_ap.s).value)
+
 def _num(x):
     """Voxel value → float, aber NaN/Inf → None. Sonst schriebe json.dumps ein
     NaN-Literal (ungültiges JSON für die SAVE_JSON-Datei; im HTML-Embed liest
@@ -368,6 +387,14 @@ def process_field(cfg):
     star_W   = Taurus_core["W"].values.astype(float)
     source_id= Taurus_core["source_id"].values
 
+    # Reine PM-Geschwindigkeit (rv=0) — für ALLE Sterne verfügbar, auch ohne
+    # RV-Messung (anders als U/V/W oben). Viewer-Option "PM only" bei den
+    # UVW-Pfeilen, analog plot_data.py U_star_pm_only.
+    star_ra   = Taurus_core["ra"].values
+    star_dec  = Taurus_core["dec"].values
+    star_dist = 1000.0 / Taurus_core["parallax"].values.astype(float)   # pc
+    U_pm, V_pm, W_pm = _icrs_to_gal_uvw(star_ra, star_dec, star_dist, pmra, pmdec, np.zeros_like(pmra))
+
     if REPO == "taurus":
         # RUWE-Schwelle für den rv_used-Fallback (final_run-Ära hat den Key nicht
         # im Parameterfile — dort war 1.4 in stellar_data.py hart verdrahtet)
@@ -415,7 +442,11 @@ def process_field(cfg):
         # zusätzliche nicht-Gaia-rvs); Zeilen per source_id angleichen.
         _gaia = pd.read_csv(os.path.join(os.path.dirname(cfg["star_csv"]) or ".", "Gaia.csv"),
                             dtype={"source_id": str})
-        _gaia = _gaia.set_index("source_id").loc[source_id].reset_index()
+        # source_id bleibt Index (nur zum Zeilen-Alignment gebraucht; die eta-
+        # Funktionen lesen nur Datenspalten). Kein reset_index → kein Spalten-
+        # Insert in den sehr breiten Gaia-Frame (löst sonst pandas' Fragmentation-
+        # PerformanceWarning aus).
+        _gaia = _gaia.set_index("source_id").loc[source_id]
         eta_mean, eta_std, _eta_has_rv = _eta_from_posterior(
             parameters, samples, _gaia, len(star_x))
         # eta bleibt an die TATSÄCHLICHE Inferenz-Sternmenge gebunden (NaN außerhalb,
@@ -487,23 +518,31 @@ def process_field(cfg):
     # taurus: Residuum / Katalogfehler (bewusst OHNE sigma_int — so wurden die
     #   alten Runs diagnostiziert); rv zusätzlich in Einheiten des eta-
     #   inflationierten Fehlers sigma·sqrt(eta).
-    # claude: sigma_eff = sqrt(sigma_gaia² + sigma_int²) wie in der Likelihood
-    #   (PM via kappa·d nach mas/yr projiziert); ein INFERIERTER sigma_int
-    #   (Prior-Dict in der Config) wird als Posterior-Mittel des Latents gelesen.
+    # claude: sigma_eff = sqrt(sigma_gaia² + sigma_int² [+ sigma_rv_jitter² auf
+    #   rv]) wie in der Likelihood (PM via kappa·d nach mas/yr projiziert);
+    #   INFERIERTE Werte (Prior-Dict in der Config) werden als Posterior-Mittel
+    #   des jeweiligen Latents gelesen. sigma_rv_jitter ist rv-only.
     if REPO == "claude":
         KAPPA = 4.740470463533
-        _si = parameters["model"].get("sigma_int", 0.0)
-        if isinstance(_si, dict):
-            import nifty.re as jft
-            _prior = jft.LogNormalPrior(_si["mean"], _si["std"], name="sigma_int", shape=())
-            _si = float(np.mean([np.asarray(_prior(s)) for s in samples]))
-            print(f"sigma_int inferiert -> Posterior-Mittel {_si:.3f} km/s")
+
+        def _sigma_cfg(key):
+            val = parameters["model"].get(key, 0.0)
+            if isinstance(val, dict):
+                import nifty.re as jft
+                prior = jft.LogNormalPrior(val["mean"], val["std"], name=key, shape=())
+                val = float(np.mean([np.asarray(prior(s)) for s in samples]))
+                print(f"{key} inferiert -> Posterior-Mittel {val:.3f} km/s")
+            return float(val)
+
+        _si  = _sigma_cfg("sigma_int")
+        _jit = _sigma_cfg("sigma_rv_jitter")
         _d_kpc     = 1.0 / Taurus_core["parallax"].values.astype(float)  # 1/mas = kpc
         _s_int_mas = _si / (KAPPA * _d_kpc)
         pmra_err_eff  = np.hypot(pmra_err,  _s_int_mas)
         pmdec_err_eff = np.hypot(pmdec_err, _s_int_mas)
-        rv_err_eff    = np.hypot(rv_err,    _si)
-        print(f"weighted residuals: sigma_eff mit sigma_int = {_si:.3f} km/s")
+        rv_err_eff    = np.hypot(np.hypot(rv_err, _si), _jit)
+        print(f"weighted residuals: sigma_eff mit sigma_int = {_si:.3f} km/s, "
+              f"sigma_rv_jitter = {_jit:.3f} km/s")
     else:
         pmra_err_eff, pmdec_err_eff, rv_err_eff = pmra_err, pmdec_err, rv_err
     pmra_residual_w  = pmra_residual  / pmra_err_eff
@@ -568,6 +607,7 @@ def process_field(cfg):
             "eta": _f(eta_mean[i]), "eta std": _f(eta_std[i]),
             "log10 eta": _f(log10_eta[i]),
             "U": _f(star_U[i]), "V": _f(star_V[i]), "W": _f(star_W[i]),
+            "U_pm": _f(U_pm[i]), "V_pm": _f(V_pm[i]), "W_pm": _f(W_pm[i]),
             # rv_good (rv filtered by the inference mask) was dropped: it is just
             # "rv" for the stars where rv_used is true, so the viewer reproduces
             # it via the "RV used in inference" mask instead of a separate field.
