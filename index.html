@@ -36,7 +36,8 @@
   section h3{ font-size:.95rem; text-transform:uppercase; letter-spacing:.08em;
               color:var(--text3); margin:0 0 .6rem; }
   ul{ margin:0; padding-left:1.2rem; color:var(--text2); font-size:.92rem; }
-  li{ margin:.3rem 0; }
+  li{ margin:.35rem 0; }
+  li b{ color:var(--text); font-weight:600; }
   footer{ margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border);
           color:var(--text3); font-size:.85rem; }
   a{ color:var(--accent); }
@@ -53,30 +54,31 @@
     <a class="card" href="vectorfield_viewer_data.html">
       <h2>Full version →</h2>
       <div class="badge">recommended on desktop</div>
-      <p>Everything: the velocity field, the stellar sample, the Edenhofer 3D dust map
-      and all five resolution levels of the Local Bubble surface.</p>
+      <p>Everything: the velocity field and the stellar sample. Additionally the Edenhofer 3D dust map
+      and a model of the Local Bubble surface.</p>
       <div class="meta">17 MB file · ≈5 MB transferred</div>
     </a>
 
     <a class="card" href="vectorfield_viewer_light.html">
       <h2>Light version →</h2>
       <div class="badge">faster to load</div>
-      <p>Same field and stellar data, but without the dust map and with only the two
-      coarsest Local Bubble levels. Best on a slow connection or a phone.</p>
+      <p>Same field and stellar data, but without the dust map and with less detail of the
+      Local Bubble surface which essentially are not important for the rest of the analysis.</p>
       <div class="meta">7 MB file · ≈1.5 MB transferred</div>
     </a>
   </div>
 
   <section>
-    <h3>What you can do in the viewer</h3>
+    <h3>Features</h3>
     <ul>
-      <li>Rotate and fly through the reconstructed field; show it as vectors, cones or streamlines.</li>
-      <li>Switch the reference frame between heliocentric, the Taurus bulk motion, the LSR or a custom vector.</li>
-      <li>Colour field and stars by any quantity — velocity components, divergence, vorticity,
-          posterior uncertainty, stellar age, mass, extinction, RUWE, membership group.</li>
-      <li>Move the mask threshold to see how far the reconstruction is actually constrained by data.</li>
-      <li>Open 2D plots (histograms, scatter, colour–magnitude diagrams, power spectra) alongside the 3D view.</li>
-      <li>Export screenshots and videos with colorbars composited in.</li>
+      <li><b>Reference frames</b> — heliocentric, relative to the Taurus bulk motion, the LSR, or a custom vector.</li>
+      <li><b>Colour by anything</b> — velocity components, divergence, vorticity, posterior
+          uncertainty, stellar age, mass, membership group.</li>
+      <li><b>Adjustable mask</b> — move the density threshold to see where the field is constrained
+          by data and where it extrapolates.</li>
+      <li><b>Streamlines and 2D plots</b> — animated tracers, histograms, scatter plots,
+          colour–magnitude diagrams, power spectra.</li>
+      <li><b>Export</b> — screenshots and videos.</li>
     </ul>
   </section>
 
