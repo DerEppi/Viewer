@@ -80,8 +80,10 @@ HTML_TEMPLATE          = VIEWER_DIR / "vectorfield_viewer.html"
 HTML_OUTPUT            = VIEWER_DIR / "vectorfield_viewer_data.html"
 SAVE_JSON              = True
 JSON_OUTPUT            = VIEWER_DIR / "saves/vectorfield_data.json"
-SAVE_HTML_WITHOUT_DUST = True
-HTML_OUTPUT_NO_DUST    = VIEWER_DIR / "vectorfield_viewer_nodust.html"
+SAVE_HTML_LIGHT        = True
+HTML_OUTPUT_LIGHT      = VIEWER_DIR / "vectorfield_viewer_light.html"
+# Light-Version: ohne Dustmap und nur mit den N gröbsten Local-Bubble-Stufen
+LIGHT_LB_LEVELS        = 2
 
 # ── Feld-Konfiguration je Repo (CLI-Argument 2 überschreibt result_name) ───────
 # Alle Felder teilen dieselbe Logik; reference_objects sind global.
@@ -148,6 +150,15 @@ def _f(v):
 def _sid(v):
     s = str(v).strip() if v is not None else ""
     return s if s and s.lower() != "nan" else None
+
+def _cat(v):
+    """Kategorie-String (Gruppenname) → None für 'kein Wert'.
+
+    Das Stern-CSV kodiert 'gehört zu keiner Luhman-Gruppe' als '-'; im Viewer
+    ist das ein fehlender Wert (grauer Punkt, ∅-Toggle), kein eigener Name.
+    """
+    s = str(v).strip() if v is not None else ""
+    return s if s and s not in ("-", "nan", "NaN", "None") else None
 
 def _icrs_to_gal_uvw(ra_deg, dec_deg, dist_pc, pmra, pmdec, rv):
     """ICRS (ra,dec,dist,pmra,pmdec,rv) -> Galactic Cartesian velocity U,V,W [km/s].
@@ -382,6 +393,13 @@ def process_field(cfg):
     rv_err   = Taurus_core["radial_velocity_error"].values
     ruwe     = Taurus_core["ruwe"].values
     av       = Taurus_core["av"].values
+    # Gruppennamen (kategorisch, '-' = keiner Gruppe zugeordnet): Luhman-Census und
+    # SigMA-Clustering. Optional — ältere Stern-CSVs haben die Spalten nicht, dann
+    # blendet der Viewer die jeweilige Farb-/Filteroption aus.
+    name_luhman = (Taurus_core["name_luhman"].values
+                   if "name_luhman" in Taurus_core.columns else None)
+    name_sigma  = (Taurus_core["name_sigma"].values
+                   if "name_sigma" in Taurus_core.columns else None)
     star_U   = Taurus_core["U"].values.astype(float)
     star_V   = Taurus_core["V"].values.astype(float)
     star_W   = Taurus_core["W"].values.astype(float)
@@ -612,6 +630,8 @@ def process_field(cfg):
             # "rv" for the stars where rv_used is true, so the viewer reproduces
             # it via the "RV used in inference" mask instead of a separate field.
             "rv_used": bool(rv_good_mask[i]),
+            "name_luhman": _cat(name_luhman[i]) if name_luhman is not None else None,
+            "name_sigma":  _cat(name_sigma[i])  if name_sigma  is not None else None,
         })
     n_used = sum(1 for s in real_stars if s["rv_used"])
     print(f"Sterne: {len(real_stars)},  Inference-verwendet: {n_used}")
@@ -826,10 +846,23 @@ html = html.replace(PLACEHOLDER, DATA_BLOCK)
 with open(HTML_OUTPUT, "w", encoding="utf-8") as f: f.write(html)
 print(f"Gespeichert: {HTML_OUTPUT}  ({os.path.getsize(HTML_OUTPUT)/1e6:.1f} MB)")
 
-if SAVE_HTML_WITHOUT_DUST:
+if SAVE_HTML_LIGHT:
     ro_nd = {k:v for k,v in reference_objects.items() if k!="dustmap"}
+    # Nach der Dustmap ist die Local Bubble der größte Brocken: die feinen
+    # NSIDE-Stufen machen den Löwenanteil ihrer Punkte aus. Die Light-Version
+    # behält nur die zwei GRÖBSTEN Stufen. Der Viewer leitet den Detail-Slider
+    # aus den vorhandenen Stufen ab (refreshLocalBubbleSlider → lbubbleNsides)
+    # und klemmt einen gespeicherten, jetzt zu großen Index fest — es braucht
+    # also keine Sonderbehandlung auf der Viewer-Seite.
+    _lb_nd = ro_nd.get("local_bubble")
+    if _lb_nd and _lb_nd.get("levels_q16"):
+        _keep = sorted(_lb_nd["levels_q16"], key=int)[:LIGHT_LB_LEVELS]
+        ro_nd["local_bubble"] = dict(
+            _lb_nd, levels_q16={k: _lb_nd["levels_q16"][k] for k in _keep})
+        print(f"Light: Local Bubble nur NSIDE {_keep} "
+              f"(von {sorted(_lb_nd['levels_q16'], key=int)})")
     d_nd  = dict(data, reference_objects=ro_nd)
     js_nd = json.dumps(d_nd, separators=(',',':'))
     html_nd = html.replace(DATA_BLOCK, f"const EMBEDDED_DATA = {js_nd};")
-    with open(HTML_OUTPUT_NO_DUST, "w", encoding="utf-8") as f: f.write(html_nd)
-    print(f"Gespeichert (ohne Dustmap): {HTML_OUTPUT_NO_DUST}  ({os.path.getsize(HTML_OUTPUT_NO_DUST)/1e6:.1f} MB)")
+    with open(HTML_OUTPUT_LIGHT, "w", encoding="utf-8") as f: f.write(html_nd)
+    print(f"Gespeichert (ohne Dustmap): {HTML_OUTPUT_LIGHT}  ({os.path.getsize(HTML_OUTPUT_LIGHT)/1e6:.1f} MB)")

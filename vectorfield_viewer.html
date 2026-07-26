@@ -286,6 +286,36 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
 #star-cb-handles{position:absolute;top:0;left:0;width:100%;height:12px;pointer-events:auto;cursor:ew-resize;touch-action:none;}
 #star-colorbar{width:100%;height:12px;border-radius:3px;display:block;}
 #star-cb-row{display:flex;justify-content:space-between;font-size:7px;color:var(--text3);margin-top:2px;}
+/* categorical colour field: one clickable chip per group name (swatch + name +
+   count). Selected chips are the "highlighted" set; the list scrolls when a
+   data set has many groups so the sidebar keeps its length. */
+.cat-chips{display:flex;flex-wrap:wrap;gap:3px;max-height:132px;overflow-y:auto;}
+.cat-chip{display:inline-flex;align-items:center;gap:4px;font-size:8px;line-height:1;
+  background:var(--panel2);color:var(--text2);border:1px solid var(--border2);
+  border-radius:2px;padding:3px 5px;cursor:pointer;font-family:inherit;}
+.cat-chip.legend{cursor:default;}
+.cat-chip.off{opacity:.4;}
+.cat-sw{width:8px;height:8px;border-radius:2px;flex:0 0 auto;}
+.cat-n{color:var(--text3);font-size:7px;}
+/* "Star groups" window: one checkable row per group, height-capped so a long
+   list (23 SigMA clusters) scrolls inside the window instead of growing it */
+#group-pop{display:none;position:fixed;z-index:80;pointer-events:auto;background:var(--bg2);
+  border:1px solid var(--border2);border-radius:4px;padding:8px;box-shadow:0 4px 14px rgba(0,0,0,.4);
+  flex-direction:column;gap:6px;width:210px;}
+#group-pop .prow{display:flex;align-items:center;gap:6px;}
+#group-pop label{font-size:8px;color:var(--text2);letter-spacing:.06em;flex-shrink:0;}
+#group-pop .tog{font-size:8px;padding:2px 7px;}
+.grp-fields{display:flex;gap:3px;}
+.grp-fields .tog{font-size:7px;padding:2px 6px;}
+.grp-list{display:flex;flex-direction:column;gap:1px;max-height:min(46vh,300px);overflow-y:auto;}
+.grp-row{display:flex;align-items:center;gap:5px;width:100%;font-family:inherit;font-size:8px;
+  line-height:1;text-align:left;background:transparent;border:none;border-radius:2px;
+  padding:3px 4px;color:var(--text2);cursor:pointer;}
+.grp-row:hover{background:rgba(26,111,212,.10);color:var(--text);}
+.grp-row.off{opacity:.45;}
+.grp-box{width:9px;height:9px;flex:0 0 auto;border:1px solid var(--border2);border-radius:2px;
+  font-size:7px;line-height:8px;text-align:center;color:var(--accent);}
+.grp-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 /* generic interactive colorbar (field/stream/cloud sidebar): draggable min/max
    handles overlaid on the colorbar strip, same as the star one. LINEAR only. */
 .cb-interactive{position:relative;}
@@ -363,14 +393,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
 /* reference lines: chip per line (inline, next to "+ line"), config in #pline-pop */
 .p-lchips{display:flex;gap:4px;flex-wrap:wrap;flex:1;min-width:0;align-items:center;}
 .p-lchips .tog{font-size:8px;padding:2px 7px;}
-#pline-pop,#axrange-pop,#pspec-pop,#iso-pop{display:none;position:fixed;z-index:80;pointer-events:auto;background:var(--bg2);
+#pline-pop,#axrange-pop,#pspec-pop,#iso-pop,#fitrange-pop{display:none;position:fixed;z-index:80;pointer-events:auto;background:var(--bg2);
   border:1px solid var(--border2);border-radius:4px;padding:8px;box-shadow:0 4px 14px rgba(0,0,0,.4);
   flex-direction:column;gap:6px;width:172px;}
-#pline-pop .prow,#axrange-pop .prow,#pspec-pop .prow,#iso-pop .prow{display:flex;align-items:center;gap:6px;}
-#pline-pop label,#axrange-pop label,#pspec-pop label,#iso-pop label{font-size:8px;color:var(--text2);letter-spacing:.06em;width:34px;flex-shrink:0;}
-#pline-pop select,#pline-pop input[type=text],#axrange-pop input[type=text],#pspec-pop select,#pspec-pop input[type=text],#iso-pop select,#iso-pop input[type=text]{font-family:var(--mono);font-size:8px;background:var(--bg3);
+#pline-pop .prow,#axrange-pop .prow,#pspec-pop .prow,#iso-pop .prow,#fitrange-pop .prow{display:flex;align-items:center;gap:6px;}
+#pline-pop label,#axrange-pop label,#pspec-pop label,#iso-pop label,#fitrange-pop label{font-size:8px;color:var(--text2);letter-spacing:.06em;width:34px;flex-shrink:0;}
+#pline-pop select,#pline-pop input[type=text],#axrange-pop input[type=text],#pspec-pop select,#pspec-pop input[type=text],#iso-pop select,#iso-pop input[type=text],#fitrange-pop input[type=text]{font-family:var(--mono);font-size:8px;background:var(--bg3);
   color:var(--text);border:1px solid var(--border2);border-radius:2px;padding:3px 6px;outline:none;flex:1;min-width:0;}
-#pline-pop .tog,#axrange-pop .tog,#pspec-pop .tog,#iso-pop .tog{font-size:8px;padding:2px 7px;}
+#pline-pop .tog,#axrange-pop .tog,#pspec-pop .tog,#iso-pop .tog,#fitrange-pop .tog{font-size:8px;padding:2px 7px;}
+#fitrange-pop label{width:46px;}
 #axrange-pop label{width:auto;}
 #pline-pop .tog:disabled{opacity:.65;cursor:default;}
 /* floating style-preset list (opened by the small "Style" button) */
@@ -548,7 +579,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       <div class="slider-row cb-minmax" data-cbl="field"></div>
       <div class="slider-row mask-level-row" title="Mask threshold on the exported KDE mass density — one shared level for field markers, streamlines and the density cloud (the twin slider in the Cloud menu moves along). ⟲ returns to the exported default level.">
         <label>Mask level</label>
-        <input type="range" id="mask-level-field" min="0" max="1000" value="500" oninput="setMaskLevel(+this.value/1000,this)">
+        <input type="range" id="mask-level-field" min="0" max="1000" value="667" oninput="setMaskLevel(+this.value/1000,this)">
         <span class="slider-val" id="sv-maskLevel-field">–</span>
         <button class="tog" onclick="resetMaskLevel()" style="flex:0 0 auto;padding:2px 5px;" title="Reset to the exported default level">⟲</button>
       </div>
@@ -641,6 +672,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
             title="Stars with NO value for this field (drawn grey): shown or hidden. The colorbar handles never touch them.">∅ shown</button>
         </div>
       </div>
+      <!-- Categorical colour field (Luhman / SigMA group): legend instead of a
+           colorbar. Showing/hiding groups lives in the "Star groups" window. -->
+      <div id="star-cat-row" style="display:none;margin-top:5px;">
+        <div id="star-cat-chips" class="cat-chips"></div>
+        <div class="slider-row" style="gap:6px;margin-top:3px;align-items:center;">
+          <span id="star-cat-info" style="font-size:8px;color:var(--text3);"></span>
+        </div>
+      </div>
       <div class="slider-row" id="star-cmap-row" style="gap:6px;margin-top:4px;">
         <label class="sel-label">Colormap</label>
         <select id="colormap-star" class="mini-select" onchange="setColormap('star',this.value)"></select>
@@ -694,6 +733,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
         <button class="tog" id="star-clear-markers-btn" style="display:none;font-size:8px;padding:3px 6px;flex-shrink:0;" onclick="clearSearchMarkers()" title="Remove all search markers (they stay until cleared here — clicking elsewhere no longer removes them)">✕ marks</button>
       </div>
       <div id="star-search-msg" class="hint" style="display:none;color:var(--accent3);margin-top:2px;"></div>
+      <!-- Group visibility: opens the shared floating "Star groups" window
+           (same one the plot window opens) — a filter, not a colour setting. -->
+      <div class="slider-row" style="margin-top:6px;gap:5px;">
+        <label style="font-size:8px;color:var(--text3);flex-shrink:0;">Groups</label>
+        <button class="tog" id="star-groups-btn" onclick="toggleGroupPop(this)"
+          style="font-size:8px;padding:3px 8px;"
+          title="Show or hide stars by their Luhman / SigMA group">Groups</button>
+      </div>
     </div>
 
     <div class="ctrl-section" id="section-cloud" style="display:none">
@@ -742,7 +789,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       </div>
       <div class="slider-row mask-level-row" title="Mask threshold on the exported KDE mass density — one shared level for the density cloud, field markers and streamlines (the twin slider in the Field menu moves along). ⟲ returns to the exported default level.">
         <label>Mask level</label>
-        <input type="range" id="mask-level-cloud" min="0" max="1000" value="500" oninput="setMaskLevel(+this.value/1000,this)">
+        <input type="range" id="mask-level-cloud" min="0" max="1000" value="667" oninput="setMaskLevel(+this.value/1000,this)">
         <span class="slider-val" id="sv-maskLevel-cloud">–</span>
         <button class="tog" onclick="resetMaskLevel()" style="flex:0 0 auto;padding:2px 5px;" title="Reset to the exported default level">⟲</button>
       </div>
@@ -943,6 +990,45 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
     <!-- floating style-preset list (shared by both plot windows, opened by the
          small "Style" button in the Type row; the button label never changes) -->
     <div id="style-pop"></div>
+
+    <!-- Fit range: bounds for the fitted curve only. Shared by both plot
+         windows (_fitRangeTarget), floating so neither panel grows. -->
+    <div id="fitrange-pop">
+      <div class="prow">
+        <label>Fit range</label>
+        <input type="text" id="fitrange-min" inputmode="decimal" spellcheck="false" placeholder="auto" title="Lower bound (empty = full range)">
+        <span style="font-size:8px;color:var(--text3);">–</span>
+        <input type="text" id="fitrange-max" inputmode="decimal" spellcheck="false" placeholder="auto" title="Upper bound (empty = full range)">
+      </div>
+      <div class="prow" style="gap:4px;">
+        <button class="tog" id="fitrange-lines" onclick="_fitRangeFromLines()"
+          title="Take the bounds from two vertical reference lines">from lines</button>
+        <button class="tog" onclick="_fitRangeFromAxis()" title="Take the bounds from the visible x-axis">from axis</button>
+      </div>
+      <div class="prow" style="justify-content:space-between;">
+        <button class="tog" onclick="_fitRangeClear()" title="Fit the whole range again">auto</button>
+        <button class="tog" onclick="_fitRangeCommit()" title="Apply both bounds (Enter)">apply ⏎</button>
+      </div>
+    </div>
+
+    <!-- "Star groups": which Luhman / SigMA groups are visible. Floating and
+         shared by the Stars section and the star plot window, so neither panel
+         grows by a list that can hold 23 entries. -->
+    <div id="group-pop">
+      <div class="prow" style="justify-content:space-between;">
+        <label style="width:auto;">Star groups</label>
+        <div id="group-pop-fields" class="grp-fields"></div>
+      </div>
+      <div id="group-pop-list" class="grp-list"></div>
+      <div class="prow" style="justify-content:space-between;">
+        <span id="group-pop-info" style="font-size:8px;color:var(--text3);"></span>
+        <span style="display:flex;gap:4px;">
+          <button class="tog" onclick="setAllStarGroups(true)" title="Show every group">all</button>
+          <button class="tog" onclick="setAllStarGroups(false)" title="Hide every group">none</button>
+          <button class="tog" onclick="closeGroupPop()">done</button>
+        </span>
+      </div>
+    </div>
 
     <div id="star-info-popup">
       <div class="sip-head">
@@ -1154,6 +1240,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
         <option value="hasrv">Has RV</option>
         <option value="used">RV used in inference</option>
       </select>
+      <!-- opens the SHARED floating group window instead of an inline list:
+           this panel is already tall, 23 SigMA clusters would not fit -->
+      <button class="tog" id="plot-groups-btn" onclick="toggleGroupPop(this)"
+        style="font-size:8px;padding:3px 8px;flex-shrink:0;"
+        title="Show or hide stars by their Luhman / SigMA group">Groups</button>
     </div>
     <div class="prow" id="plot-color-row">
       <label>Plot color</label>
@@ -1176,6 +1267,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
         <button class="tog" id="plot-fit-exp"      onclick="togglePlotFit('exp','star')">Exp</button>
         <button class="tog" id="plot-fit-kde"      onclick="togglePlotFit('kde','star')" title="Kernel density estimate — a smooth curve over the histogram (Gaussian kernels, Silverman bandwidth)">KDE</button>
       </div>
+      <!-- fit range: restrict the fit to a sub-range while the whole histogram
+           stays drawn (e.g. fit the core, judge the tails against it) -->
+      <button class="tog" id="plot-fitrange-btn" onclick="toggleFitRangePop('star', this)" style="flex:0 0 auto;"
+        title="Restrict the fit to an x-range (the full histogram stays visible)">Range</button>
     </div>
     <div class="prow sub">
       <label>Lines</label>
@@ -1312,6 +1407,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
         <button class="tog" id="fplot-fit-exp"      onclick="togglePlotFit('exp','field')">Exp</button>
         <button class="tog" id="fplot-fit-kde"      onclick="togglePlotFit('kde','field')" title="Kernel density estimate — a smooth curve over the histogram (Gaussian kernels, Silverman bandwidth)">KDE</button>
       </div>
+      <!-- fit range: restrict the fit to a sub-range while the whole histogram
+           stays drawn (e.g. fit the core, judge the tails against it) -->
+      <button class="tog" id="fplot-fitrange-btn" onclick="toggleFitRangePop('field', this)" style="flex:0 0 auto;"
+        title="Restrict the fit to an x-range (the full histogram stays visible)">Range</button>
     </div>
     <div class="prow sub">
       <label>Lines</label>
@@ -1439,7 +1538,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
           <tr><td>Velocity/Curl/Div/Std</td><td>Which quantity to show: the velocity field, its curl (rotation), divergence (expansion/contraction), or local spread. Streamlines always follow the velocity.</td></tr>
           <tr><td>Show as</td><td>Vector = markers pointing along the field; Magnitude or a single X/Y/Z component = coloured scalar markers instead.</td></tr>
           <tr><td>Marker shape</td><td>The button next to <em>Show as</em> switches the shape: vector views between <em>Arrows</em> (shaft + head) and <em>Cones</em>, scalar views between <em>Crosses</em> and <em>Diamonds</em>. Each mode remembers its own shape.</td></tr>
-          <tr><td>Mask level</td><td>Threshold on the exported KDE mass density that defines the voxel mask. ONE shared level controls the field markers, the streamline region and the density cloud — the twin sliders in the Field and Cloud menus are linked and move together. Auto colorbar ranges rescale to the current mask (manual min/max stay put); ⟲ returns to the exported default. The total-energy readout deliberately keeps the FIXED default mask so its value stays comparable and box-edge artefacts never enter the sum.</td></tr>
+          <tr><td>Mask level</td><td>Threshold on the exported KDE mass density that defines the voxel mask. The slider spans two decades below to one decade above the exported default (a decade higher, the mask is already empty) and updates the view live as you drag. ONE shared level controls the field markers, the streamline region and the density cloud — the twin sliders in the Field and Cloud menus are linked and move together. Auto colorbar ranges rescale to the current mask (manual min/max stay put); ⟲ returns to the exported default. The total-energy readout deliberately keeps the FIXED default mask so its value stays comparable and box-edge artefacts never enter the sum.</td></tr>
           <tr><td>Size</td><td>Size of the markers.</td></tr>
           <tr><td>Subsample</td><td>Draw only every Nth marker (1 = all). Higher = less clutter, faster.</td></tr>
           <tr><td>Hover / Click</td><td>Hovering a marker shows its current value; clicking it opens a card with all of that voxel's values (velocity, pm/RV, divergence, curl, densities) in the active reference frame.</td></tr>
@@ -1452,7 +1551,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       <div class="help-section">
         <div class="help-section-title">Stars</div>
         <p>Appears when <em>Stars</em> is active. Choose a field from the <em>Color by</em> dropdown to color stars by that property (age, rv, pmra, …). A colorbar shows the min/max range. Stars <strong>without</strong> a value for that field are drawn grey; the <strong>∅</strong> button next to the dropdown hides them (and brings them back). The colorbar's range handles never touch them — they filter only stars that do have a value.</p>
-        <p style="margin-top:4px;">The button at the top of the section cycles the star display through three modes: <strong>Dots</strong> (coloured by the field above), <strong>UVW vectors</strong> (the full 3D velocity as a 3D arrow — needs a measured radial velocity) and <strong>PM vectors</strong> (tangential velocity from the proper motion alone, radial velocity set to zero — shown for every star with a proper motion, no RV needed). In either vector mode a <strong>Marker</strong> button switches the shape between arrows (shaft + head) and plain cones, and the <strong>Vector size</strong> slider scales either shape. The <strong>Mask</strong> dropdown (All stars / Has RV / RV used in inference) filters which stars are shown — it applies to the dots and both vector modes.</p>
+        <p style="margin-top:4px;"><strong>Luhman group</strong> and <strong>SigMA group</strong> (the <em>Membership</em> group of the dropdown) are <em>categorical</em> colour fields: instead of a colorbar every group gets its own colour and a legend below the dropdown names them (swatch, name, star count). Stars in no group carry no value and follow the <strong>∅</strong> button.</p>
+        <p style="margin-top:4px;">Which groups are <em>shown</em> is set separately, in the <strong>Groups</strong> window (button at the end of this section, and in the star plot window — it is the same window). Tick a group off and its stars disappear from the 3D view, from both 2D plots and from every count and auto colour range at once, so you can compare group properties: colour by <em>age</em> or <em>rv</em> and leave only two clusters visible. The switch at the top picks whether the filter works on the Luhman or the SigMA grouping; <em>all</em> / <em>none</em> set everything at once, and the button is marked ● while a filter is narrowing the sample. The selection is saved between sessions, like the Mask dropdown.</p>
+        <p style="margin-top:4px;">The button at the top of the section cycles the star display through three modes: <strong>Dots</strong>, <strong>UVW vectors</strong> (the full 3D velocity as a 3D arrow — needs a measured radial velocity) and <strong>PM vectors</strong> (tangential velocity from the proper motion alone, radial velocity set to zero — shown for every star with a proper motion, no RV needed). In either vector mode a <strong>Marker</strong> button switches the shape between arrows (shaft + head) and plain cones, and the <strong>Vector size</strong> slider scales either shape. The <strong>Mask</strong> dropdown (All stars / Has RV / RV used in inference) filters which stars are shown — it applies to the dots and both vector modes. <strong>Colour works the same in all three modes:</strong> the arrows are coloured by whatever <em>Color by</em> field is selected (age, rv, group, …), not automatically by speed — including <em>Uniform</em>, whose colour picker stays available in the vector modes. The speeds are simply two of the fields: <em>Velocity magnitude (UVW)</em> and <em>Velocity magnitude (PM only)</em>, one per vector mode; picking the matching one reproduces the old speed colouring. Arrow LENGTH always encodes the speed.</p>
         <p style="margin-top:4px;"><strong>Find ID</strong> (end of the section) flies the camera to a star by its Gaia source ID (several IDs comma-separated) and marks it with an orange ring; clicking a star opens its full data card.</p>
         <p style="margin-top:4px;"><strong>Noise estimate η</strong> is the per-star rv noise factor of the Bayesian inference (inverse-gamma prior): the fit worked with the inflated uncertainty σ<sub>eff</sub> = σ<sub>rv</sub>·√η, so η ≈ 1 means "rv error as quoted", η ≫ 1 means the rv had to be down-weighted (potential outlier/binary). Only stars whose rv entered the fit carry a value; use <em>log₁₀ η</em> for 3D colouring (η is heavy-tailed). The <em>Residuals</em> group also offers the residuals in units of the measurement error ("/ σ") and, for rv, of the η-inflated error ("/ σ·√η").</p>
       </div>
@@ -1462,15 +1563,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
         <p>Two floating plot windows: <strong>◱ Data plots</strong> (Stars section — the real stars) and <strong>◱ Field plots</strong> (Field section — the mask voxels, live in the active reference frame). Both can be open at once and are drawn into PNG/PDF exports exactly as shown.</p>
         <table class="help-table">
           <tr><td>Histogram</td><td>Distribution of one field. Left-drag selects an x-range (only that data is shown and fitted), right-drag pans it, the wheel zooms it. <em>Fit</em> overlays Gauss / Log-norm / Power law / Exp / KDE — the formula appears below the plot, the fitted parameters inside it.</td></tr>
+          <tr><td>Fit range</td><td>The button at the right end of the <em>Fit</em> row restricts the fit to an x-range while the <strong>whole histogram stays drawn</strong> — the way to fit a core and then judge the tails against it (the drag-selection, in contrast, crops the data and the axis). Type the bounds, take them from two vertical reference lines (<em>from lines</em>) or from the visible axis (<em>from axis</em>); one bound is enough, the open end follows the axis. The excluded part is dimmed and the bounds are marked, so a restricted fit is recognizable in PNG/PDF exports; the line under the plot reports how many values were fitted. <em>auto</em> returns to the full range. Changing the plotted field clears the bounds (they are in its units). Like every small popup in the viewer, <strong>Enter</strong> applies what you typed and closes it, <strong>Esc</strong> closes without applying.</td></tr>
           <tr><td>Scatter 2D</td><td>Two fields against each other, optionally coloured by a third. Wheel zooms, drag pans (right-drag: x only), double-click resets. Click a star point to pin it; pinned IDs can be copied.</td></tr>
           <tr><td>Axis range ⋯</td><td>The small <em>⋯</em> box in each axis row (scatter only, left of ⇄/log) opens a min/max editor: ↑/↓/Tab (or ←/→ at a field's edge) hop between the two values, <strong>Enter</strong> applies both, Esc/outside click discards. An active override shows as <em>mn–mx</em> in the box. Zoom/pan still works on top — <em>⟲ full range</em> / double-click returns to these ends; changing the axis field clears its pair.</td></tr>
           <tr><td>⟲ (axis)</td><td>The circular arrow left of each axis dropdown resets everything about that axis: manual range, log and flip (for the histogram x also the drag-selected range).</td></tr>
+          <tr><td>Groups</td><td>(Star window, next to <em>Mask</em>) Opens the shared <strong>Star groups</strong> window — which Luhman / SigMA groups are visible. It is a floating window rather than an inline list so this panel keeps its height, and the selection is the same one the 3D view uses.</td></tr>
           <tr><td>Color by</td><td>The colour field gets the same controls as the 3D colorbars: two range handles (<em>hidden/greyed</em> for the rest), a min/max row directly under the colorbar with <em>⇄</em>, <em>⤓</em> (adopt the handle window) and <em>Auto</em>, and the <strong>∅</strong> button — points with no value for that field are grey, ∅ hides them.</td></tr>
           <tr><td>Star positions</td><td>The stars' galactic coordinates x/y/z [pc] are available as plot axes and as a colour field (2D windows only — in 3D they would just paint a gradient across the scene).</td></tr>
           <tr><td>Power spec.</td><td>(Field window) Spherically averaged 3D FFT power spectrum, always log-log, on logarithmically spaced k-shells (smooth curves, Hutschenreuter et al. 2026 style). <em>|v|</em> gives the total kinetic-energy spectrum E(k) = ½ Σ|FFT(v<sub>c</sub>)|²; <em>vx/vy/vz</em> give that component's E<sub>c</sub>(k) separately (they sum to the total); scalar fields give their power |FFT(f)|². <em>+ spectrum</em> overlays another field's spectrum as an extra colour-coded curve (a legend then names each curve) — compare vx/vy/vz/|v| on one plot; <em>✕ all</em> clears the overlays.</td></tr>
           <tr><td>⇄ / log</td><td>Per-axis flip and log-scale toggles. Log only engages for strictly positive data; an active log axis is marked <em>(log)</em> in its axis label.</td></tr>
           <tr><td>Lines</td><td><em>+ line</em> adds a dashed reference line and opens its settings: ONE value field with an <em>x =</em>/<em>y =</em> toggle to its left, colour via the colour picker (empty hex = auto). In the power spectrum the line is a <strong>slope line</strong> instead (value = the log-log slope, default Kolmogorov −11/3), drawn through the spectrum's low-k end — Hutschenreuter et al. 2026 style. Closing leaves a <em>lineN</em> chip next to the button — click it to edit again, ✕ inside removes one line, <em>✕ all</em> (far right) removes all. Every mode keeps its own line set. Lines follow zoom/flip/log and appear in exports.</td></tr>
-          <tr><td>Isochrones</td><td>(Star window) In a colour-magnitude diagram — a scatter with <em>BP−RP</em> or <em>G−RP</em> on x and <em>abs. G mag</em> on y — an <em>Isochrones</em> row appears. <em>+ isochrone</em> overlays a BHAC15 pre-main-sequence isochrone (Baraffe et al. 2015, Gaia bands) of a chosen age (0.5–15 Myr) as a colour-coded curve; a chip lets you change the age/colour, <em>✕ all</em> clears them. The curves follow the axis flip/log/zoom and are labelled in a legend, so they carry into PNG/PDF exports.</td></tr>
+          <tr><td>Isochrones</td><td>(Star window) In a colour-magnitude diagram — a scatter with <em>BP−RP</em> or <em>G−RP</em> on x and <em>abs. G mag</em> on y — an <em>Isochrones</em> row appears. <em>+ isochrone</em> overlays a BHAC15 pre-main-sequence isochrone (Baraffe et al. 2015, Gaia bands) of a chosen age (0.5–15 Myr) as a colour-coded curve; a chip lets you change the age/colour, <em>✕ all</em> clears them. The curves follow the axis flip/log/zoom and are labelled in a legend, so they carry into PNG/PDF exports. The legend (this one and the spectrum-overlay one) is placed in whichever corner of the plot holds the fewest points, decided once from the full view — it stays put while you zoom or pan.</td></tr>
           <tr><td>Style</td><td>The small <em>Style</em> button next to <em>Grid</em> opens the preset list (theme, seaborn, matplotlib-light, …; the active one is marked). The colormap select sits directly under the <em>Color by</em> dropdown; grid toggle, bin count and plot colour keep their rows.</td></tr>
         </table>
       </div>
@@ -1582,16 +1685,15 @@ function effectiveColorRange(layer){
   if(layer === 'stream') return [streamFieldMin(), streamFieldMax()];
   if(layer === 'cloud')  return [cloudFieldMin(), cloudFieldMax()];
   if(layer === 'star'){
+    // a categorical colour field has no numeric scale at all (and no colorbar)
+    if(starColorField === 'none' || isStarCatField(starColorField)) return [0, 1];
     let mn = Infinity, mx = -Infinity;
-    // both modes honour the display mask so this range matches the on-screen
-    // colorbar buildStars()/buildStarVectorArrows() computes
+    // dots and vectors colour by the SAME field, and both honour the display
+    // mask, so this range matches the colorbar the builders draw
     const dotMask = starMaskPred(starDisplayMask);
-    const { kU, kV, kW } = _starVecFields();
     (DATA?.real_stars || []).forEach(s=>{
       if(!dotMask(s)) return;
-      const v = starVectorsOn()
-        ? ((s[kU]==null||s[kV]==null||s[kW]==null) ? null : Math.hypot(s[kU],s[kV],s[kW]))
-        : (starColorField !== 'none' ? s[starColorField] : null);
+      const v = s[starColorField];
       if(v == null) return;
       if(v < mn) mn = v; if(v > mx) mx = v;
     });
@@ -1682,6 +1784,45 @@ let starColorClipGray = false;
 // filter now only ever touches stars that HAVE a value, so moving the handles
 // can no longer make the no-data ones disappear behind your back.
 let starShowNoData = true;
+// ── Categorical colour fields (STAR_CAT_FIELDS: Luhman / SigMA group) ────────
+// A category has no position on a continuous scale, so the colorbar + its range
+// handles are meaningless here. Every distinct name gets its own colour from a
+// qualitative palette, and the sidebar shows a plain legend (#star-cat-row).
+// WHICH groups are shown is a separate concern — see the group filter below —
+// so that group membership can be analysed against any colour field, not only
+// against the group name itself.
+// ── Group filter (floating "Star groups" window) ─────────────────────────────
+// starGroupField = the grouping the filter works on (independent of the colour
+// field: colour by age, filter by Luhman group). starGroupHidden[field] = the
+// names switched OFF; an empty set means everything is visible. Hidden (not
+// visible) names are stored rather than visible ones so a data set with new
+// groups shows them by default. Stars in no group at all are one entry, keyed
+// by NO_GROUP. Persisted — this is a data selection like the display mask, not
+// a transient sub-range.
+const NO_GROUP = '\u0000';   // sentinel: "belongs to no group" (never a real name)
+let starGroupField = 'name_luhman';
+let starGroupHidden = { name_luhman:new Set(), name_sigma:new Set() };
+let _groupPopOpen = false;
+// Qualitative palette — distinct hues at similar lightness, so no group reads as
+// "more important" than another (a sequential colormap would imply an order the
+// group names do not have). Readable on both the dark and the light background.
+// 24 entries: the SigMA clustering has 22 groups, and a shorter palette would
+// wrap and hand two of them the same colour. The second half repeats the hues
+// at a clearly different lightness rather than squeezing in more hues, which
+// stops being distinguishable well before 24.
+const STAR_CAT_PALETTE = ['#4e9bd8','#e8743b','#5cbf6a','#d94f6e','#a97bd6',
+                          '#e0b73c','#3fb8b0','#e07ab0','#8c9440','#b06a3a',
+                          '#7f8fa6','#c0d63f','#5f6ee0','#d15b5b',
+                          '#1f5f92','#a8451a','#2f7d3c','#8f2540','#6d47a0',
+                          '#9a7a12','#1c7a74','#a34a7c','#5a6320','#e5b39a'];
+// Which star fields are categorical, and the distinct-value cache keyed by them.
+// BOTH live in the STATE block per the TDZ rule: _applyStarVectorModeUI() runs
+// from loadSettings() at parse time and reaches renderStarCatChips() →
+// isStarCatField() → these two. Declared further down they would still be in the
+// temporal dead zone there and abort the restore half-way.
+const STAR_CAT_FIELDS = new Set(['name_luhman', 'name_sigma']);
+function isStarCatField(f){ return STAR_CAT_FIELDS.has(f); }
+const _starCatCache = {};
 // Cached scale ends from the last buildStars(), so the handle-drag handler can
 // map mouse→value and repaint without a full rebuild.
 let _starCbAx = null;   // { mn, mx }
@@ -1740,6 +1881,7 @@ const PLOT_STATE = {
            cSel:{ t0:0, t1:1 }, cGray:false, cAx:null,   // interactive colour-range: handles (session) + grey/hide mode (always linear)
            cMin:null, cMax:null, cNoData:true,
            axOv:{ xmn:null, xmx:null, ymn:null, ymx:null },   // manual scatter axis ends (null = auto) — plot2d blob
+           fitRange:null,       // [lo,hi] the histogram FIT is restricted to (null = whole range) — plot2d blob
            lines:{ hist:[], scatter:[] },       // reference lines PER MODE: {axis:'x'|'y', val, color|null} — plot2d blob
            isochrones:[] },     // BHAC15 CMD isochrones (star scatter, colour-magnitude axes only): {age, color|null} — plot2d blob
   field: { type:'hist', grid:false, color:null, style:'theme', fit:'none', cmap:'viridis', flipX:false, flipY:false, logX:false, logY:false,
@@ -1748,6 +1890,7 @@ const PLOT_STATE = {
            cSel:{ t0:0, t1:1 }, cGray:false, cAx:null,
            cMin:null, cMax:null, cNoData:true,
            axOv:{ xmn:null, xmx:null, ymn:null, ymx:null },
+           fitRange:null,
            lines:{ hist:[], scatter:[], power:[] },
            psOverlays:[] },     // extra power-spectrum curves overlaid on the primary (x-select): {field, color|null} — fieldPlot blob
 };
@@ -1759,6 +1902,7 @@ let _plineTarget = null;   // {w, idx} of the reference line open in #pline-pop
 let _pspecTarget = null;   // idx of the power-spectrum overlay open in #pspec-pop (field window only)
 let _isoTarget = null;     // idx of the isochrone open in #iso-pop (star window CMD only)
 let _axrangeTarget = null; // {w, axis, btn} while #axrange-pop (manual axis range) is open
+let _fitRangeTarget = null;// {w, btn} while #fitrange-pop (histogram fit range) is open
 let _stylePopTarget = null;// {w, btn} while #style-pop (style-preset list) is open
 const _pid = w => w === 'field' ? 'fplot' : 'plot';
 const _pEl = (w, suffix) => document.getElementById(_pid(w) + '-' + suffix);
@@ -1790,6 +1934,7 @@ const STAR_UNITS = {
   pmra: 'mas/yr', pmdec: 'mas/yr', mass: 'M☉', mass_err: 'M☉',
   U: 'km/s', V: 'km/s', W: 'km/s', extinction: 'mag',
   U_pm: 'km/s', V_pm: 'km/s', W_pm: 'km/s',
+  uvw_mag: 'km/s', pm_mag: 'km/s',
   "pmra error": 'mas/yr', "pmdec error": 'mas/yr', "rv error": 'km/s',
   "pmra residual": 'mas/yr', "pmdec residual": 'mas/yr', "rv residual": 'km/s',
   // weighted residuals and eta are dimensionless (units of sigma / pure factor)
@@ -2095,6 +2240,7 @@ function setLoading(active,msg='',pct=0){
 // ═══════════════════════════════════════════════════════════
 function initScene(){
   const m=DATA.meta;
+  _deriveStarFields();
   const resultName = m.result_name || 'unknown';
   // meta.repo ("T" = TaurusVelocityField, "C" = ClaudeVelocityField) markiert,
   // aus welchem Repo das Run-Verzeichnis stammt; alte Exporte haben den Key
@@ -2125,7 +2271,7 @@ function initScene(){
   if(_legacyStarFields[starColorField]) starColorField = _legacyStarFields[starColorField];
   // validate against the 3D-color list — a persisted field now moved to 2D-only
   // (UVW/photometry/mass_err) falls back to 'none' rather than showing nothing
-  if(starColorField !== 'none' && !starNumericFields(false, true).includes(starColorField)) starColorField = 'none';
+  if(starColorField !== 'none' && !starNumericFields(false, true, true).includes(starColorField)) starColorField = 'none';
   // restore star color field — options now exist so .value assignment works
   if(starColorField && starColorField !== 'none'){
     const _sel = document.getElementById('star-color-select');
@@ -2133,9 +2279,9 @@ function initScene(){
   }
   // initialise uniform-colour picker vs colormap-row visibility
   { const cmapRow=document.getElementById('star-cmap-row'); const picker=document.getElementById('star-color-picker');
-    if(cmapRow) cmapRow.style.display=(starColorField==='none')?'none':'flex';
+    if(cmapRow) cmapRow.style.display=_starCmapOn()?'flex':'none';
     if(picker)  picker.style.display =(starColorField==='none')?'block':'none';
-    syncStarColorWidgets(); }
+    syncStarColorWidgets(); renderStarCatChips(); _syncGroupButtons(); }
   updateColorbar();
   // Guard against a first-paint timing quirk where the colorbar canvas
   // doesn't reflect its drawn pixels until the next paint cycle — redraw
@@ -2262,7 +2408,13 @@ function maskAdjustable(){
             && defaultMaskLevel() != null);
 }
 function effMaskLevel(){
-  return (maskLevel != null && maskAdjustable()) ? maskLevel : defaultMaskLevel();
+  if(!(maskLevel != null && maskAdjustable())) return defaultMaskLevel();
+  // Clamp into what the slider can represent. A level saved under the old, wider
+  // range (up to 100·default) would otherwise sit past the end of the track, so
+  // the handle and the actual level would disagree.
+  const d = defaultMaskLevel();
+  return Math.min(d * Math.pow(10, MASK_DEC_UP),
+                  Math.max(d * Math.pow(10, -MASK_DEC_DOWN), maskLevel));
 }
 function applyMaskLevel(){
   if(!DATA) return;
@@ -2277,40 +2429,61 @@ function applyMaskLevel(){
     v._fixedMask = md > dlv;
   });
 }
-// slider mapping: log-uniform over default/100 … default·100 (t ∈ 0..1)
+// Slider mapping: log-uniform over default/10^MASK_DEC_DOWN … default·10^MASK_DEC_UP.
+// The upper end stops one decade above the default (July 2026): the mask is
+// already empty a decade higher (at 10·default only ~100 of 25000 voxels
+// survive, at 100·default none), so that top decade was dead travel.
+const MASK_DEC_DOWN = 2, MASK_DEC_UP = 1;
+const MASK_DECADES = MASK_DEC_DOWN + MASK_DEC_UP;
 function _maskFrac(){
   const d = defaultMaskLevel(), lv = effMaskLevel();
-  if(!(d > 0) || !(lv > 0)) return 0.5;
-  return Math.min(1, Math.max(0, (Math.log10(lv/d) + 2) / 4));
+  if(!(d > 0) || !(lv > 0)) return MASK_DEC_DOWN / MASK_DECADES;
+  return Math.min(1, Math.max(0, (Math.log10(lv/d) + MASK_DEC_DOWN) / MASK_DECADES));
 }
-function _syncMaskSliders(){
+// skipEl = the slider currently under the pointer: writing .value back to it on
+// every frame of a live drag can fight the drag, and it is already where the
+// user put it. The twin slider and both labels still follow.
+function _syncMaskSliders(skipEl){
   const lv = effMaskLevel();
   const t = Math.round(_maskFrac()*1000);
   ['mask-level-field','mask-level-cloud'].forEach(id=>{
-    const el = document.getElementById(id); if(el) el.value = t; });
+    const el = document.getElementById(id); if(el && el !== skipEl) el.value = t; });
   const n = DATA ? DATA.voxels.reduce((a,v)=>a+(v.mask?1:0),0) : 0;
   const txt = lv != null ? lv.toExponential(1) + ' · ' + n + ' vox' : '–';
   ['sv-maskLevel-field','sv-maskLevel-cloud'].forEach(id=>{
     const el = document.getElementById(id); if(el) el.textContent = txt; });
 }
+let _maskRafId = 0, _maskDragEl = null;
 function setMaskLevel(t, el){
   if(!maskAdjustable()) return;
-  maskLevel = defaultMaskLevel() * Math.pow(10, t*4 - 2);
-  // rebuilds are heavy (arrows + RK4 re-trace) — debounce the drag; the twin
-  // slider and both labels snap into sync on apply
-  debounce('maskLevel', _applyMaskChange, 160);
+  maskLevel = defaultMaskLevel() * Math.pow(10, t*MASK_DECADES - MASK_DEC_DOWN);
+  _maskDragEl = el || null;
+  // Live during the drag, coalesced to ONE rebuild per animation frame (July
+  // 2026, replaces a 160 ms debounce). Measured on the 25000-voxel export: a
+  // full mask change costs 3-16 ms in every normal configuration and 29 ms in
+  // the worst case (lowest level = 6916 masked voxels, streamlines on at 1000),
+  // so rAF keeps it at frame rate instead of letting rebuilds queue up.
+  if(!_maskRafId) _maskRafId = requestAnimationFrame(()=>{ _maskRafId = 0; _applyMaskChange(_maskDragEl, true); });
+  // The RK4 re-trace is the one dominant cost: with streamlines on at 1000 seeds
+  // it pushes a drag step past the 60 fps budget on its own, while arrows, cloud
+  // and colorbars together stay well inside it. Streamlines are a derived view of
+  // the mask region rather than the readout the user is aiming at, so they lag by
+  // one settle instead of being re-traced per frame. The localStorage write must
+  // not run per frame either.
+  debounce('maskLevelStreams', buildStreamlines, 180);
+  debounce('maskLevelSave', saveSettings, 400);
 }
-function resetMaskLevel(){ maskLevel = null; _applyMaskChange(); }
-function _applyMaskChange(){
+function resetMaskLevel(){ maskLevel = null; _applyMaskChange(); saveSettings(); }
+function _applyMaskChange(skipEl, deferStreams){
   applyMaskLevel();
-  _syncMaskSliders();
+  _syncMaskSliders(skipEl);
   _magCache.sig = null; _obsCache.sig = null; _energyCache.sig = null; _psCache = {};
   _derivedCache.lv = undefined;
   buildLookup();
-  buildArrows(); buildStreamlines(); buildCloud();
+  buildArrows(); buildCloud();
+  if(!deferStreams) buildStreamlines();
   updateColorbar(); updateStreamColorbar();
   renderAllPlots();
-  saveSettings();
 }
 // Frame-independent min/max of the derived fields over the CURRENT mask —
 // replaces the baked meta.curl_min/… so auto colorbars follow the mask slider
@@ -3923,9 +4096,10 @@ function debounce(key,fn,ms=120){
 // override just the displayed text here, the underlying value/key is unchanged.
 const STAR_FIELD_LABELS = {
   rv_used: 'rv used in inference',
+  name_luhman: 'Luhman group', name_sigma: 'SigMA group',
+  uvw_mag: 'Velocity magnitude (UVW)', pm_mag: 'Velocity magnitude (PM only)',
   pmra: 'pmRA', pmdec: 'pmDec', rv: 'rv',
   U: 'U', V: 'V', W: 'W',
-  U_pm: 'U (PM only)', V_pm: 'V (PM only)', W_pm: 'W (PM only)',
   'pmra error': 'pmRA error', 'pmdec error': 'pmDec error', 'rv error': 'rv error',
   'pmra residual': 'pmRA residual', 'pmdec residual': 'pmDec residual', 'rv residual': 'rv residual',
   'pmra residual weighted': 'pmRA residual / σ', 'pmdec residual weighted': 'pmDec residual / σ',
@@ -3939,7 +4113,16 @@ function starFieldLabel(field){ return STAR_FIELD_LABELS[field] || field; }
 // Grouping for the "Color by" dropdown and the plot-window axis selects.
 // Order = display order; only fields that actually carry values are shown.
 const STAR_FIELD_GROUPS = [
-  { label: 'Velocity',   fields: ['rv', 'pmra', 'pmdec', 'U', 'V', 'W', 'U_pm', 'V_pm', 'W_pm'] },
+  // uvw_mag / pm_mag are DERIVED in the viewer (_deriveStarFields), not
+  // exported: the speed that the star vector arrows encode in their length, for
+  // both vector modes (full UVW, and PM-only tangential). As ordinary numeric
+  // fields they are available as a 3D/2D colour and as a plot axis, and the
+  // vector modes no longer force one of them as their colour. The individual
+  // U_pm/V_pm/W_pm components stay in the data (the 'pm' vector mode reads them,
+  // see _starVecFields) but are deliberately NOT offered as fields — per-axis
+  // PM-only components were noise in the dropdown; the magnitude is the useful one.
+  { label: 'Velocity',   fields: ['rv', 'pmra', 'pmdec', 'U', 'V', 'W',
+                                  'uvw_mag', 'pm_mag'] },
   { label: 'Errors',     fields: ['rv error', 'pmra error', 'pmdec error'] },
   { label: 'Residuals',  fields: ['rv residual', 'pmra residual', 'pmdec residual',
                                   'rv residual weighted', 'pmra residual weighted',
@@ -3952,6 +4135,10 @@ const STAR_FIELD_GROUPS = [
   // rv_used = boolean flag (0/1): was this star's radial velocity used in the
   // inference likelihood? Colour-only (no plot axis, see STAR_AXIS_EXCLUDE).
   { label: 'Quality',    fields: ['ruwe', 'rv_used'] },
+  // CATEGORICAL (see STAR_CAT_FIELDS): the Luhman group a star belongs to.
+  // Not a number — coloured from a qualitative palette, with a clickable name
+  // list instead of a colorbar. 3D colour only (no plot axis, no 2D colour).
+  { label: 'Membership', fields: ['name_luhman', 'name_sigma'] },
   // heliocentric galactic cartesian position, same coordinates as the 3D view —
   // 2D-plot axes and colour only (see STAR_3D_COLOR_EXCLUDE): colouring the 3D
   // dots by their own coordinate just paints a gradient across the scene
@@ -3967,28 +4154,36 @@ const STAR_AXIS_EXCLUDE = new Set(['rv_used']);   // 0/1 flag: colour-only, not 
 // photometry / mass-error fields (better explored in 2D scatters/CMDs).
 // 'eta' and 'eta std' additionally: eta is heavy-tailed (1…~10³) — on the linear
 // 3D colorbar everything collapses onto one colour; 'log10 eta' is the 3D view.
-const STAR_3D_COLOR_EXCLUDE = new Set(['U', 'V', 'W', 'U_pm', 'V_pm', 'W_pm',
+const STAR_3D_COLOR_EXCLUDE = new Set(['U', 'V', 'W',
                                        'BP-RP', 'G-RP', 'abs_g_mag', 'mass_err',
                                        'x', 'y', 'z', 'eta', 'eta std']);
+// CATEGORICAL fields (STAR_CAT_FIELDS / isStarCatField, declared in the STATE
+// block): the value is a group NAME, not a number. They are opt-in (`cat`
+// argument below) and appear ONLY in the 3D "Color by" dropdown — every other
+// consumer (plot axes, 2D plot colour, colorbar ranges, KDE strips, the video
+// colorbar composite) does arithmetic on the value and would produce NaN.
 // numeric fields to expose as colour / plot fields (never x/y/z/ids). axisOnly
 // drops the axis-excluded ones (2D X/Y selects); for3d drops the 3D-only-excluded
-// ones (3D "Color by").
-function starNumericFields(axisOnly=false, for3d=false){
+// ones (3D "Color by"); cat ADDS the categorical fields (3D "Color by" only).
+function starNumericFields(axisOnly=false, for3d=false, cat=false){
   const out = [];
   STAR_FIELD_GROUPS.forEach(g => g.fields.forEach(f => {
     if(axisOnly && STAR_AXIS_EXCLUDE.has(f)) return;
     if(for3d && STAR_3D_COLOR_EXCLUDE.has(f)) return;
+    if(!cat && isStarCatField(f)) return;
     if(DATA?.real_stars?.some(s => s[f] != null)) out.push(f);
   }));
   return out;
 }
 // append <optgroup>s of the numeric fields to a <select>; axisOnly drops the
-// axis-excluded fields (X/Y selects), for3d drops the 3D-only-excluded ones
-function fillStarFieldOptgroups(sel, axisOnly=false, for3d=false){
+// axis-excluded fields (X/Y selects), for3d drops the 3D-only-excluded ones,
+// cat adds the categorical ones
+function fillStarFieldOptgroups(sel, axisOnly=false, for3d=false, cat=false){
   STAR_FIELD_GROUPS.forEach(g => {
     const avail = g.fields.filter(f =>
       (!axisOnly || !STAR_AXIS_EXCLUDE.has(f)) &&
-      (!for3d || !STAR_3D_COLOR_EXCLUDE.has(f)) && DATA?.real_stars?.some(s => s[f] != null));
+      (!for3d || !STAR_3D_COLOR_EXCLUDE.has(f)) &&
+      (cat || !isStarCatField(f)) && DATA?.real_stars?.some(s => s[f] != null));
     if(avail.length === 0) return;
     const og = document.createElement('optgroup');
     og.label = g.label;
@@ -4000,11 +4195,25 @@ function fillStarFieldOptgroups(sel, axisOnly=false, for3d=false){
     sel.appendChild(og);
   });
 }
+// Speed as a plain star field, derived once per loaded data set — one per vector
+// mode: uvw_mag = |U,V,W| (needs a measured rv), pm_mag = |U_pm,V_pm,W_pm| (the
+// tangential PM-only speed, available for every star with a proper motion). The
+// star vector arrows encode these in their LENGTH; having them as ordinary
+// fields means either can also be picked as a colour (or a plot axis) like
+// anything else, instead of the vector modes hard-wiring their own magnitude
+// colorbar.
+function _deriveStarFields(){
+  (DATA?.real_stars || []).forEach(s => {
+    s.uvw_mag = (s.U == null || s.V == null || s.W == null) ? null : Math.hypot(s.U, s.V, s.W);
+    s.pm_mag  = (s.U_pm == null || s.V_pm == null || s.W_pm == null)
+              ? null : Math.hypot(s.U_pm, s.V_pm, s.W_pm);
+  });
+}
 function populateStarDropdown(){
   const sel = document.getElementById('star-color-select');
   // remove all options except the first ("Uniform")
   while(sel.options.length > 1) sel.remove(1);
-  if(DATA && DATA.real_stars && DATA.real_stars.length > 0) fillStarFieldOptgroups(sel, false, true);   // 3D: no UVW/photometry/mass_err
+  if(DATA && DATA.real_stars && DATA.real_stars.length > 0) fillStarFieldOptgroups(sel, false, true, true);   // 3D: no UVW/photometry/mass_err, but WITH the categorical fields
   // long grouped list gets the in-page custom dropdown (native <select> popups
   // clip their bottom entries until a scroll forces a repaint — same Firefox
   // paint bug already worked around in the plot window)
@@ -4053,17 +4262,13 @@ function cycleStarVectorMode(){
                   : 'dots');
 }
 // Set the star display mode directly (used by the cycle button, the settings
-// restore and the tests). Syncs the panel, closes the now-irrelevant colour
-// picker in a vector mode, then rebuilds.
+// restore and the tests). Syncs the panel, then rebuilds — the rebuild's
+// _syncStarColorWidget decides the uniform picker's visibility from the colour
+// FIELD alone, which is the same rule in every mode.
 function setStarVectorMode(m){
   if(m !== 'dots' && m !== 'uvw' && m !== 'pm') return;
   starVectorMode = m;
   _applyStarVectorModeUI();
-  if(starVectorsOn()){
-    const picker = document.getElementById('star-color-picker');
-    if(picker) picker.style.display = 'none';
-    if(_pickerTarget === 'star') closeColorPicker();
-  }
   buildStars();
   saveSettings();
 }
@@ -4080,14 +4285,17 @@ function _applyStarVectorModeUI(){
     // colour the button by which velocity it draws, so the three states read
     // apart at a glance (dots = neutral accent handled by .tog.on default)
   }
-  // Marker-shape + size rows belong to the vector modes; the "Color by" block and
-  // uniform picker have no effect there (colour always encodes |velocity|), so
-  // hide them. The colormap row shows in a vector mode too (it drives the
-  // |velocity| colouring), otherwise it follows the dot-mode Color-by field.
+  // Marker-shape + size rows belong to the vector modes. "Color by" — including
+  // its Uniform option and the colour picker — stays visible in ALL modes since
+  // July 2026: the arrows are coloured by the chosen field just like the dots
+  // (the magnitudes uvw_mag/pm_mag are ordinary fields now, no longer forced on
+  // as soon as a vector mode is switched on).
   const shapeRow = document.getElementById('star-vec-shape-row'); if(shapeRow) shapeRow.style.display = on ? 'flex' : 'none';
   const sizeRow  = document.getElementById('star-arrow-size-row'); if(sizeRow)  sizeRow.style.display  = on ? 'flex' : 'none';
-  const cbyRow   = document.getElementById('star-colorby-row');    if(cbyRow)   cbyRow.style.display   = on ? 'none' : 'block';
-  const cmapRow  = document.getElementById('star-cmap-row');       if(cmapRow)  cmapRow.style.display  = (on || starColorField!=='none') ? 'flex' : 'none';
+  const cbyRow   = document.getElementById('star-colorby-row');    if(cbyRow)   cbyRow.style.display   = 'block';
+  const cmapRow  = document.getElementById('star-cmap-row');       if(cmapRow)  cmapRow.style.display  = _starCmapOn() ? 'flex' : 'none';
+  renderStarCatChips();
+  _syncGroupButtons();
   _syncStarVecGlyphButton();
 }
 // Marker shape for the UVW/PM star vectors — same two shapes as the field
@@ -4105,6 +4313,176 @@ function _syncStarVecGlyphButton(){
   b.textContent = starVectorGlyph === 'cone' ? 'Cones' : 'Arrows';
 }
 
+// ── Categorical colour fields ────────────────────────────────────────────────
+// Distinct values of a categorical star field, ordered by how many stars carry
+// them (largest group first, ties alphabetical) and paired with a palette
+// colour. The order — and therefore every group's colour — is derived from ALL
+// stars, never from the currently displayed subset, so switching the display
+// mask or hiding groups never repaints the remaining ones in new colours.
+// (_starCatCache lives in the STATE block — TDZ rule, see there.)
+function starCatInfo(field){
+  const nAll = DATA?.real_stars?.length || 0;
+  const c = _starCatCache[field];
+  if(c && c.n === nAll) return c.list;
+  const cnt = new Map();
+  (DATA?.real_stars || []).forEach(s => {
+    const v = s[field];
+    if(v == null || v === '') return;
+    cnt.set(v, (cnt.get(v) || 0) + 1);
+  });
+  const list = [...cnt.entries()]
+    .sort((a,b) => b[1]-a[1] || (a[0] < b[0] ? -1 : 1))
+    .map(([name,count],i) => ({ name, count, color: STAR_CAT_PALETTE[i % STAR_CAT_PALETTE.length] }));
+  _starCatCache[field] = { n:nAll, list, map:new Map(list.map(e => [e.name, e])) };
+  return list;
+}
+function starCatColor(field, name){
+  starCatInfo(field);
+  return _starCatCache[field].map.get(name)?.color || '#666666';
+}
+// Per-group star counts under the CURRENT display mask, including the
+// "no group" bucket. Feeds both the legend and the group window. The window
+// must show what a group WOULD contribute even while it is switched off, so
+// the active grouping's own hiding is lifted for the count.
+function starCatCounts(field){
+  const lift = field === starGroupField && starGroupFilterActive();
+  const saved = starGroupHidden[field];
+  if(lift) starGroupHidden[field] = new Set();
+  const pred = starMaskPred(starDisplayMask);
+  const cnt = new Map();
+  (DATA?.real_stars || []).forEach(s => {
+    if(!pred(s)) return;
+    const k = s[field] == null ? NO_GROUP : s[field];
+    cnt.set(k, (cnt.get(k) || 0) + 1);
+  });
+  if(lift) starGroupHidden[field] = saved;
+  return cnt;
+}
+// The legend under "Color by": swatch + name + count per group. Purely
+// informative since July 2026 — WHICH groups are visible is set in the
+// "Star groups" window, so a group selection can be combined with any colour
+// field instead of only with the group colouring itself.
+function renderStarCatChips(){
+  const row = document.getElementById('star-cat-row');
+  if(!row) return;
+  const on = starColorField !== 'none' && isStarCatField(starColorField);
+  row.style.display = on ? 'block' : 'none';
+  if(!on) return;
+  const list = starCatInfo(starColorField);
+  const cnt = starCatCounts(starColorField);
+  const chips = list.map(e => {
+    const n = cnt.get(e.name) || 0;
+    return `<span class="cat-chip legend${n ? '' : ' off'}" title="${e.name} — ${n} star${n===1?'':'s'} shown">
+              <span class="cat-sw" style="background:${e.color}"></span>${e.name}<span class="cat-n">${n}</span></span>`;
+  }).join('');
+  document.getElementById('star-cat-chips').innerHTML = chips ||
+    '<span style="color:var(--text3);font-size:8px;">no groups in the data</span>';
+  const info = document.getElementById('star-cat-info');
+  if(info) info.textContent = `${list.length} groups`;
+}
+
+// ── "Star groups" window (#group-pop) ────────────────────────────────────────
+// ONE floating window, opened from the Stars section AND from the star plot
+// window. Deliberately not inline in the plot window: that panel is already
+// tall, and a list of 23 SigMA clusters would push its controls off screen.
+// It sets which groups are VISIBLE; the selection flows through starMaskPred,
+// so the 3D view, the 2D plots and every count/auto-range follow in one step.
+function starGroupFields(){
+  return [...STAR_CAT_FIELDS].filter(f => DATA?.real_stars?.some(s => s[f] != null));
+}
+function _groupHasNone(f){ return (DATA?.real_stars || []).some(s => s[f] == null); }
+function toggleGroupPop(btn){
+  const pop = document.getElementById('group-pop');
+  if(!pop) return;
+  if(_groupPopOpen){ closeGroupPop(); return; }
+  const avail = starGroupFields();          // fall back to a grouping the data has
+  if(avail.length && !avail.includes(starGroupField)) starGroupField = avail[0];
+  _groupPopOpen = true;
+  pop.style.display = 'flex';
+  renderGroupPop();
+  const r = btn.getBoundingClientRect();
+  const pw = pop.offsetWidth || 210, ph = pop.offsetHeight || 240;
+  const x = Math.min(Math.max(4, r.left), window.innerWidth - pw - 4);
+  let   y = r.bottom + 4;
+  if(y + ph > window.innerHeight - 4) y = Math.max(4, r.top - ph - 4);
+  pop.style.left = x + 'px'; pop.style.top = y + 'px';
+  _syncGroupButtons();
+}
+function closeGroupPop(){
+  _groupPopOpen = false;
+  const p = document.getElementById('group-pop'); if(p) p.style.display = 'none';
+  _syncGroupButtons();
+}
+function setStarGroupField(f){ starGroupField = f; renderGroupPop(); _applyGroupFilter(); }
+function toggleStarGroup(name){
+  const hid = starGroupHidden[starGroupField] || (starGroupHidden[starGroupField] = new Set());
+  if(hid.has(name)) hid.delete(name); else hid.add(name);
+  renderGroupPop(); _applyGroupFilter();
+}
+function setAllStarGroups(visible){
+  const hid = new Set();
+  if(!visible){
+    starCatInfo(starGroupField).forEach(e => hid.add(e.name));
+    if(_groupHasNone(starGroupField)) hid.add(NO_GROUP);
+  }
+  starGroupHidden[starGroupField] = hid;
+  renderGroupPop(); _applyGroupFilter();
+}
+// one place to push a changed selection everywhere it shows
+function _applyGroupFilter(){
+  if(DATA && starsVisible) buildStars();
+  renderStarCatChips();
+  _syncGroupButtons();
+  updateColorbar();
+  renderAllPlots();
+  saveSettings();
+}
+function renderGroupPop(){
+  if(!_groupPopOpen) return;
+  const avail = starGroupFields();
+  document.getElementById('group-pop-fields').innerHTML = avail.map(f =>
+    `<button class="tog${f === starGroupField ? ' on' : ''}" onclick="setStarGroupField('${f}')"
+       title="Filter by the ${starFieldLabel(f)}">${starFieldLabel(f).replace(' group','')}</button>`).join('');
+  const list = starCatInfo(starGroupField);
+  const cnt  = starCatCounts(starGroupField);
+  const hid  = starGroupHidden[starGroupField] || new Set();
+  const rows = list.map(e => _groupRow(e.name, e.color, cnt.get(e.name) || 0, hid.has(e.name)));
+  if(_groupHasNone(starGroupField))
+    rows.push(_groupRow(NO_GROUP, null, cnt.get(NO_GROUP) || 0, hid.has(NO_GROUP), 'no group'));
+  document.getElementById('group-pop-list').innerHTML = rows.join('') ||
+    '<span style="color:var(--text3);font-size:8px;">no groups in the data</span>';
+  document.getElementById('group-pop-info').textContent =
+    hid.size ? `${rows.length - hid.size} of ${rows.length} shown` : `all ${rows.length} shown`;
+}
+function _groupRow(name, color, n, hidden, labelOverride){
+  const lbl = labelOverride || name;
+  const sw = `<span class="cat-sw" style="background:${color || 'var(--text3)'};${color ? '' : 'opacity:.45'}"></span>`;
+  return `<button class="grp-row${hidden ? ' off' : ''}" onclick="toggleStarGroup(${JSON.stringify(name).replace(/"/g,'&quot;')})"
+            title="${lbl} — ${n} star${n===1?'':'s'}. Click to ${hidden ? 'show' : 'hide'} this group.">
+            <span class="grp-box">${hidden ? '' : '✓'}</span>${sw}<span class="grp-name">${lbl}</span><span class="cat-n">${n}</span></button>`;
+}
+// both entry points show whether a filter is currently narrowing the sample
+function _syncGroupButtons(){
+  const active = starGroupFilterActive();
+  ['star-groups-btn','plot-groups-btn'].forEach(id => {
+    const b = document.getElementById(id); if(!b) return;
+    b.classList.toggle('on', active || _groupPopOpen);
+    b.textContent = active ? 'Groups ●' : 'Groups';
+    b.title = active ? `Star groups — filter active (${starFieldLabel(starGroupField)})`
+                     : 'Show or hide stars by their Luhman / SigMA group';
+  });
+}
+document.addEventListener('mousedown', e => {
+  if(!_groupPopOpen) return;
+  const pop = document.getElementById('group-pop');
+  if(pop && pop.contains(e.target)) return;
+  if(e.target.closest && e.target.closest('#star-groups-btn,#plot-groups-btn')) return;
+  closeGroupPop();
+});
+
+// The colormap row applies to CONTINUOUS colour fields only — a categorical
+// field draws its colours from the qualitative palette instead.
+function _starCmapOn(){ return starColorField !== 'none' && !isStarCatField(starColorField); }
 function setStarColorField(field){
   starColorField=field;
   starColorSel = { t0:0, t1:1 };   // range set for one field shouldn't hide another
@@ -4112,14 +4490,16 @@ function setStarColorField(field){
   // a meaningless window (age's 0–5 Myr over RUWE) → back to auto, same reasoning
   colorMinOverride.star = null; colorMaxOverride.star = null;
   _selSync('star-cmin-input', ''); _selSync('star-cmax-input', '');
-  // colormap is only meaningful when colouring by a field; the RGB picker only
-  // when uniform. Toggle their visibility here so the panel isn't cluttered.
+  // colormap is only meaningful when colouring by a continuous field; the RGB
+  // picker only when uniform. Toggle their visibility here so the panel isn't
+  // cluttered; the categorical name list follows in renderStarCatChips().
   const cmapRow = document.getElementById('star-cmap-row');
   const picker  = document.getElementById('star-color-picker');
-  if(cmapRow) cmapRow.style.display = (field==='none') ? 'none' : 'flex';
+  if(cmapRow) cmapRow.style.display = _starCmapOn() ? 'flex' : 'none';
   if(picker)  picker.style.display  = (field==='none') ? 'block' : 'none';
   if(field !== 'none' && _pickerTarget === 'star') closeColorPicker();
   _syncStarNoDataBtn();   // "no value" only exists when colouring BY a field
+  renderStarCatChips();
   buildStars();
   saveSettings();
 }
@@ -4363,12 +4743,104 @@ function _starVecFields(){
 }
 let starArrowConeMesh = null, starArrowShaftMesh = null;
 let _starVectorStars = [];   // gefilterte Sterne in Instanz-Reihenfolge, für Hover via instanceId
+// ── Shared "Color by" resolution for the 3D stars ────────────────────────────
+// Dots and velocity arrows colour their stars through the SAME code: since July
+// 2026 the vector modes no longer force a |velocity| colorbar, they honour the
+// selected field like the dots do (|UVW| is simply one of the fields now, see
+// _deriveStarFields). Arrow LENGTH still encodes the speed — that is geometry,
+// not colour. Build the context once per rebuild, then ask per star.
+const _STAR_GREY = 0x666666;
+function _starColorCtx(stars){
+  const useField = starColorField !== 'none';
+  const catMode  = useField && isStarCatField(starColorField);
+  let mn = Infinity, mx = -Infinity;
+  if(useField && !catMode){
+    // +v coerces boolean flags (rv_used) to 0/1 so the ends stay real numbers —
+    // they are later formatted with .toFixed()
+    stars.forEach(s => { const v = s[starColorField];
+      if(v != null){ const n = +v; if(n < mn) mn = n; if(n > mx) mx = n; } });
+    if(colorMaxOverride.star != null) mx = colorMaxOverride.star;
+    if(colorMinOverride.star != null) mn = colorMinOverride.star;
+  }
+  const selLo = Math.min(starColorSel.t0, starColorSel.t1);
+  const selHi = Math.max(starColorSel.t0, starColorSel.t1);
+  return { useField, catMode, mn, mx, selLo, selHi,
+           // the value-range handles are meaningless for a categorical field
+           filtering: useField && !catMode && (selLo > 1e-6 || selHi < 1 - 1e-6),
+           greyMode: starColorClipGray,
+           n: { noData:0, skipped:0, greyed:0, filtered:0 } };   // → readout line
+}
+// → { col, grey, noVal } for one star, or null when it must not be drawn.
+// Stars with NO value can't have a fraction on the scale, so the range handles
+// never touch them — the ∅ button (starShowNoData) alone decides.
+function _starColorOf(s, C){
+  if(!C.useField) return { col:new THREE.Color(uniformStarColor), grey:false, noVal:false };
+  const v = s[starColorField];
+  if(v == null){
+    if(!starShowNoData){ C.n.skipped++; return null; }
+    C.n.noData++;
+    return { col:new THREE.Color(_STAR_GREY), grey:false, noVal:true };
+  }
+  if(C.catMode) return { col:new THREE.Color(starCatColor(starColorField, v)), grey:false, noVal:false };
+  const f = cbNorm(+v, C.mn, C.mx, false);
+  if(C.filtering && !(f >= C.selLo - 1e-6 && f <= C.selHi + 1e-6)){
+    if(!C.greyMode){ C.n.filtered++; return null; }
+    C.n.greyed++;
+    return { col:new THREE.Color(_STAR_GREY), grey:true, noVal:false };
+  }
+  return { col:sampleColormap(f, starColormap), grey:false, noVal:false };
+}
+// The sidebar colour widget for the current mode: colorbar strip (continuous
+// field), group legend (categorical, drawn by renderStarCatChips) or the RGB
+// picker (uniform). `vals` feeds the KDE strip under the bar.
+function _syncStarColorWidget(C, vals){
+  const cbWrap = document.getElementById('star-colorbar-wrap');
+  const picker = document.getElementById('star-color-picker');
+  const showBar = C.useField && !C.catMode && C.mn !== Infinity;
+  // The uniform picker belongs to "Color by = Uniform" in EVERY star mode — the
+  // vector arrows honour uniformStarColor through _starColorOf just like the
+  // dots do, so hiding the picker in a vector mode only made the colour
+  // unreachable, not unused.
+  if(picker) picker.style.display = !C.useField ? 'block' : 'none';
+  cbWrap.style.display = showBar ? 'block' : 'none';
+  if(showBar){
+    const cv = document.getElementById('star-colorbar');
+    cv.width = 240; cv.height = 12;
+    const ctx = cv.getContext('2d'), img = ctx.createImageData(240,12);
+    for(let px=0;px<240;px++){
+      const c = sampleColormap(px/239, starColormap);
+      for(let py=0;py<12;py++){ const i=(py*240+px)*4;
+        img.data[i]=Math.round(c.r*255); img.data[i+1]=Math.round(c.g*255); img.data[i+2]=Math.round(c.b*255); img.data[i+3]=255; }
+    }
+    ctx.putImageData(img,0,0);
+    document.getElementById('star-val-min').textContent = C.mn.toFixed(2);
+    document.getElementById('star-val-max').textContent = C.mx.toFixed(2);
+    const unit = STAR_UNITS[starColorField] || '';
+    document.getElementById('star-cb-field').textContent =
+      unit ? `${starFieldLabel(starColorField)} [${unit}]` : starFieldLabel(starColorField);
+    drawColorbarKde('star-cb-kde', vals, C.mn, C.mx, false);
+    _starCbAx = { mn: C.mn, mx: C.mx, log: false };
+    drawStarCbHandles();
+  } else {
+    syncStarColorWidgets();
+  }
+  renderStarCatChips();
+}
+
 function buildStarVectorArrows(){
-  // dispose any previous instance — clearGroup() only detaches from the
-  // scene, it doesn't free GPU geometry/material, so without this every
-  // slider tweak while UVW mode is on would leak an InstancedMesh.
-  if(starArrowConeMesh){  starArrowConeMesh.geometry.dispose();  starArrowConeMesh.material.dispose();  starArrowConeMesh=null; }
-  if(starArrowShaftMesh){ starArrowShaftMesh.geometry.dispose(); starArrowShaftMesh.material.dispose(); starArrowShaftMesh=null; }
+  // Detach AND dispose any previous instance. Both steps are needed and for
+  // different reasons: remove() takes the old meshes out of G.stars (dispose()
+  // alone only frees the GPU buffers — three.js re-uploads them from the still
+  // present attribute data on the next frame, so a detached-but-not-removed
+  // mesh keeps rendering; that made the arrow and cone glyphs pile up on top of
+  // each other instead of replacing one another when toggling the shape), and
+  // dispose() frees the geometry/material so a rebuild can't leak them.
+  [starArrowConeMesh, starArrowShaftMesh].forEach(m => {
+    if(!m) return;
+    G.stars.remove(m);
+    m.geometry.dispose(); m.material.dispose();
+  });
+  starArrowConeMesh = null; starArrowShaftMesh = null;
 
   const { kU, kV, kW, label:_srcLabel, missing:_srcMissing } = _starVecFields();
   let stars = DATA.real_stars.filter(s =>
@@ -4385,43 +4857,40 @@ function buildStarVectorArrows(){
   // screen out of ALL stars, then why the rest is missing and how many of the
   // drawn ones are only grey. Called again at the END, once the range filter's
   // greyed / hidden counts exist.
-  const _uvwInfo = (drawn, grey, hidden) => {
+  const _uvwInfo = (drawn, C) => {
     const parts = [ drawn === nTotal ? `${drawn} stars (${_srcLabel})` : `${drawn} of ${nTotal} stars (${_srcLabel})` ];
-    if(grey)          parts.push(`${grey} greyed (out of range)`);
-    if(hidden)        parts.push(`${hidden} hidden (out of range)`);
+    if(C){
+      const why = C.catMode ? 'not in a shown group' : 'out of range';
+      if(C.n.noData)   parts.push(`${C.n.noData} greyed (no value)`);
+      if(C.n.greyed)   parts.push(`${C.n.greyed} greyed (${why})`);
+      if(C.n.skipped)  parts.push(`${C.n.skipped} hidden (no value)`);
+      if(C.n.filtered) parts.push(`${C.n.filtered} hidden (${why})`);
+    }
     if(noVec)         parts.push(`${noVec} hidden (${_srcMissing})`);
     if(maskedOut > 0) parts.push(`${maskedOut} masked out`);
     document.getElementById('star-info').textContent = parts.join(' · ');
   };
-  _uvwInfo(stars.length, 0, 0);
+  _uvwInfo(stars.length, null);
 
-  // colour/length both driven by |velocity| — show its own colorbar, like the
-  // cloud/field panels, rather than reusing the starColorField machinery.
-  const cbWrap=document.getElementById('star-colorbar-wrap');
-  const picker=document.getElementById('star-color-picker');
-  if(picker) picker.style.display='none';
+  if(stars.length===0){
+    G.stars.visible=starsVisible;
+    document.getElementById('star-colorbar-wrap').style.display='none';
+    return;
+  }
 
-  if(stars.length===0){ G.stars.visible=starsVisible; cbWrap.style.display='none'; return; }
-
+  // Colour follows the "Color by" field, exactly like the dots (July 2026 — the
+  // arrows used to hard-wire a |velocity| colorbar). The arrow LENGTH still
+  // encodes the speed; magMin/magMax below are only for that scaling.
+  const C = _starColorCtx(stars);
   let magMin=Infinity, magMax=-Infinity;
   stars.forEach(s=>{
     const mag=Math.hypot(s[kU],s[kV],s[kW]);
     if(mag<magMin) magMin=mag; if(mag>magMax) magMax=mag;
   });
-  if(colorMaxOverride.star != null) magMax = colorMaxOverride.star;
-  if(colorMinOverride.star != null) magMin = colorMinOverride.star;
-
-  // interactive-range selection (handles as fractions over [magMin,magMax], on a
-  // LINEAR scale). hide mode → drop out-of-range stars up front so hover indices +
-  // counts stay consistent; grey mode → keep all, desaturate the ones outside.
-  const _log = false;
-  const selLo = Math.min(starColorSel.t0, starColorSel.t1);
-  const selHi = Math.max(starColorSel.t0, starColorSel.t1);
-  const filtering = selLo > 1e-6 || selHi < 1 - 1e-6;
-  const inSel = mag => { const f = cbNorm(mag, magMin, magMax, _log); return f >= selLo - 1e-6 && f <= selHi + 1e-6; };
-  const greyMode = starColorClipGray;
-  let built = stars;
-  if(filtering && !greyMode) built = stars.filter(s => inSel(Math.hypot(s[kU],s[kV],s[kW])));
+  // resolve the colour up front so hidden stars drop out BEFORE the instance
+  // arrays are sized (instance index ↔ built[i] drives hover)
+  const cols = new Map();
+  const built = stars.filter(s => { const c = _starColorOf(s, C); if(c) cols.set(s, c); return !!c; });
   _starVectorStars = built;   // instance i ↔ built[i]
 
   const sp = DATA.meta.spacing;
@@ -4442,8 +4911,6 @@ function buildStarVectorArrows(){
     shaftGeo.translate(0, shaftH*0.5, 0);
   }
 
-  const _grey = new THREE.Color(0x666666);
-  let greyed = 0;
   if(built.length > 0){
     const mat = new THREE.MeshBasicMaterial({ transparent:true, opacity:params.starAlpha, vertexColors:false });
     starArrowConeMesh  = new THREE.InstancedMesh(coneGeo,  mat.clone(), built.length);
@@ -4468,10 +4935,7 @@ function buildStarVectorArrows(){
       _d.updateMatrix();
       starArrowConeMesh.setMatrixAt(i, _d.matrix);
       if(starArrowShaftMesh) starArrowShaftMesh.setMatrixAt(i, _d.matrix);
-      // colour on the (possibly log) scale; grey when out of range in grey mode
-      let c;
-      if(greyMode && filtering && !inSel(mag)){ c = _grey; greyed++; }
-      else c = sampleColormap(cbNorm(mag, magMin, magMax, _log), starColormap);
+      const c = cols.get(s).col;
       starArrowConeMesh.setColorAt(i, c);
       if(starArrowShaftMesh) starArrowShaftMesh.setColorAt(i, c);
     });
@@ -4486,24 +4950,8 @@ function buildStarVectorArrows(){
   }
   G.stars.visible = starsVisible;
 
-  _uvwInfo(built.length, greyed, stars.length - built.length);
-
-  // colorbar: |velocity| magnitude, star colormap, km/s
-  cbWrap.style.display='block';
-  const cv=document.getElementById('star-colorbar');
-  cv.width=240; cv.height=12;
-  const ctx=cv.getContext('2d'), img=ctx.createImageData(240,12);
-  for(let px=0;px<240;px++){
-    const c=sampleColormap(px/239, starColormap);
-    for(let py=0;py<12;py++){ const idx=(py*240+px)*4; img.data[idx]=Math.round(c.r*255); img.data[idx+1]=Math.round(c.g*255); img.data[idx+2]=Math.round(c.b*255); img.data[idx+3]=255; }
-  }
-  ctx.putImageData(img,0,0);
-  document.getElementById('star-val-min').textContent=magMin.toFixed(2);
-  document.getElementById('star-val-max').textContent=magMax.toFixed(2);
-  document.getElementById('star-cb-field').textContent = `|${_srcLabel}| [km/s]`;
-  drawColorbarKde('star-cb-kde', stars.map(s=>Math.hypot(s[kU],s[kV],s[kW])), magMin, magMax, _log);
-  _starCbAx = { mn: magMin, mx: magMax, log: _log };
-  drawStarCbHandles();
+  _uvwInfo(built.length, C);
+  _syncStarColorWidget(C, stars.map(s => s[starColorField]));
 }
 
 function buildStars(){
@@ -4527,53 +4975,18 @@ function buildStars(){
   // geometry is shared by all dots, so the extra triangles are cheap
   const geo=new THREE.SphereGeometry(radius,16,12);
 
-  let valMin=Infinity,valMax=-Infinity;
-  const useField=starColorField!=='none';
-  if(useField){
-    // +v coerces booleans (e.g. binary_suspect) to 0/1 so valMin/valMax stay
-    // real numbers — needed since they're later formatted with .toFixed()
-    stars.forEach(s=>{const v=s[starColorField];if(v!=null){const vn=+v;if(vn<valMin)valMin=vn;if(vn>valMax)valMax=vn;}});
-    if(colorMaxOverride.star != null) valMax = colorMaxOverride.star;
-    if(colorMinOverride.star != null) valMin = colorMinOverride.star;
-  }
-  const valRange=Math.max(valMax-valMin,1e-9);
+  // colour context shared with the vector arrows (_starColorCtx/_starColorOf):
+  // value range, the range-handle window and the tallies for the readout line
+  const C = _starColorCtx(stars);
+  const useField = C.useField;
 
-  // interactive-range selection over [valMin,valMax] on the current lin/log
-  // scale (only meaningful when colouring by a field). hide → skip out-of-range
-  // dots; grey → draw them desaturated + faint, without the black rim.
-  // Stars with NO value can't have a fraction at all, so the range NEVER touches
-  // them (it used to sweep them out in hide mode) — they are grey, and the ∅
-  // button (starShowNoData) alone decides whether they're drawn.
-  const _log = false;
-  const selLo = Math.min(starColorSel.t0, starColorSel.t1);
-  const selHi = Math.max(starColorSel.t0, starColorSel.t1);
-  const filtering = useField && (selLo > 1e-6 || selHi < 1 - 1e-6);
-  const greyMode = starColorClipGray;
-  const inSel = vn => { const f = cbNorm(vn, valMin, valMax, _log); return f >= selLo - 1e-6 && f <= selHi + 1e-6; };
-
-  // Plasma colormap for stars (always, regardless of field colormap)
-  let shown=0,skipped=0,filtered=0,greyed=0,noData=0;
+  let shown=0;
   const outlinePos=[];   // positions of the shown (non-grey) dots → black rim instances
   stars.forEach(s=>{
     if(s.x==null||s.y==null||s.z==null) return;
-    let col, grey=false, noVal=false;
-    if(!useField){
-      col=new THREE.Color(uniformStarColor);
-    } else {
-      const v=s[starColorField];
-      if(v==null){
-        if(!starShowNoData){ skipped++; return; }   // hidden by the ∅ button
-        noVal=true; noData++;
-        col=new THREE.Color(0x666666);
-      } else {
-        const vn=+v;
-        if(filtering && !inSel(vn)){
-          if(!greyMode){ filtered++; return; }   // hidden
-          grey=true; greyed++;
-        }
-        col = grey ? new THREE.Color(0x666666) : sampleColormap(cbNorm(vn,valMin,valMax,_log), starColormap);
-      }
-    }
+    const cr = _starColorOf(s, C);
+    if(!cr) return;                       // hidden (∅ or out of range)
+    const { col, grey, noVal } = cr;
     // faded dots: out-of-range ones recede into the background, no-value ones sit
     // between that and full colour — visible as "nothing measured here" without
     // competing with the stars that actually carry the field. alphaCap keeps the
@@ -4621,41 +5034,16 @@ function buildStars(){
   // the line has to say so ("420 of 557 stars · 377 greyed (no value)").
   const parts = [ shown === nTotal ? `${shown} stars` : `${shown} of ${nTotal} stars` ];
   if(useField){
-    if(noData)   parts.push(`${noData} greyed (no value)`);
-    if(greyed)   parts.push(`${greyed} greyed (out of range)`);
-    if(skipped)  parts.push(`${skipped} hidden (no value)`);
-    if(filtered) parts.push(`${filtered} hidden (out of range)`);
+    if(C.n.noData)   parts.push(`${C.n.noData} greyed (no value)`);
+    if(C.n.greyed)   parts.push(`${C.n.greyed} greyed (out of range)`);
+    if(C.n.skipped)  parts.push(`${C.n.skipped} hidden (no value)`);
+    if(C.n.filtered) parts.push(`${C.n.filtered} hidden (out of range)`);
   }
-  if(starDisplayMask !== 'all') parts.push(`${nTotal-stars.length} masked out`);
+  if(stars.length !== nTotal) parts.push(`${nTotal-stars.length} masked out`);
   document.getElementById('star-info').textContent = parts.join(' · ');
 
-  // colorbar (field mode) vs colour picker (uniform mode)
-  const cbWrap=document.getElementById('star-colorbar-wrap');
-  const picker=document.getElementById('star-color-picker');
-  if(useField&&valMin!==Infinity){
-    if(picker) picker.style.display='none';
-    cbWrap.style.display='block';
-    const cv=document.getElementById('star-colorbar');
-    cv.width=240; cv.height=12;
-    const ctx=cv.getContext('2d'),img=ctx.createImageData(240,12);
-    for(let px=0;px<240;px++){
-      const c=sampleColormap(px/239, starColormap);
-      for(let py=0;py<12;py++){const i=(py*240+px)*4;img.data[i]=Math.round(c.r*255);img.data[i+1]=Math.round(c.g*255);img.data[i+2]=Math.round(c.b*255);img.data[i+3]=255;}
-    }
-    ctx.putImageData(img,0,0);
-    document.getElementById('star-val-min').textContent=valMin.toFixed(2);
-    document.getElementById('star-val-max').textContent=valMax.toFixed(2);
-    const unit = STAR_UNITS[starColorField] || '';
-    document.getElementById('star-cb-field').textContent =
-      unit ? `${starFieldLabel(starColorField)} [${unit}]` : starFieldLabel(starColorField);
-    drawColorbarKde('star-cb-kde', stars.map(s=>s[starColorField]), valMin, valMax, _log);
-    _starCbAx = { mn: valMin, mx: valMax, log: _log };
-    drawStarCbHandles();
-  } else {
-    cbWrap.style.display='none';
-    if(picker) picker.style.display = (starColorField==='none') ? 'block' : 'none';
-    syncStarColorWidgets();
-  }
+  // colorbar (continuous field) / group legend (categorical) / picker (uniform)
+  _syncStarColorWidget(C, stars.map(s=>s[starColorField]));
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -5263,6 +5651,7 @@ const SETTINGS_TABLE = [
                y:_pEl('star','y-select')?.value||null, c:_pEl('star','c-select')?.value||null,
                cMin:s.cMin, cMax:s.cMax, cNoData:s.cNoData,
                axOv:{ ...s.axOv },
+               fitRange:s.fitRange ? [...s.fitRange] : null,
                lines:s.lines,
                isochrones:s.isochrones.map(o=>({ age:o.age, color:o.color })) }; },
     set:v=>{ if(!v||typeof v!=='object') return; const s=PLOT_STATE.star;
@@ -5278,6 +5667,8 @@ const SETTINGS_TABLE = [
       if(typeof v.cNoData === 'boolean') s.cNoData = v.cNoData;
       if(v.axOv && typeof v.axOv === 'object')
         ['xmn','xmx','ymn','ymx'].forEach(k => s.axOv[k] = (typeof v.axOv[k] === 'number') ? v.axOv[k] : null);
+      s.fitRange = (Array.isArray(v.fitRange) && v.fitRange.length === 2 &&
+                    v.fitRange.every(n => typeof n === 'number' && isFinite(n))) ? [...v.fitRange] : null;
       if(v.lines && typeof v.lines === 'object'){ s.lines = _restoreLines(v.lines); renderPlotLinesUI('star'); }
       // isochrones: state only — chips render on window open (setPlotType), since
       // renderIsoChips → _isoAutoColor reads _ISO_PALETTE, still in TDZ here
@@ -5297,6 +5688,7 @@ const SETTINGS_TABLE = [
                xHist:f.xf.hist, xScatter:f.xf.scatter, xPower:f.xf.power, y:_pEl('field','y-select')?.value||null, c:_pEl('field','c-select')?.value||null,
                cMin:f.cMin, cMax:f.cMax, cNoData:f.cNoData,
                axOv:{ ...f.axOv },
+               fitRange:f.fitRange ? [...f.fitRange] : null,
                lines:f.lines,
                psOverlays:f.psOverlays.map(o=>({ field:o.field, color:o.color })) }; },
     set:v=>{ if(!v || typeof v !== 'object') return;
@@ -5320,6 +5712,8 @@ const SETTINGS_TABLE = [
       if(typeof v.cNoData === 'boolean') f.cNoData = v.cNoData;
       if(v.axOv && typeof v.axOv === 'object')
         ['xmn','xmx','ymn','ymx'].forEach(k => f.axOv[k] = (typeof v.axOv[k] === 'number') ? v.axOv[k] : null);
+      f.fitRange = (Array.isArray(v.fitRange) && v.fitRange.length === 2 &&
+                    v.fitRange.every(n => typeof n === 'number' && isFinite(n))) ? [...v.fitRange] : null;
       if(v.lines && typeof v.lines === 'object'){ f.lines = _restoreLines(v.lines); renderPlotLinesUI('field'); }
       // psOverlays: state only — chips render on window open (setPlotType), since
       // renderPsChips reads FPLOT_FIELDS which is still in TDZ during loadSettings
@@ -5357,6 +5751,12 @@ const SETTINGS_TABLE = [
   // stars with no value for the colour field: grey (true) or hidden (false)
   { key:'starShowNoData',    get:()=>starShowNoData,   set:v=>{ starShowNoData = !!v; _syncStarNoDataBtn(); } },
   { key:'starDisplayMask',   get:()=>starDisplayMask,  set:v=>{ if(v){ starDisplayMask = v; _selSync('star-mask-select', starDisplayMask); } } },
+  // Group filter ("Star groups" window). A data selection like the display mask
+  // above, so it persists; Sets are stored as arrays of the HIDDEN names.
+  { key:'starGroupField',    get:()=>starGroupField,   set:v=>{ if(v) starGroupField = v; } },
+  { key:'starGroupHidden',
+    get:()=>{ const o={}; for(const k in starGroupHidden) o[k] = [...starGroupHidden[k]]; return o; },
+    set:v=>{ if(v && typeof v === 'object') for(const k in v) if(Array.isArray(v[k])) starGroupHidden[k] = new Set(v[k]); } },
   // interactive 3D star colorbar: log scale + hide/grey mode (sub-range session-only)
   { key:'starColorClipGray', get:()=>starColorClipGray, set:v=>{ starColorClipGray = !!v; _syncStarCbButtons(); } },
   // Field/Stream/Cloud interactive-colorbar grey/hide mode (sub-range is session-only)
@@ -5409,9 +5809,10 @@ function _postRestoreSync(){
   // star display mode (dots/uvw/pm): button label + which rows show. This also
   // sets the colormap-row visibility; still handle the uniform-picker here since
   // _applyStarVectorModeUI deliberately never touches the picker (TDZ-safe).
+  // The picker follows the colour FIELD only — it is available in every mode.
   _applyStarVectorModeUI();
   { const picker=document.getElementById('star-color-picker');
-    if(picker) picker.style.display =(!starVectorsOn() && starColorField==='none')?'block':'none'; }
+    if(picker) picker.style.display =(starColorField==='none')?'block':'none'; }
   // sync all sliders to the loaded param values
   const scaled100 = ['stepSize','animSpeed','arrowScale','arrowAlpha','streamAlpha',
                      'starAlpha','cloudAlpha','cloudStrength','starArrowScale'];
@@ -6094,6 +6495,10 @@ function showStarInfo(s, px, py){
   });
   if('rv_used' in s)
     rows += `<tr class="sip-sep"><td>${starFieldLabel('rv_used')}</td><td>${s.rv_used ? 'yes' : 'no'}</td></tr>`;
+  // categorical memberships (Luhman group): a name, so they never made it into
+  // the numeric loop above. '–' where the star belongs to no group.
+  STAR_CAT_FIELDS.forEach(k => { if(k in s)
+    rows += `<tr><td>${starFieldLabel(k)}</td><td>${s[k] == null ? '–' : s[k]}</td></tr>`; });
   document.getElementById('sip-table').innerHTML = rows;
   // position near the click, clamped inside the viewer
   pop.style.display = 'block';
@@ -6586,6 +6991,94 @@ document.addEventListener('mousedown', e=>{
   if(pop.contains(e.target)||(picker&&picker.contains(e.target))||(e.target.id||'').includes('-iso-chip-')) return;
   closeIsoEditor();
 });
+// ── Fit range (#fitrange-pop) ────────────────────────────────────────────────
+// Restricts the FIT to a sub-range of x while the whole histogram keeps being
+// drawn — the point is to fit a core and then judge the tails against it
+// (rather than the drag-selection, which also crops the axis and the data).
+// Bounds can be typed, taken from two vertical reference lines, or from the
+// visible axis. Shared by both plot windows via _fitRangeTarget.
+function toggleFitRangePop(w, btn){
+  if(_fitRangeTarget && _fitRangeTarget.w === w){ closeFitRangePop(); return; }
+  _fitRangeTarget = { w, btn };
+  const pop = document.getElementById('fitrange-pop');
+  pop.style.display = 'flex';
+  _syncFitRangeInputs();
+  const r = btn.getBoundingClientRect(), pw = pop.offsetWidth || 172, ph = pop.offsetHeight || 120;
+  const x = Math.min(Math.max(4, r.left - pw + r.width), window.innerWidth - pw - 4);
+  let   y = r.bottom + 4;
+  if(y + ph > window.innerHeight - 4) y = Math.max(4, r.top - ph - 4);
+  pop.style.left = x + 'px'; pop.style.top = y + 'px';
+  _syncFitRangeBtn(w);
+}
+function closeFitRangePop(){
+  const t = _fitRangeTarget; _fitRangeTarget = null;
+  const p = document.getElementById('fitrange-pop'); if(p) p.style.display = 'none';
+  if(t) _syncFitRangeBtn(t.w);
+}
+function _syncFitRangeInputs(){
+  if(!_fitRangeTarget) return;
+  const fr = PLOT_STATE[_fitRangeTarget.w].fitRange;
+  document.getElementById('fitrange-min').value = fr ? _fmtTick(fr[0]) : '';
+  document.getElementById('fitrange-max').value = fr ? _fmtTick(fr[1]) : '';
+  // "from lines" only works with at least two vertical lines in this mode
+  const n = _plotLines(_fitRangeTarget.w).filter(l => l.axis === 'x').length;
+  const b = document.getElementById('fitrange-lines');
+  b.disabled = n < 2;
+  b.style.opacity = n < 2 ? 0.4 : 1;
+  b.title = n < 2 ? 'Needs two vertical (x) reference lines' : 'Take the bounds from the first two vertical reference lines';
+}
+function _setFitRange(w, lo, hi){
+  const s = PLOT_STATE[w];
+  if(lo == null || hi == null || !isFinite(lo) || !isFinite(hi) || lo === hi) s.fitRange = null;
+  else s.fitRange = [Math.min(lo, hi), Math.max(lo, hi)];
+  s.fitCache = null;                 // the cached curve was fitted to other data
+  _syncFitRangeInputs(); _syncFitRangeBtn(w);
+  renderPlot(w); saveSettings();
+}
+function _fitRangeCommit(){
+  if(!_fitRangeTarget) return;
+  const w = _fitRangeTarget.w;
+  const num = id => { const v = document.getElementById(id).value.trim();
+                      if(v === '') return null; const n = Number(v); return isFinite(n) ? n : null; };
+  let lo = num('fitrange-min'), hi = num('fitrange-max');
+  // one-sided bound ("fit everything above −20"): the open end falls back to the
+  // axis, so a single number is enough
+  const ax = PLOT_STATE[w].ax;
+  if(lo == null && hi != null && ax && ax.mode === 'hist') lo = ax.mn;
+  if(hi == null && lo != null && ax && ax.mode === 'hist') hi = ax.mx;
+  _setFitRange(w, lo, hi);
+}
+function _fitRangeClear(){ if(_fitRangeTarget) _setFitRange(_fitRangeTarget.w, null, null); }
+function _fitRangeFromLines(){
+  if(!_fitRangeTarget) return;
+  const xs = _plotLines(_fitRangeTarget.w).filter(l => l.axis === 'x').map(l => l.val).sort((a,b)=>a-b);
+  if(xs.length < 2) return;
+  _setFitRange(_fitRangeTarget.w, xs[0], xs[xs.length-1]);
+}
+function _fitRangeFromAxis(){
+  if(!_fitRangeTarget) return;
+  const ax = PLOT_STATE[_fitRangeTarget.w].ax;
+  if(!ax || ax.mode !== 'hist') return;
+  _setFitRange(_fitRangeTarget.w, ax.mn, ax.mx);
+}
+// button label carries the active bounds, so the restriction is visible without
+// opening the popup
+function _syncFitRangeBtn(w){
+  const b = _pEl(w, 'fitrange-btn'); if(!b) return;
+  const fr = PLOT_STATE[w].fitRange;
+  b.textContent = fr ? `${_fmtTick(fr[0])}–${_fmtTick(fr[1])}` : 'Range';
+  b.classList.toggle('on', !!fr || (_fitRangeTarget && _fitRangeTarget.w === w));
+  b.title = fr ? `Fit restricted to ${_fmtTick(fr[0])}…${_fmtTick(fr[1])} — click to change`
+               : 'Restrict the fit to an x-range (the full histogram stays visible)';
+}
+document.addEventListener('mousedown', e => {
+  if(!_fitRangeTarget) return;
+  const pop = document.getElementById('fitrange-pop');
+  if(pop && pop.contains(e.target)) return;
+  if(e.target.closest && e.target.closest('#plot-fitrange-btn,#fplot-fitrange-btn')) return;
+  closeFitRangePop();
+});
+
 // Fits behave like the sidebar toggle groups: at most one active, clicking the
 // active one turns the fit off again.
 function togglePlotFit(kind, w='star'){
@@ -7108,6 +7601,11 @@ function _syncPlotAxisInputs(w){
 function onPlotAxisFieldChange(w, axis){
   const st = PLOT_STATE[w];
   if(_axrangeTarget && _axrangeTarget.w === w) closeAxRangePop();
+  // the fit bounds are in the units of the plotted quantity — meaningless for
+  // another field, so a field change drops them (like the axis overrides below)
+  if(st.type === 'hist' && axis === 'x' && st.fitRange){ st.fitRange = null; st.fitCache = null; }
+  if(_fitRangeTarget && _fitRangeTarget.w === w) closeFitRangePop();
+  _syncFitRangeBtn(w);
   if(st.type === 'scatter'){
     st.axOv[axis+'mn'] = null; st.axOv[axis+'mx'] = null;
     _syncPlotAxisInputs(w);
@@ -7179,6 +7677,8 @@ function setPlotType(t, w='star'){
   show('c-row',       t === 'scatter');
   show('bins-row', t === 'hist');
   show('fit-row',  t === 'hist');
+  if(_fitRangeTarget && _fitRangeTarget.w === w) closeFitRangePop();
+  _syncFitRangeBtn(w);
   // power spectrum: only the field picker matters (no Y/colour/bins/fit); the
   // X-select chooses the quantity whose spectrum is shown. Axes are forced
   // log-log with no flip → hide the X flip + log + reset toggles in this mode.
@@ -7323,12 +7823,28 @@ function setPlotBins(w, n){
 // UVW arrows): all → everything · hasrv → has a radial velocity · used → RV
 // used in the inference (RUWE-filtered subset, i.e. the former "rv_good" set)
 function starMaskPred(which){
+  let base;
   switch(which){
-    case 'hasrv':  return s => s.rv != null;
-    case 'used':   return s => s.rv_used === true;
-    default:       return () => true;
+    case 'hasrv':  base = s => s.rv != null; break;
+    case 'used':   base = s => s.rv_used === true; break;
+    default:       base = () => true;
   }
+  // The group filter ("Star groups" window) rides on top of every display mask,
+  // so hiding a group removes it from the 3D dots/arrows, the 2D plots, the
+  // counts and every auto colour range in one place. Composed here rather than
+  // in the builders precisely because all of them already honour this predicate.
+  const g = starGroupPred();
+  return g ? (s => base(s) && g(s)) : base;
 }
+// null when nothing is filtered (fast path); otherwise a predicate over the
+// ACTIVE grouping field. Stars without a group are one entry, keyed by NO_GROUP.
+function starGroupPred(){
+  const hid = starGroupHidden[starGroupField];
+  if(!hid || hid.size === 0) return null;
+  const f = starGroupField;
+  return s => !hid.has(s[f] == null ? NO_GROUP : s[f]);
+}
+function starGroupFilterActive(){ const h = starGroupHidden[starGroupField]; return !!h && h.size > 0; }
 function _plotMaskFn(){ return starMaskPred(document.getElementById('plot-mask-select').value); }
 function _fmtTick(v){
   if(v === 0) return '0';
@@ -7543,6 +8059,83 @@ function drawPlotRefLines(w, ctx, col){
   ctx.restore(); ctx.globalAlpha = 1;
 }
 
+// Full (un-zoomed) scatter axis range: raw data extent, padded, then overridden
+// by the manual axis ends. This is what the plot shows with no zoom viewport
+// active — drawDataPlot uses it for exactly that, and the legend placement uses
+// it to judge where the data sits regardless of the current zoom.
+function _scatterFullRange(pts, stw){
+  let xmn=Infinity, xmx=-Infinity, ymn=Infinity, ymx=-Infinity;
+  pts.forEach(p => { if(p.a<xmn)xmn=p.a; if(p.a>xmx)xmx=p.a; if(p.b<ymn)ymn=p.b; if(p.b>ymx)ymx=p.b; });
+  if(xmn===xmx){ xmn-=0.5; xmx+=0.5; } if(ymn===ymx){ ymn-=0.5; ymx+=0.5; }
+  // pad the auto range ~3% per side so edge points (2.2px dots) aren't cut
+  // in half. A log axis pads MULTIPLICATIVELY (in log space) so a positive min
+  // never crosses 0 — plain linear padding could push it ≤0 and disable log.
+  const wantLX = !!stw.logX && _axLogOK(xmn, xmx), wantLY = !!stw.logY && _axLogOK(ymn, ymx);
+  if(wantLX){ const r = Math.pow(xmx/xmn, 0.03); xmn /= r; xmx *= r; }
+  else { const p=(xmx-xmn)*0.03; xmn -= p; xmx += p; }
+  if(wantLY){ const r = Math.pow(ymx/ymn, 0.03); ymn /= r; ymx *= r; }
+  else { const p=(ymx-ymn)*0.03; ymn -= p; ymx += p; }
+  // manual axis ends (Range row): replace the padded auto ends EXACTLY as
+  // typed (null = keep auto). Swapped pairs are normalized (inverting an
+  // axis is the ⇄ flip button's job); a log request on a range an override
+  // pushed ≤0 simply drops out via _axLogOK at the call site, like everywhere else.
+  const ov = stw.axOv || {};
+  if(ov.xmn != null) xmn = ov.xmn;  if(ov.xmx != null) xmx = ov.xmx;
+  if(ov.ymn != null) ymn = ov.ymn;  if(ov.ymx != null) ymx = ov.ymx;
+  if(xmn > xmx){ const t = xmn; xmn = xmx; xmx = t; }
+  if(ymn > ymx){ const t = ymn; ymn = ymx; ymx = t; }
+  if(xmn === xmx){ xmn -= 0.5; xmx += 0.5; }
+  if(ymn === ymx){ ymn -= 0.5; ymx += 0.5; }
+  return { xmn, xmx, ymn, ymx };
+}
+
+// ── In-plot legends (isochrones, spectrum overlays) ──────────────────────────
+// The legend box goes into whichever corner of the plot area carries the FEWEST
+// data points. That corner is decided ONCE per data/axis signature — from the
+// FULL, un-zoomed data — and then frozen, so zooming or panning never makes the
+// box hop from one corner to another (a moving legend is far more distracting
+// than an occasional overlap). Sampled positions are unit fractions of the plot
+// area with (0,0) = top-left, i.e. already flipped/logged like the drawn points.
+const _legendCorner = {};   // signature → 'tl' | 'tr' | 'bl' | 'br'
+function _pickLegendCorner(sig, bwFrac, bhFrac, samples){
+  if(_legendCorner[sig]) return _legendCorner[sig];
+  const pad = 0.02;
+  const bw = Math.min(bwFrac + pad, 0.9), bh = Math.min(bhFrac + pad, 0.9);
+  const boxes = { tl:[0,bw,0,bh], tr:[1-bw,1,0,bh], bl:[0,bw,1-bh,1], br:[1-bw,1,1-bh,1] };
+  const cnt = { tl:0, tr:0, bl:0, br:0 };
+  samples.forEach(p => {
+    const u = p[0], v = p[1];
+    if(!(u >= -0.05 && u <= 1.05 && v >= -0.05 && v <= 1.05)) return;   // off-plot
+    for(const k in boxes){
+      const b = boxes[k];
+      if(u >= b[0] && u <= b[1] && v >= b[2] && v <= b[3]) cnt[k]++;
+    }
+  });
+  // ties keep the conventional reading order (top-right first, bottom-left last)
+  let best = 'tr';
+  ['tr','tl','br','bl'].forEach(k => { if(cnt[k] < cnt[best]) best = k; });
+  _legendCorner[sig] = best;
+  return best;
+}
+// rows = [{c: colour, t: text}]; ax = {x0,y0,x1,y1} of the plot area
+function _drawPlotLegend(ctx, col, rows, ax, sig, samples){
+  if(!rows.length) return;
+  ctx.font = '9px "IBM Plex Mono", monospace'; ctx.textBaseline = 'middle';
+  let tw = 0; rows.forEach(r => tw = Math.max(tw, ctx.measureText(r.t).width));
+  const lw = 28 + tw + 8, lh = rows.length*13 + 8;
+  const pw = Math.max(ax.x1-ax.x0, 1), ph = Math.max(ax.y1-ax.y0, 1);
+  const corner = _pickLegendCorner(sig, lw/pw, lh/ph, samples);
+  const lx = (corner === 'tr' || corner === 'br') ? ax.x1 - lw - 6 : ax.x0 + 6;
+  const ly = (corner === 'bl' || corner === 'br') ? ax.y1 - lh - 6 : ax.y0 + 6;
+  ctx.globalAlpha = _lum(col.bg) > 0.5 ? 0.82 : 0.7; ctx.fillStyle = col.bg;
+  ctx.fillRect(lx, ly, lw, lh); ctx.globalAlpha = 1;
+  ctx.strokeStyle = col.axis; ctx.globalAlpha = 0.5; ctx.strokeRect(lx+0.5, ly+0.5, lw, lh); ctx.globalAlpha = 1;
+  rows.forEach((r,i) => { const ry = ly + 10 + 13*i;
+    ctx.strokeStyle = r.c; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(lx+6, ry); ctx.lineTo(lx+22, ry); ctx.stroke();
+    ctx.fillStyle = col.lab; ctx.textAlign = 'left'; ctx.fillText(r.t, lx+28, ry); });
+}
+
 function drawDataPlot(w, ctx, W, H, interactive){
   const stw = PLOT_STATE[w], src = PLOT_SRC[w];
   const st = PLOT_STYLES[stw.style];   // undefined for 'theme'
@@ -7658,16 +8251,15 @@ function drawDataPlot(w, ctx, W, H, interactive){
     // legend (only with overlays) — swatch + field label, so PNG/PDF exports say
     // which curve is which
     if(series.length > 1){
-      ctx.font = '9px "IBM Plex Mono", monospace'; ctx.textBaseline = 'middle';
       const rows = series.map(s => ({ c:scol(s), t:src.label(s.field) }));
-      let tw = 0; rows.forEach(r => tw = Math.max(tw, ctx.measureText(r.t).width));
-      const lw = 28 + tw + 8, lh = rows.length*13 + 8, lx = x1 - lw - 6, ly = y0 + 6;
-      ctx.globalAlpha = _lum(col.bg) > 0.5 ? 0.82 : 0.7; ctx.fillStyle = col.bg;
-      ctx.fillRect(lx, ly, lw, lh); ctx.globalAlpha = 1;
-      ctx.strokeStyle = col.axis; ctx.globalAlpha = 0.5; ctx.strokeRect(lx+0.5, ly+0.5, lw, lh); ctx.globalAlpha = 1;
-      rows.forEach((r,i)=>{ const ry = ly + 10 + 13*i;
-        ctx.strokeStyle = r.c; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(lx+6, ry); ctx.lineTo(lx+22, ry); ctx.stroke();
-        ctx.fillStyle = col.lab; ctx.textAlign = 'left'; ctx.fillText(r.t, lx+28, ry); });
+      // occupancy = every plotted spectrum point (the axes always span the full
+      // series here — the power mode has no zoom viewport)
+      const samples = [];
+      series.forEach(s => s.k.forEach((kv,i) => { const pv = s.P[i];
+        if(kv > 0 && pv > 0) samples.push([_axFrac(kv,xmn,xmx,true), 1-_axFrac(pv,ymn,ymx,true)]); }));
+      const sig = ['ps', w, series.map(s=>s.field).join(','), rows.length,
+                   prim.k.length, _rangeSig()].join('|');
+      _drawPlotLegend(ctx, col, rows, stw.ax, sig, samples);
     }
     // energy spectra: E(k) for the |v| total, E_x/E_y/E_z(k) for one component
     const allEnergy = series.every(s => s.mode === 'energy');
@@ -7742,10 +8334,33 @@ function drawDataPlot(w, ctx, W, H, interactive){
     // up in the PNG/PDF export (user request July 2026).
     stw.fitInfo = null;
     if(stw.fit !== 'none'){
-      const fitSig = [stw.fit, xf, vals.length, mn, mx, w === 'field' ? _rangeSig() : ''].join('|');
+      // Fit range (the button next to the fit options): only the values inside
+      // it are fitted, the histogram itself keeps showing everything. Clamped
+      // to the axis, and ignored if it leaves nothing.
+      let fmn = mn, fmx = mx, fvals = vals;
+      if(stw.fitRange){
+        const lo = Math.max(mn, stw.fitRange[0]), hi = Math.min(mx, stw.fitRange[1]);
+        const sub = (hi > lo) ? vals.filter(v => v >= lo && v <= hi) : [];
+        if(sub.length >= 2){ fmn = lo; fmx = hi; fvals = sub; }
+      }
+      const restricted = fvals.length !== vals.length;
+      const fitSig = [stw.fit, xf, fvals.length, fmn, fmx, w === 'field' ? _rangeSig() : ''].join('|');
       let fit;
       if(stw.fitCache && stw.fitCache.sig === fitSig) fit = stw.fitCache.fit;
-      else { fit = _fitDistribution(vals, stw.fit, mn, mx); stw.fitCache = { sig:fitSig, fit }; }
+      else { fit = _fitDistribution(fvals, stw.fit, fmn, fmx); stw.fitCache = { sig:fitSig, fit }; }
+      // dim what the fit ignored, so a restricted fit is obvious in exports too
+      if(restricted){
+        const sxOf = v => { const f = _axFrac(v, mn, mx, lgX); return x0 + (fx ? 1-f : f)*(x1-x0); };
+        const a = sxOf(fmn), b = sxOf(fmx), lo2 = Math.min(a,b), hi2 = Math.max(a,b);
+        ctx.save();
+        ctx.fillStyle = col.bg; ctx.globalAlpha = 0.55;
+        ctx.fillRect(x0, y0, Math.max(lo2-x0, 0), y1-y0);
+        ctx.fillRect(hi2, y0, Math.max(x1-hi2, 0), y1-y0);
+        ctx.globalAlpha = 0.8; ctx.strokeStyle = col.pin; ctx.lineWidth = 1; ctx.setLineDash([3,3]);
+        [lo2, hi2].forEach(sx => { const px = Math.round(sx)+0.5;
+          if(px > x0 && px < x1){ ctx.beginPath(); ctx.moveTo(px, y0); ctx.lineTo(px, y1); ctx.stroke(); } });
+        ctx.restore();
+      }
       if(fit.ok){
         ctx.save();
         ctx.beginPath(); ctx.rect(x0, y0, x1-x0, y1-y0); ctx.clip();
@@ -7753,9 +8368,10 @@ function drawDataPlot(w, ctx, W, H, interactive){
         ctx.beginPath();
         const S = PLOT_FIT_SAMPLES;
         for(let i=0;i<=S;i++){
-          // fit.curve is sampled LINEARLY over [mn,mx]; on a log-x axis warp each
-          // sample's x through _axFrac and scale by the LOCAL (variable) bin width
-          const sx = mn + (i/S)*(mx-mn);
+          // fit.curve is sampled LINEARLY over the FIT range; on a log-x axis warp
+          // each sample's x through _axFrac and scale by the LOCAL (variable) bin
+          // width — the bin width follows the AXIS, not the fit range
+          const sx = fmn + (i/S)*(fmx-fmn);
           const bwl = lgX ? sx*Math.log(mx/mn)/bins : bw;
           const cy = y1 - (fit.curve[i]*fit.nFit*bwl/mc)*(y1-y0);
           const fr = _axFrac(sx, mn, mx, lgX);
@@ -7779,8 +8395,10 @@ function drawDataPlot(w, ctx, W, H, interactive){
           ctx.restore();
         }
         // density function (formula) below the canvas + how many values fed the fit
-        stw.fitInfo = fit.formula + (fit.nFit < vals.length
-          ? `<span class="fi-note">(${fit.nFit}/${vals.length} values &gt; 0)</span>` : '');
+        const note = restricted
+          ? `(${fit.nFit}/${vals.length} values in ${_fmtTick(fmn)}…${_fmtTick(fmx)})`
+          : (fit.nFit < vals.length ? `(${fit.nFit}/${vals.length} values &gt; 0)` : '');
+        stw.fitInfo = fit.formula + (note ? `<span class="fi-note">${note}</span>` : '');
       } else {
         stw.fitInfo = 'fit n/a — ' + (fit.why || '');
       }
@@ -7815,28 +8433,7 @@ function drawDataPlot(w, ctx, W, H, interactive){
   if(stw.view){
     ({ xmn, xmx, ymn, ymx } = stw.view);   // wheel-zoom / drag-pan viewport
   } else {
-    xmn=Infinity; xmx=-Infinity; ymn=Infinity; ymx=-Infinity;
-    pts.forEach(p => { if(p.a<xmn)xmn=p.a; if(p.a>xmx)xmx=p.a; if(p.b<ymn)ymn=p.b; if(p.b>ymx)ymx=p.b; });
-    if(xmn===xmx){ xmn-=0.5; xmx+=0.5; } if(ymn===ymx){ ymn-=0.5; ymx+=0.5; }
-    // pad the auto range ~3% per side so edge points (2.2px dots) aren't cut
-    // in half. A log axis pads MULTIPLICATIVELY (in log space) so a positive min
-    // never crosses 0 — plain linear padding could push it ≤0 and disable log.
-    const wantLX = !!stw.logX && _axLogOK(xmn, xmx), wantLY = !!stw.logY && _axLogOK(ymn, ymx);
-    if(wantLX){ const r = Math.pow(xmx/xmn, 0.03); xmn /= r; xmx *= r; }
-    else { const p=(xmx-xmn)*0.03; xmn -= p; xmx += p; }
-    if(wantLY){ const r = Math.pow(ymx/ymn, 0.03); ymn /= r; ymx *= r; }
-    else { const p=(ymx-ymn)*0.03; ymn -= p; ymx += p; }
-    // manual axis ends (Range row): replace the padded auto ends EXACTLY as
-    // typed (null = keep auto). Swapped pairs are normalized (inverting an
-    // axis is the ⇄ flip button's job); a log request on a range an override
-    // pushed ≤0 simply drops out via _axLogOK below, like everywhere else.
-    const ov = stw.axOv;
-    if(ov.xmn != null) xmn = ov.xmn;  if(ov.xmx != null) xmx = ov.xmx;
-    if(ov.ymn != null) ymn = ov.ymn;  if(ov.ymx != null) ymx = ov.ymx;
-    if(xmn > xmx){ const t = xmn; xmn = xmx; xmx = t; }
-    if(ymn > ymx){ const t = ymn; ymn = ymx; ymx = t; }
-    if(xmn === xmx){ xmn -= 0.5; xmx += 0.5; }
-    if(ymn === ymx){ ymn -= 0.5; ymx += 0.5; }
+    ({ xmn, xmx, ymn, ymx } = _scatterFullRange(pts, stw));
   }
   const xsp = xmx-xmn, ysp = ymx-ymn;
   // axis flip (max→min) — for CMDs etc. The flip lives in the normalized 0..1
@@ -7974,16 +8571,22 @@ function drawDataPlot(w, ctx, W, H, interactive){
       ctx.stroke();
     });
     ctx.restore(); ctx.globalAlpha = 1;
-    // legend (age labels) top-left inside the plot, so PNG/PDF exports name each curve
-    ctx.font = '9px "IBM Plex Mono", monospace'; ctx.textBaseline = 'middle';
+    // legend (age labels) inside the plot, so PNG/PDF exports name each curve.
+    // Its corner is the emptiest one of the FULL view — in a CMD the top-left is
+    // exactly where the main sequence and the isochrones themselves run, so a
+    // fixed corner buried the legend in data.
     const rows = stw.isochrones.map((iso,ii)=>({ c:iso.color||_isoAutoColor(ii), t:iso.age+' Myr' }));
-    let tw=0; rows.forEach(r=>tw=Math.max(tw,ctx.measureText(r.t).width));
-    const lw=28+tw+8, lh=rows.length*13+8, lx=x0+6, ly=y0+6;
-    ctx.globalAlpha=_lum(col.bg)>0.5?0.82:0.7; ctx.fillStyle=col.bg; ctx.fillRect(lx,ly,lw,lh); ctx.globalAlpha=1;
-    ctx.strokeStyle=col.axis; ctx.globalAlpha=0.5; ctx.strokeRect(lx+0.5,ly+0.5,lw,lh); ctx.globalAlpha=1;
-    rows.forEach((r,i)=>{ const ry=ly+10+13*i;
-      ctx.strokeStyle=r.c; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(lx+6,ry); ctx.lineTo(lx+22,ry); ctx.stroke();
-      ctx.fillStyle=col.lab; ctx.textAlign='left'; ctx.fillText(r.t,lx+28,ry); });
+    const full = stw.view ? _scatterFullRange(pts, stw) : { xmn, xmx, ymn, ymx };
+    const fLX = lgX && _axLogOK(full.xmn, full.xmx), fLY = lgY && _axLogOK(full.ymn, full.ymx);
+    const frac = (a,b) => { let u=_axFrac(a,full.xmn,full.xmx,fLX), v=_axFrac(b,full.ymn,full.ymx,fLY);
+                            if(fx) u=1-u; if(fy) v=1-v; return [u, 1-v]; };   // 1-v → y measured DOWN from the top
+    const samples = pts.map(p => frac(p.a, p.b));
+    // the curves count as data too — the legend shouldn't sit on them either
+    stw.isochrones.forEach(iso => { (ISOCHRONES[iso.age]||[]).forEach(pt => {
+      const a=_isoXVal(pt), b=pt[2]; if(isFinite(a)&&isFinite(b)) samples.push(frac(a,b)); }); });
+    const sig = ['iso', w, xf, yf, fx, fy, lgX, lgY, pts.length,
+                 stw.isochrones.map(i=>i.age).join(','), JSON.stringify(stw.axOv||{})].join('|');
+    _drawPlotLegend(ctx, col, rows, stw.ax, sig, samples);
   }
   axLabel(unitLbl(xf) + (lgX ? ' (log)' : ''), 'x'); axLabel(unitLbl(yf) + (lgY ? ' (log)' : ''), 'y');
   // Caption, same scheme as the 3D star panel: "x of y" whenever the colour
@@ -8369,6 +8972,38 @@ function toggleSidebar(){
 // Captures only the 3D canvas (never the sidebar/menu/HUD buttons), with an
 // optional colorbar panel composited onto the side. Available colorbars are
 // determined dynamically from what's currently visible in the scene.
+// ── ENTER / ESC in the small floating popups ─────────────────────────────────
+// Every one of them (#fitrange-pop, #axrange-pop, #pline-pop, #iso-pop,
+// #pspec-pop, #group-pop, #color-picker-pop) closes on ENTER with whatever was
+// typed applied, and on ESC without applying. Text fields normally apply
+// through their own change/onchange handler — which would NOT fire if we closed
+// the popup straight from keydown, so the focused element is blurred FIRST;
+// that flushes the pending change synchronously. Popups whose values are read
+// from the DOM on demand additionally get an explicit commit.
+const _POPUP_KEYS = [
+  { id:'fitrange-pop',     commit:() => _fitRangeCommit(),  close:() => closeFitRangePop() },
+  { id:'axrange-pop',      commit:() => _axrangeCommit(),   close:() => closeAxRangePop() },
+  { id:'pline-pop',        commit:null,                     close:() => closePlotLineEditor() },
+  { id:'iso-pop',          commit:null,                     close:() => closeIsoEditor() },
+  { id:'pspec-pop',        commit:null,                     close:() => closePsEditor() },
+  { id:'group-pop',        commit:null,                     close:() => closeGroupPop() },
+  { id:'color-picker-pop', commit:null,                     close:() => closeColorPicker() },
+];
+_POPUP_KEYS.forEach(p => {
+  const el = document.getElementById(p.id);
+  if(!el) return;
+  el.addEventListener('keydown', e => {
+    if(e.key !== 'Enter' && e.key !== 'Escape') return;
+    e.preventDefault(); e.stopPropagation();
+    if(e.key === 'Escape'){ p.close(); return; }
+    // flush a half-typed field through its change handler before anything closes
+    const a = document.activeElement;
+    if(a && el.contains(a) && typeof a.blur === 'function') a.blur();
+    if(p.commit) p.commit();   // may close by itself (axrange) — close() is idempotent
+    p.close();
+  });
+});
+
 function getAvailableColorbars(){
   const bars = [];
   if(vis.arrows){
@@ -8386,20 +9021,9 @@ function getAvailableColorbars(){
     bars.push({ id:'cloud', label:`Density cloud (${cloudField==='energy_density'?'½ρv²':'ρ'})`, unit:def.unit,
                 min:cloudFieldMin(), max:cloudFieldMax(), cmap:cloudColormap });
   }
-  if(starsVisible && starVectorsOn()){
-    let vMin=Infinity, vMax=-Infinity;
-    const uvwMask = starMaskPred(starDisplayMask);   // match the displayed arrows
-    const { kU, kV, kW, label:_srcLabel } = _starVecFields();
-    (DATA?.real_stars||[]).forEach(s=>{
-      if(s[kU]==null||s[kV]==null||s[kW]==null || !uvwMask(s)) return;
-      const m=Math.hypot(s[kU],s[kV],s[kW]); if(m<vMin)vMin=m; if(m>vMax)vMax=m;
-    });
-    if(colorMaxOverride.star != null) vMax = colorMaxOverride.star;
-    if(colorMinOverride.star != null) vMin = colorMinOverride.star;
-    if(vMin!==Infinity){
-      bars.push({ id:'star', label:`Stars (|${_srcLabel}|)`, unit:'km/s', min:vMin, max:vMax, cmap:starColormap });
-    }
-  } else if(starsVisible && starColorField !== 'none'){
+  if(starsVisible && starColorField !== 'none' && !isStarCatField(starColorField)){
+    // Dots AND velocity arrows colour by this one field (July 2026) — one
+    // branch covers both. Categorical fields have no colorbar to composite.
     let vMin=Infinity, vMax=-Infinity;
     const dotMask = starMaskPred(starDisplayMask);   // match the displayed dots
     (DATA?.real_stars||[]).forEach(s=>{ if(!dotMask(s)) return; const v=s[starColorField]; if(v!=null){ if(v<vMin)vMin=v; if(v>vMax)vMax=v; } });
@@ -8837,14 +9461,41 @@ function downloadBlob(blob, filename){
 
 
 // draws one colorbar (gradient + ticks + label) onto a 2D context at (x,y)
-function drawColorbarPanel(ctx, bar, x, y, w, h, textColor, bgColor){
+// Fits a colorbar label into availW: shrink the font down to minFs, and if even
+// that overflows, truncate with an ellipsis. Without the truncation step a long
+// label (e.g. "Stars (Velocity magnitude (PM only)) [km/s]") simply ran past the
+// panel's right edge and got clipped by the canvas. Sets ctx.font and returns
+// the string to draw.
+function _cbFitLabel(ctx, lbl, availW, fs, minFs){
+  const setF = f => ctx.font = `600 ${f}px "IBM Plex Mono",monospace`;
+  setF(fs);
+  let tw = ctx.measureText(lbl).width;
+  if(tw <= availW) return lbl;
+  // Iterate the shrink: a single width-ratio estimate can land a hair OVER the
+  // limit because the browser quantises glyph advances at the new size, and
+  // that near-miss used to trip the ellipsis for labels that actually fit.
+  for(let pass = 0; pass < 3 && tw > availW && fs > minFs; pass++){
+    fs = Math.max(minFs, fs * availW / tw * 0.995);
+    setF(fs);
+    tw = ctx.measureText(lbl).width;
+  }
+  if(tw <= availW + 0.5) return lbl;
+  // still too wide at the minimum size → drop characters until the ellipsis fits
+  let out = lbl;
+  while(out.length > 1 && ctx.measureText(out + '…').width > availW) out = out.slice(0, -1);
+  return out + '…';
+}
+// `s` = output-resolution scale (see colorbarPanelDims): every size below is a
+// reference-pixel constant multiplied by it, so the text keeps its proportion
+// to the strip at any export resolution.
+function drawColorbarPanel(ctx, bar, x, y, w, h, textColor, bgColor, s=1){
   // gradient strip
   for(let px = 0; px < w; px++){
     const c = sampleColormap(px/(w-1), bar.cmap);
     ctx.fillStyle = `rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
     ctx.fillRect(x+px, y, 1, h);
   }
-  ctx.strokeStyle = textColor; ctx.lineWidth = 2;
+  ctx.strokeStyle = textColor; ctx.lineWidth = 2*s;
   ctx.strokeRect(x+0.5, y+0.5, w-1, h-1);
 
   // ticks (5) — shrink the number font when wide values (e.g. -17334.1)
@@ -8853,34 +9504,32 @@ function drawColorbarPanel(ctx, bar, x, y, w, h, textColor, bgColor){
     const val = bar.min + (i/4)*(bar.max-bar.min);
     return val.toFixed(Math.abs(val)<10?2:1);
   });
-  let tfs = 20;
+  let tfs = 20*s;
   ctx.font = `${tfs}px "IBM Plex Mono",monospace`;
-  const widest = Math.max(...tickVals.map(s => ctx.measureText(s).width));
+  const widest = Math.max(...tickVals.map(t => ctx.measureText(t).width));
   const slotW = w/4 * 0.94;
-  if(widest > slotW){ tfs = Math.max(12, Math.floor(tfs * slotW / widest)); ctx.font = `${tfs}px "IBM Plex Mono",monospace`; }
+  if(widest > slotW){ tfs = Math.max(12*s, Math.floor(tfs * slotW / widest)); ctx.font = `${tfs}px "IBM Plex Mono",monospace`; }
   ctx.fillStyle = textColor;
   ctx.textAlign = 'center';
   for(let i=0;i<=4;i++){
     const tx = x + (i/4)*w;
-    ctx.fillRect(tx-0.5, y+h, 2, 7);
-    ctx.fillText(tickVals[i], tx, y+h+31);
+    ctx.fillRect(tx-0.5*s, y+h, 2*s, 7*s);
+    ctx.fillText(tickVals[i], tx, y+h+31*s);
   }
-  // label — shrink the font if the text would run off the panel's right edge
+  // label — shrink (then ellipsize) so it can never run off the panel's right
+  // edge. The strip starts 42*s into a (w + 84*s) wide panel, so the space from
+  // the label's left edge to the panel border is w + 42*s.
   const lbl = `${bar.label}${bar.unit?' ['+bar.unit+']':''}`;
-  let fs = 21;
-  ctx.font = `600 ${fs}px "IBM Plex Mono",monospace`;
-  const availW = w + 36;
-  const tw = ctx.measureText(lbl).width;
-  if(tw > availW){ fs = Math.max(13, Math.floor(fs * availW / tw)); ctx.font = `600 ${fs}px "IBM Plex Mono",monospace`; }
+  const drawn = _cbFitLabel(ctx, lbl, w + 42*s, 21*s, 13*s);
   ctx.textAlign = 'left';
-  ctx.fillText(lbl, x, y-14);
+  ctx.fillText(drawn, x, y-14*s);
 }
 
 // Vertical variant: gradient runs bottom (min) → top (max), ticks + values to
 // the right of the strip, label rotated along the left side. Used for the 1-
 // and 2-colorbar screenshot layouts where a tall bar reads better than a wide
 // one. (x,y) is the top-left of the gradient strip; w/h its width/height.
-function drawColorbarVertical(ctx, bar, x, y, w, h, textColor){
+function drawColorbarVertical(ctx, bar, x, y, w, h, textColor, s=1){
   // gradient strip, top = max, bottom = min
   for(let py = 0; py < h; py++){
     const t = 1 - py/(h-1);
@@ -8888,11 +9537,11 @@ function drawColorbarVertical(ctx, bar, x, y, w, h, textColor){
     ctx.fillStyle = `rgb(${Math.round(c.r*255)},${Math.round(c.g*255)},${Math.round(c.b*255)})`;
     ctx.fillRect(x, y+py, w, 1);
   }
-  ctx.strokeStyle = textColor; ctx.lineWidth = 2;
+  ctx.strokeStyle = textColor; ctx.lineWidth = 2*s;
   ctx.strokeRect(x+0.5, y+0.5, w-1, h-1);
 
   // ticks (5) on the right edge
-  ctx.font = '20px "IBM Plex Mono",monospace';
+  ctx.font = `${20*s}px "IBM Plex Mono",monospace`;
   ctx.fillStyle = textColor;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
@@ -8900,32 +9549,50 @@ function drawColorbarVertical(ctx, bar, x, y, w, h, textColor){
     const t = i/4;                       // 0 = bottom (min) … 1 = top (max)
     const val = bar.min + t*(bar.max-bar.min);
     const ty = y + (1-t)*h;
-    ctx.fillRect(x+w, ty-0.5, 8, 2);
-    ctx.fillText(val.toFixed(Math.abs(val)<10?2:1), x+w+15, ty);
+    ctx.fillRect(x+w, ty-0.5*s, 8*s, 2*s);
+    ctx.fillText(val.toFixed(Math.abs(val)<10?2:1), x+w+15*s, ty);
   }
   ctx.textBaseline = 'alphabetic';
 
-  // label rotated 90° along the left side of the strip — shrink to fit its height
+  // label rotated 90° along the left side of the strip — shrink (then ellipsize)
+  // to fit the strip's height, which is the label's run length here
   const lbl = `${bar.label}${bar.unit?' ['+bar.unit+']':''}`;
   ctx.save();
-  ctx.translate(x-18, y+h/2);
+  ctx.translate(x-18*s, y+h/2);
   ctx.rotate(-Math.PI/2);
-  let fs = 21;
-  ctx.font = `600 ${fs}px "IBM Plex Mono",monospace`;
-  const availW = h + 40;
-  const tw = ctx.measureText(lbl).width;
-  if(tw > availW){ fs = Math.max(13, Math.floor(fs * availW / tw)); ctx.font = `600 ${fs}px "IBM Plex Mono",monospace`; }
+  const drawn = _cbFitLabel(ctx, lbl, h + 40*s, 21*s, 13*s);
   ctx.textAlign = 'center';
-  ctx.fillText(lbl, 0, 0);
+  ctx.fillText(drawn, 0, 0);
   ctx.restore();
 }
 
+// Panel geometry and fonts used to be FIXED pixel sizes while the export
+// resolution is free (applyExportSize renders at anything up to the screen's
+// native size). A 4K screenshot therefore got the same 195 px panel and 20 px
+// labels as a 1000 px one — a sliver with unreadable text next to the render.
+// Everything below is expressed in units of this factor instead, so the bar
+// keeps a constant RELATIVE size at any output resolution; the 1.35 is the
+// overall bump on top (July 2026: the labels were too small to read).
+const _CB_REF_H = 1000, _CB_BUMP = 1.35;
+function _cbScale(ch){ return Math.min(3, Math.max(0.8, ch/_CB_REF_H)) * _CB_BUMP; }
 // Computes the output dimensions needed to fit srcCanvas + a colorbar panel
-// for n selected bars. Returns {width, height, panelW, layout}.
+// for n selected bars. Returns {width, height, panelW, layout, s} — `s` is the
+// scale factor every drawing constant in compositeColorbarsOnto is multiplied
+// by, so the panel width and its contents can never disagree.
 function colorbarPanelDims(cw, ch, n){
-  if(n <= 0) return { width: cw, height: ch, panelW: 0, layout: 'none' };
-  if(n <= 2) return { width: cw + 195, height: ch, panelW: 195, layout: 'vertical' };
-  return { width: cw + 300, height: ch, panelW: 300, layout: 'horizontal' };
+  if(n <= 0) return { width: cw, height: ch, panelW: 0, layout: 'none', s: 1 };
+  let s = _cbScale(ch);
+  if(n <= 2){
+    // vertical: 88+70 margins, plus a 64 gap between two stacked bars — clamp so
+    // the strip itself always keeps a usable height on a short output canvas
+    s = Math.min(s, ch / (158 + (n === 2 ? 128 : 0)) * 0.9);
+    const panelW = Math.round(195*s);
+    return { width: cw + panelW, height: ch, panelW, layout: 'vertical', s };
+  }
+  // horizontal: 72 top offset + 112 per stacked bar must fit the canvas height
+  s = Math.min(s, ch / (72 + n*112));
+  const panelW = Math.round(300*s);
+  return { width: cw + panelW, height: ch, panelW, layout: 'horizontal', s };
 }
 
 // Draws srcCanvas plus the selected colorbars onto the destination 2D context.
@@ -8944,24 +9611,27 @@ function compositeColorbarsOnto(octx, srcCanvas, selectedBars){
   if(n === 0) return;
 
   octx.fillStyle = bg; octx.fillRect(cw, 0, dims.panelW, ch);
-  octx.strokeStyle = divider; octx.lineWidth = 1;
+  octx.strokeStyle = divider; octx.lineWidth = Math.max(1, dims.s);
   octx.beginPath(); octx.moveTo(cw+0.5, 0); octx.lineTo(cw+0.5, ch); octx.stroke();
 
+  // every constant below is in "reference pixels" — dims.s maps them onto the
+  // actual output resolution (see colorbarPanelDims)
+  const s = dims.s;
   if(dims.layout === 'vertical'){
-    const stripW = 38;
-    const marginTop = 88, marginBot = 70;
+    const stripW = 38*s;
+    const marginTop = 88*s, marginBot = 70*s;
     const slotH = (ch - marginTop - marginBot) / n;
-    const barH = slotH - (n === 2 ? 64 : 0);
-    const stripX = cw + 50;
+    const barH = slotH - (n === 2 ? 64*s : 0);
+    const stripX = cw + 50*s;
     selectedBars.forEach((bar, i) => {
-      drawColorbarVertical(octx, bar, stripX, marginTop + i*slotH, stripW, barH, text);
+      drawColorbarVertical(octx, bar, stripX, marginTop + i*slotH, stripW, barH, text, s);
     });
   } else {
-    const barW = dims.panelW - 84, barH = 20;
-    let yPos = 72;
+    const barW = dims.panelW - 84*s, barH = 20*s;
+    let yPos = 72*s;
     selectedBars.forEach(bar => {
-      drawColorbarPanel(octx, bar, cw+42, yPos, barW, barH, text, bg);
-      yPos += 112;
+      drawColorbarPanel(octx, bar, cw+42*s, yPos, barW, barH, text, bg, s);
+      yPos += 112*s;
     });
   }
 }

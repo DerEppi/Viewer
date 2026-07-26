@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taurus 3D Velocity Field — Viewer</title>
+<meta name="description" content="Interactive 3D viewer for the reconstructed velocity field of the Taurus molecular cloud complex.">
+<style>
+  :root{
+    --bg:#0c1220; --bg2:#121b2e; --border:#26456f; --text:#d0e0f8;
+    --text2:#93a9c9; --text3:#6b7f9e; --accent:#5aa9ff; --accent2:#7be0c8;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f4f7fc; --bg2:#ffffff; --border:#c7d5ea; --text:#1a2540;
+           --text2:#46587a; --text3:#7688a3; --accent:#1f6fd0; --accent2:#127a63; }
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; padding:3rem 1.25rem 4rem; background:var(--bg); color:var(--text);
+        font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main{ max-width:52rem; margin:0 auto; }
+  h1{ font-size:clamp(1.5rem,4vw,2.1rem); line-height:1.25; margin:0 0 .4rem;
+      letter-spacing:-.01em; }
+  .sub{ color:var(--text2); margin:0 0 2.5rem; }
+  .cards{ display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(17rem,1fr)); }
+  .card{ display:flex; flex-direction:column; background:var(--bg2);
+         border:1px solid var(--border); border-radius:10px; padding:1.25rem 1.25rem 1.1rem;
+         text-decoration:none; color:inherit; transition:border-color .15s, transform .15s; }
+  .card:hover{ border-color:var(--accent); transform:translateY(-2px); }
+  .card h2{ font-size:1.05rem; margin:0 0 .1rem; color:var(--accent); }
+  .badge{ font:600 11px/1 ui-monospace,monospace; letter-spacing:.06em;
+          text-transform:uppercase; color:var(--accent2); margin-bottom:.7rem; }
+  .card p{ margin:0 0 1rem; color:var(--text2); font-size:.92rem; flex:1; }
+  .meta{ font:12px/1.5 ui-monospace,monospace; color:var(--text3);
+         border-top:1px solid var(--border); padding-top:.7rem; }
+  section{ margin-top:3rem; }
+  section h3{ font-size:.95rem; text-transform:uppercase; letter-spacing:.08em;
+              color:var(--text3); margin:0 0 .6rem; }
+  ul{ margin:0; padding-left:1.2rem; color:var(--text2); font-size:.92rem; }
+  li{ margin:.3rem 0; }
+  footer{ margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border);
+          color:var(--text3); font-size:.85rem; }
+  a{ color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>3D velocity field of the Taurus molecular cloud complex</h1>
+  <p class="sub">Interactive viewer for a velocity field reconstructed from <em>Gaia</em> DR3
+  astrometry and radial velocities using Bayesian information field theory (NIFTy).
+  Runs entirely in the browser — no installation, nothing is uploaded.</p>
+
+  <div class="cards">
+    <a class="card" href="vectorfield_viewer_data.html">
+      <h2>Full version →</h2>
+      <div class="badge">recommended on desktop</div>
+      <p>Everything: the velocity field, the stellar sample, the Edenhofer 3D dust map
+      and all five resolution levels of the Local Bubble surface.</p>
+      <div class="meta">17 MB file · ≈5 MB transferred</div>
+    </a>
+
+    <a class="card" href="vectorfield_viewer_light.html">
+      <h2>Light version →</h2>
+      <div class="badge">faster to load</div>
+      <p>Same field and stellar data, but without the dust map and with only the two
+      coarsest Local Bubble levels. Best on a slow connection or a phone.</p>
+      <div class="meta">7 MB file · ≈1.5 MB transferred</div>
+    </a>
+  </div>
+
+  <section>
+    <h3>What you can do in the viewer</h3>
+    <ul>
+      <li>Rotate and fly through the reconstructed field; show it as vectors, cones or streamlines.</li>
+      <li>Switch the reference frame between heliocentric, the Taurus bulk motion, the LSR or a custom vector.</li>
+      <li>Colour field and stars by any quantity — velocity components, divergence, vorticity,
+          posterior uncertainty, stellar age, mass, extinction, RUWE, membership group.</li>
+      <li>Move the mask threshold to see how far the reconstruction is actually constrained by data.</li>
+      <li>Open 2D plots (histograms, scatter, colour–magnitude diagrams, power spectra) alongside the 3D view.</li>
+      <li>Export screenshots and videos with colorbars composited in.</li>
+    </ul>
+  </section>
+
+  <footer>
+    Part of a bachelor's thesis on the kinematics of the Taurus star-forming region.
+    Source: <a href="https://github.com/DerEppi/Viewer">github.com/DerEppi/Viewer</a>
+  </footer>
+</main>
+</body>
+</html>
