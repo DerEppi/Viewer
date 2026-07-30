@@ -129,6 +129,12 @@ def _find_asset(name):
 # Sonnenbewegung relativ zum LSR (Schönrich et al. 2010, U,V,W in km/s)
 SUN_MOTION_LSR = [11.1, 12.2, 7.3]
 
+# Bandbreiten-Faktor der KDE-Massendichte (scipy gaussian_kde bw_method-Skalar:
+# Kovarianz = Datenkovarianz · smooth²). Wandert als meta.kde in den Export, damit
+# der Viewer die Dichte LIVE neu rechnen kann (andere Bandbreite / nur bestimmte
+# Sterngruppen) und mit diesem Wert exakt die exportierte Dichte reproduziert.
+KDE_SMOOTH = 0.2
+
 
 # =============================================================================
 # Hilfsfunktionen
@@ -489,7 +495,7 @@ def process_field(cfg):
     # ── KDE-Dichte & Maske ────────────────────────────────────────────────────
     _kde_kw = dict(box_origin=BOX_ORIGIN, box_shape=BOX_SHAPE,
                    box_distances=BOX_DISTANCES,
-                   star_x=star_x, star_y=star_y, star_z=star_z, smooth=0.2)
+                   star_x=star_x, star_y=star_y, star_z=star_z, smooth=KDE_SMOOTH)
     density      = calculate_mask(**_kde_kw, masses=None)
     mass_density = calculate_mask(**_kde_kw, masses=mass)
     mask_level   = cfg.get("mask_level")
@@ -661,6 +667,20 @@ def process_field(cfg):
             # darunter sind über die DEFAULT-Maske gerechnet (Fallback; der
             # Viewer rechnet Auto-Ranges live über die aktuelle Maske).
             "mask_level":     float(mask_level),
+            # KDE-Rezept der Massendichte, damit der Viewer sie LIVE neu rechnen
+            # kann (Bandbreite umstellen, nur ausgewählte Sterngruppen gewichten).
+            # ⚠️ Das Auswertegitter von simple_functions.calculate_mask ist NICHT
+            # das Voxelgitter: np.mgrid legt `shape` Punkte INKLUSIVE beider Enden
+            # über [origin, origin+shape·distance], die Schrittweite ist dort also
+            # shape/(shape-1)·distance statt distance (xyz oben ist endpoint=False).
+            # origin/shape/distances gehen deshalb roh mit — der Viewer baut damit
+            # exakt dasselbe Gitter und reproduziert die exportierte Dichte.
+            "kde": {
+                "smooth":    float(KDE_SMOOTH),
+                "origin":    [float(v) for v in BOX_ORIGIN],
+                "shape":     [int(v) for v in BOX_SHAPE],
+                "distances": [float(v) for v in BOX_DISTANCES],
+            },
             "curl_min": round(curl_min,5), "curl_max": round(curl_max,5),
             "div_min":  round(div_min,5),  "div_max":  round(div_max,5),
             "std_min":  round(std_min,4),  "std_max":  round(std_max,4),

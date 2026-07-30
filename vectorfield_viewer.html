@@ -301,13 +301,17 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
    list (23 SigMA clusters) scrolls inside the window instead of growing it */
 #group-pop{display:none;position:fixed;z-index:80;pointer-events:auto;background:var(--bg2);
   border:1px solid var(--border2);border-radius:4px;padding:8px;box-shadow:0 4px 14px rgba(0,0,0,.4);
-  flex-direction:column;gap:6px;width:210px;}
-#group-pop .prow{display:flex;align-items:center;gap:6px;}
+  flex-direction:column;gap:6px;width:228px;}
+/* the tab row (Luhman / SigMA / Custom) must wrap under the label instead of
+   sticking out of the window when the third tab doesn't fit next to it */
+#group-pop .prow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 #group-pop label{font-size:8px;color:var(--text2);letter-spacing:.06em;flex-shrink:0;}
 #group-pop .tog{font-size:8px;padding:2px 7px;}
-.grp-fields{display:flex;gap:3px;}
+.grp-fields{display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end;min-width:0;}
 .grp-fields .tog{font-size:7px;padding:2px 6px;}
-.grp-list{display:flex;flex-direction:column;gap:1px;max-height:min(46vh,300px);overflow-y:auto;}
+/* padding-right keeps the star counts clear of the scrollbar (long SigMA list) */
+.grp-list{display:flex;flex-direction:column;gap:1px;max-height:min(46vh,300px);overflow-y:auto;
+  padding-right:7px;}
 .grp-row{display:flex;align-items:center;gap:5px;width:100%;font-family:inherit;font-size:8px;
   line-height:1;text-align:left;background:transparent;border:none;border-radius:2px;
   padding:3px 4px;color:var(--text2);cursor:pointer;}
@@ -316,6 +320,22 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
 .grp-box{width:9px;height:9px;flex:0 0 auto;border:1px solid var(--border2);border-radius:2px;
   font-size:7px;line-height:8px;text-align:center;color:var(--accent);}
 .grp-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* custom (user-drawn) group rows carry rename/delete buttons, so the row is a
+   div with a clickable span instead of one big button */
+.grp-hit{display:flex;align-items:center;gap:5px;flex:1;min-width:0;}
+.grp-mini{flex:0 0 auto;font-size:8px;line-height:1;padding:1px 3px;background:transparent;
+  border:none;color:var(--text3);cursor:pointer;border-radius:2px;}
+.grp-mini:hover{color:var(--accent);background:rgba(26,111,212,.15);}
+.grp-rename{flex:1;min-width:0;font-family:var(--mono);font-size:8px;background:var(--bg3);
+  color:var(--text);border:1px solid var(--border2);border-radius:2px;padding:1px 3px;outline:none;}
+/* drawing a new custom group: floating hint bar + rubber-band rectangle */
+#grpsel-bar{position:fixed;left:50%;transform:translateX(-50%);top:12px;z-index:90;display:none;
+  gap:8px;align-items:center;background:var(--bg2);border:1px solid var(--accent3);border-radius:4px;
+  padding:6px 10px;box-shadow:0 4px 14px rgba(0,0,0,.45);font-size:8px;color:var(--text2);
+  letter-spacing:.06em;pointer-events:auto;}
+#grpsel-bar .tog{font-size:8px;padding:2px 7px;}
+#grpsel-rect{position:fixed;display:none;z-index:89;pointer-events:none;
+  border:1px dashed var(--accent3);background:rgba(255,180,84,.10);}
 /* generic interactive colorbar (field/stream/cloud sidebar): draggable min/max
    handles overlaid on the colorbar strip, same as the star one. LINEAR only. */
 .cb-interactive{position:relative;}
@@ -404,14 +424,31 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
 #fitrange-pop label{width:46px;}
 #axrange-pop label{width:auto;}
 #pline-pop .tog:disabled{opacity:.65;cursor:default;}
-/* floating style-preset list (opened by the small "Style" button) */
-#style-pop{display:none;position:fixed;z-index:80;pointer-events:auto;background:var(--bg2);
+/* floating style-preset lists: the 2D plot presets (small "Style" button) and
+   the 3D viewer presets (#vstyle-btn in the header). Each row shows the preset's
+   prominent colours as a chip strip in front of its name. */
+#style-pop,#vstyle-pop{display:none;position:fixed;z-index:80;pointer-events:auto;background:var(--bg2);
   border:1px solid var(--border2);border-radius:4px;padding:4px;box-shadow:0 4px 14px rgba(0,0,0,.4);
   flex-direction:column;gap:2px;min-width:150px;}
-#style-pop button{font-family:var(--mono);font-size:8px;letter-spacing:.06em;text-align:left;
+#style-pop button,#vstyle-pop button{display:flex;align-items:center;gap:7px;width:100%;
+  font-family:var(--mono);font-size:8px;letter-spacing:.06em;text-align:left;
   padding:4px 8px;background:transparent;border:none;border-radius:2px;color:var(--text2);cursor:pointer;}
-#style-pop button:hover{background:rgba(26,111,212,.10);color:var(--text);}
-#style-pop button.on{color:var(--accent);background:rgba(26,111,212,.14);}
+#style-pop button:hover,#vstyle-pop button:hover{background:rgba(26,111,212,.10);color:var(--text);}
+#style-pop button.on,#vstyle-pop button.on{color:var(--accent);background:rgba(26,111,212,.14);}
+/* colour preview: a few chips in the preset's prominent colours */
+.sw-strip{display:inline-flex;gap:1px;flex:0 0 auto;border-radius:2px;overflow:hidden;
+  border:1px solid var(--border);}
+.sw-strip .sw{width:7px;height:11px;display:block;}
+#vstyle-btn{display:inline-flex;align-items:center;gap:6px;}
+/* editor for the "Custom" 3D style, shown INSIDE the style list while it is the
+   active preset: one swatch per colour, opening the shared colour picker */
+.vstyle-edit{display:flex;flex-direction:column;gap:2px;margin-top:3px;padding-top:4px;
+  border-top:1px solid var(--border2);}
+.vstyle-edit .vsr{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  font-family:var(--mono);font-size:8px;letter-spacing:.06em;color:var(--text2);padding:1px 8px;}
+.vstyle-edit .vsw{width:24px;height:12px;border:1px solid var(--border2);border-radius:2px;flex:0 0 auto;}
+#vstyle-pop .vstyle-edit button{width:auto;display:inline-flex;padding:1px 6px;font-size:7px;
+  border:1px solid var(--border2);border-radius:2px;}
 /* left column in the Color-by row: the field dropdown (+∅) with the colormap
    select directly beneath — the colorbar column keeps flowing to its right */
 .p-cleft{display:flex;flex-direction:column;gap:4px;flex:0 0 auto;min-width:0;}
@@ -497,7 +534,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
   <div id="sidebar-header">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
       <h1>Vector Field Viewer</h1>
-      <button class="tog on" id="tog-darkmode" onclick="toggleDarkMode()" style="flex-shrink:0;">☀ Light</button>
+      <!-- 3D style preset (July 2026, replaces the dark/light toggle): opens the
+           list of VIEWER_STYLES, each with a preview of its prominent colours -->
+      <button class="tog" id="vstyle-btn" onclick="toggleViewerStylePop(this)" style="flex-shrink:0;">Midnight</button>
     </div>
     <div style="font-size:7px;color:var(--text3);letter-spacing:.07em;margin-top:5px;line-height:1.9;"><span style="color:var(--text2)">H</span> or <span style="color:var(--text2)">?</span>  Help &nbsp;·&nbsp; <span style="color:var(--text2)">M</span>  Menu &nbsp;·&nbsp; <span style="color:var(--text2)">R</span>  Rotate</div>
     <div id="meta-info" style="display:none"></div>
@@ -539,6 +578,43 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
     </div>
 
 
+    <!-- Mask: the ONE place the KDE density behind the mask is configured
+         (cut level, bandwidth, which stars go in). It feeds field markers,
+         streamlines and the density cloud alike, hence its own section rather
+         than twin sliders in the Field and Cloud menus (July 2026). -->
+    <div class="ctrl-section" id="section-mask" style="display:none">
+      <div class="ctrl-title">Mask</div>
+      <div class="slider-row mask-level-row" data-type-set="setMaskLevelExact" data-type-get="_maskLevelTypeValue"
+           title="Threshold on the KDE mass density — voxels above it are the mask that field markers, streamlines and the density cloud live in. Double-click the read-out to type an exact level. ⟲ returns to the exported default.">
+        <label>Cut level</label>
+        <input type="range" id="mask-level" min="0" max="1000" value="667" oninput="setMaskLevel(+this.value/1000,this)">
+        <span class="slider-val" id="sv-maskLevel">–</span>
+        <button class="tog" onclick="resetMaskLevel()" style="flex:0 0 auto;padding:2px 5px;" title="Reset to the exported default level">⟲</button>
+      </div>
+      <div class="slider-row" id="mask-kde-row" style="gap:6px;margin-top:2px;"
+           title="Bandwidth of the Gaussian KDE the density is built from. 'Exported' reuses the values the export baked in; 'Custom' recomputes the density in the browser with the factor you set.">
+        <label class="sel-label">Bandwidth</label>
+        <select id="mask-kde-select" class="mini-select" onchange="setMaskKdeMethod(this.value)">
+          <option value="export">Exported</option>
+          <option value="manual">Custom</option>
+        </select>
+      </div>
+      <div class="slider-row" id="mask-bw-row" style="display:none"
+           title="Bandwidth factor: the KDE covariance is the sample covariance times this squared (the export used 0.20)">
+        <label>Factor</label>
+        <input type="range" id="mask-bw-range" min="2" max="200" value="20" oninput="setMaskKdeFactor(+this.value/100,this)">
+        <span class="slider-val" id="sv-maskKdeFactor">0.20</span>
+      </div>
+      <div class="slider-row" id="mask-groups-row" style="gap:5px;margin-top:2px;">
+        <label class="sel-label">Stars</label>
+        <button class="tog" id="mask-groups-btn" onclick="toggleGroupPop(this)" style="font-size:8px;padding:3px 8px;"
+          title="Star groups — the same selection the 3D view and the plots use">Groups</button>
+        <button class="tog" id="mask-usegroups-btn" onclick="toggleMaskUseGroups()" style="font-size:8px;padding:3px 8px;"
+          title="Build the KDE density from the currently shown groups only — the mask and the density cloud then describe just those stars">Apply to mask</button>
+      </div>
+      <div class="hint" id="mask-kde-info" style="margin-top:2px;">–</div>
+    </div>
+
     <div class="ctrl-section" id="section-field">
       <div class="ctrl-title">Field</div>
       <div class="toggle-row" style="margin-bottom:6px;">
@@ -577,12 +653,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
         <button class="tog" id="field-cb-reset" onclick="resetCbFilterSel('field')" style="margin-left:auto;display:none;" title="Reset the range handles to full">⟲ full</button>
       </div>
       <div class="slider-row cb-minmax" data-cbl="field"></div>
-      <div class="slider-row mask-level-row" title="Mask threshold on the exported KDE mass density — one shared level for field markers, streamlines and the density cloud (the twin slider in the Cloud menu moves along). ⟲ returns to the exported default level.">
-        <label>Mask level</label>
-        <input type="range" id="mask-level-field" min="0" max="1000" value="667" oninput="setMaskLevel(+this.value/1000,this)">
-        <span class="slider-val" id="sv-maskLevel-field">–</span>
-        <button class="tog" onclick="resetMaskLevel()" style="flex:0 0 auto;padding:2px 5px;" title="Reset to the exported default level">⟲</button>
-      </div>
       <div class="slider-row">
         <label>Size</label>
         <input type="range" min="5" max="120" value="40" oninput="setParam('arrowScale',+this.value/100,this)">
@@ -787,12 +857,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
         <input type="range" min="10" max="300" value="100" oninput="setParam('cloudStrength',+this.value/100,this)">
         <span class="slider-val" id="sv-cloudStrength">1.00</span>
       </div>
-      <div class="slider-row mask-level-row" title="Mask threshold on the exported KDE mass density — one shared level for the density cloud, field markers and streamlines (the twin slider in the Field menu moves along). ⟲ returns to the exported default level.">
-        <label>Mask level</label>
-        <input type="range" id="mask-level-cloud" min="0" max="1000" value="667" oninput="setMaskLevel(+this.value/1000,this)">
-        <span class="slider-val" id="sv-maskLevel-cloud">–</span>
-        <button class="tog" onclick="resetMaskLevel()" style="flex:0 0 auto;padding:2px 5px;" title="Reset to the exported default level">⟲</button>
-      </div>
     </div>
 
     <div class="ctrl-section" id="section-objects" style="display:none">
@@ -990,6 +1054,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
     <!-- floating style-preset list (shared by both plot windows, opened by the
          small "Style" button in the Type row; the button label never changes) -->
     <div id="style-pop"></div>
+    <div id="vstyle-pop"></div>
 
     <!-- Fit range: bounds for the fitted curve only. Shared by both plot
          windows (_fitRangeTarget), floating so neither panel grows. -->
@@ -1020,6 +1085,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
         <div id="group-pop-fields" class="grp-fields"></div>
       </div>
       <div id="group-pop-list" class="grp-list"></div>
+      <div class="prow" id="group-pop-new-row" style="display:none;">
+        <button class="tog" id="group-pop-new" onclick="startGroupSelect()"
+          title="Draw a new group: right-drag a box around stars (left-drag still rotates), click single stars to add or remove them, Enter creates the group">+ new group</button>
+      </div>
       <div class="prow" style="justify-content:space-between;">
         <span id="group-pop-info" style="font-size:8px;color:var(--text3);"></span>
         <span style="display:flex;gap:4px;">
@@ -1029,6 +1098,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
         </span>
       </div>
     </div>
+
+    <!-- drawing mode for a custom group (see startGroupSelect) -->
+    <div id="grpsel-bar">
+      <span id="grpsel-info">0 stars</span>
+      <span style="color:var(--text3);" id="grpsel-hint">right-drag = box · click = toggle</span>
+      <button class="tog" onclick="finishGroupSelect()" title="Create the group from the marked stars">✓ create</button>
+      <button class="tog" onclick="cancelGroupSelect()" title="Leave without creating a group">✕ cancel</button>
+    </div>
+    <div id="grpsel-rect"></div>
 
     <div id="star-info-popup">
       <div class="sip-head">
@@ -1320,7 +1398,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       <div class="toggle-row" style="flex:1;">
         <button class="tog on" id="fplot-type-hist" onclick="setPlotType('hist','field')">Histogram</button>
         <button class="tog" id="fplot-type-scatter" onclick="setPlotType('scatter','field')">Scatter 2D</button>
-        <button class="tog" id="fplot-type-power" onclick="setPlotType('power','field')" title="Spherically-averaged 3D FFT power spectrum P(k) — |v| → total kinetic-energy spectrum E(k), vx/vy/vz → that component's E_c(k) separately">Power spec.</button>
+        <button class="tog" id="fplot-type-power" onclick="setPlotType('power','field')" title="Spherically-averaged 3D FFT power spectrum P(k) — |v| → total kinetic-energy spectrum E(k), vx/vy/vz → that component's E_c(k) separately">Power spec. (test)</button>
         <button class="tog" id="fplot-style-btn" onclick="toggleStylePop('field',this)" style="margin-left:auto;" title="Plot style preset — opens the style list (current one marked)">Style</button>
         <button class="tog" id="fplot-grid-btn" onclick="togglePlotGrid('field')">Grid</button>
         <select id="fplot-style-select" style="display:none;" onchange="setPlotStyle(this.value,'field')">
@@ -1456,6 +1534,133 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
     <div id="help-body">
 
       <div class="help-section">
+        <div class="help-section-title">Navigation</div>
+        <table class="help-table">
+          <tr><td>Left drag</td><td>Rotate</td></tr>
+          <tr><td>Right drag</td><td>Pan</td></tr>
+          <tr><td>Scroll</td><td>Zoom in / out</td></tr>
+          <tr><td>+X / +Y / +Z / Iso</td><td>Snap camera to a preset viewpoint</td></tr>
+          <tr><td>Bookmarks</td><td>Save the current viewpoint by name (Camera section); click it to fly back.</td></tr>
+        </table>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Display — layer toggles</div>
+        <p>Turn each layer on or off. An active layer gets its own settings section below.</p>
+        <table class="help-table">
+          <tr><td>Field</td><td>The velocity field as markers at each grid point.</td></tr>
+          <tr><td>Streamlines</td><td>Lines / particles that follow the field.</td></tr>
+          <tr><td>Grid</td><td>The bounding box wireframe.</td></tr>
+          <tr><td>Axes</td><td>Labelled X/Y/Z axes with ticks.</td></tr>
+          <tr><td>Stars</td><td>The real stars (opens the Stars section).</td></tr>
+          <tr><td>Density Cloud</td><td>Glowing cloud of the stellar mass (or kinetic energy) density. <em>Strength</em> grows and brightens the points; <em>Intensity</em> is a gain on the alpha, not a 0–100 % opacity — above 1 it mainly lifts the faint outskirts.</td></tr>
+          <tr><td>Objects</td><td>Literature objects around Taurus (see <em>Reference Objects</em> at the end).</td></tr>
+          <tr><td>Style</td><td>Button in the header: colour presets for the 3D view, each shown with a preview of its colours. A preset sets the <em>background</em>, the three <em>axis colours</em> (and their labels), the <em>grid box</em>, the <em>label text</em> and the light/dark tint of the interface — nothing else; colormaps, star colours and the 2D plot windows keep their own settings. Screenshots and videos come out as shown.</td></tr>
+          <tr><td>Custom style</td><td>The last entry of that list is editable: pick it and the list grows a row per colour — <em>Background</em>, <em>X/Y/Z axis</em>, <em>Grid box</em>, <em>Labels</em> — each a swatch that opens the same colour picker used everywhere else in the viewer, applied live. <em>Interface</em> switches its panels between dark and light. It starts as a copy of the preset that was active when you picked it, and is saved with the other settings.</td></tr>
+        </table>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Reference Frame</div>
+        <p>Which velocity is subtracted from the field before display. All modes start from the same raw measurement.</p>
+        <table class="help-table">
+          <tr><td>Gaia (raw)</td><td>No subtraction — the field as measured, in the Sun's rest frame.</td></tr>
+          <tr><td>Taurus</td><td>Subtracts Taurus's bulk motion → internal motions relative to the cloud.</td></tr>
+          <tr><td>LSR</td><td>Subtracts the Sun's motion relative to the Local Standard of Rest (Schönrich et al. 2010).</td></tr>
+          <tr><td>Custom</td><td>Subtracts a velocity you type in (vx, vy, vz in km/s).</td></tr>
+        </table>
+        <p style="margin-top:4px;color:var(--text3);font-size:8px;">The PMRA/PMDec/RV components (Field → Show as) follow the selected frame too.</p>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Mask</div>
+        <p>The mask is the region the reconstruction is constrained in — a mass-weighted kernel-density estimate (KDE) of the stars, cut at a threshold. Field markers, streamline seeds and the density cloud are limited to it, hence its own section.</p>
+        <table class="help-table">
+          <tr><td>Cut level</td><td>Threshold on the KDE density; updates the view live while dragging. The read-out shows the level and the surviving voxel count — <strong>double-click it to type an exact level</strong>. ⟲ returns to the exported default. Auto colorbar ranges follow the mask; the total-energy read-out deliberately stays on the fixed default mask so it remains comparable.</td></tr>
+          <tr><td>Bandwidth</td><td>Width of the KDE kernel, as the factor the sample covariance is scaled by: <em>Exported</em> reuses the exported density verbatim (factor 0.20), <em>Custom</em> puts the factor on a slider and recomputes the density in the browser — smaller resolves single clumps, larger smooths the complex into one blob.</td></tr>
+          <tr><td>Stars</td><td><em>Groups</em> opens the Star groups window; <em>Apply to mask</em> then builds the KDE from the shown groups only (e.g. one SigMA cluster). Fewer than four stars can't define a density — the last one is kept and the status line says so.</td></tr>
+        </table>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Field</div>
+        <table class="help-table">
+          <tr><td>Velocity / Curl / Div / Std</td><td>Which quantity the markers show: velocity, curl (rotation), divergence (expansion/contraction) or local spread. Streamlines always follow the velocity.</td></tr>
+          <tr><td>Show as</td><td>Vector = markers pointing along the field; magnitude or a single X/Y/Z (or PMRA/PMDec/RV) component = coloured scalar markers.</td></tr>
+          <tr><td>Marker shape</td><td>Button next to <em>Show as</em>: arrows ↔ cones for vectors, crosses ↔ diamonds for scalars. Each mode remembers its own shape.</td></tr>
+          <tr><td>Size</td><td>Size of the markers.</td></tr>
+          <tr><td>Subsample</td><td>Draw only every Nth marker (1 = all) — less clutter, faster.</td></tr>
+          <tr><td>Hover / Click</td><td>Hover shows a marker's value; click opens the full voxel record in the active reference frame.</td></tr>
+          <tr><td>Mask</td><td>Which voxels carry markers is set in the <em>Mask</em> section, not here.</td></tr>
+        </table>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Streamlines</div>
+        <table class="help-table">
+          <tr><td>Random seeds</td><td>Static lines from random starting points; opacity shows local speed.</td></tr>
+          <tr><td>Animated</td><td>Particles flowing along the field — faster where the field is stronger.</td></tr>
+          <tr><td>Count</td><td>How many streamlines / particles to show.</td></tr>
+          <tr><td>Reach</td><td>Line length and how far lines run outside the mask (negative = shorter, inside only).</td></tr>
+          <tr><td>Opacity</td><td>Transparency of the streamlines.</td></tr>
+          <tr><td>Anim. speed</td><td>Playback speed in animated mode.</td></tr>
+        </table>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Stars</div>
+        <table class="help-table">
+          <tr><td>Display mode</td><td>The button at the top cycles <em>Dots</em> → <em>UVW vectors</em> (full 3D velocity, needs a measured rv) → <em>PM vectors</em> (tangential velocity from the proper motion alone, rv set to 0 — available for every star).</td></tr>
+          <tr><td>Marker / Vector size</td><td>In a vector mode: shape (arrow with shaft ↔ plain cone) and length scale. Arrow length always encodes the speed.</td></tr>
+          <tr><td>Mask</td><td>Which stars are shown: All stars / Has RV / RV used in inference — applies to dots and both vector modes.</td></tr>
+          <tr><td>Color by</td><td>Property the stars are coloured by (age, rv, group, … or <em>Uniform</em> with a colour picker) — the same in all three display modes. The speeds are just two of the fields: <em>Velocity magnitude (UVW)</em> and <em>(PM only)</em>. Stars without a value are grey; the <strong>∅</strong> button hides them.</td></tr>
+          <tr><td>Membership fields</td><td><em>Luhman</em> / <em>SigMA</em> / <em>Custom group</em> are categorical: every group gets its own colour and a legend (swatch, name, count) replaces the colorbar.</td></tr>
+          <tr><td>Groups</td><td>Opens the shared <strong>Star groups</strong> window (same one from the Stars section, the star plot window and Mask): which groups are visible. Hiding a group removes its stars from the 3D view, both 2D plots and every count and auto range at once. The tabs at the top pick the grouping, <em>all</em> / <em>none</em> set everything; the button is marked ● while a filter is active. Saved between sessions.</td></tr>
+          <tr><td>Custom groups</td><td>Third tab of that window — groups you draw yourself. <em>+ new group</em> switches to selection mode: <strong>right-drag</strong> a box (left-drag still rotates), <strong>click</strong> a star to add/remove it, <strong>Enter</strong> creates, <strong>Esc</strong> leaves (and only the selection). Started from the star plot window it is drawn in <em>that</em> plot: in a scatter as a box over the points, in a histogram over the <strong>bars</strong> — a click takes a whole bar, a right-drag sweeps several, and the marked share of every bar is shown in the marker colour. Rename ✎ / delete ✕ in the window. Saved by Gaia source ID.</td></tr>
+          <tr><td>Overlapping groups</td><td>Custom groups may overlap — a new group no longer takes its stars from the older ones. A star stays visible as long as <em>any</em> group it belongs to is shown, and every group's row counts all of its stars. For the colour and the legend one name has to win: that is the newest group the star is in.</td></tr>
+          <tr><td>Find ID</td><td>Flies the camera to a star by Gaia source ID (several comma-separated) and marks it with an orange ring. Clicking a star opens its full data card.</td></tr>
+          <tr><td>Noise estimate η</td><td>Per-star rv noise factor of the inference: the fit used σ<sub>eff</sub> = σ<sub>rv</sub>·√η, so η ≈ 1 means "rv error as quoted", η ≫ 1 means the rv was down-weighted (possible outlier/binary). Only for stars whose rv entered the fit; colour in 3D with <em>log₁₀ η</em> (η is heavy-tailed). The <em>Residuals</em> group also has residuals in units of σ and, for rv, of σ·√η.</td></tr>
+        </table>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Colorbars &amp; value ranges</div>
+        <p>Every colorbar (Field, Streamlines, Cloud, Stars, and the 2D plots) carries the same controls.</p>
+        <table class="help-table">
+          <tr><td>Range handles</td><td>Drag the two handles to show only objects inside that value range. The <em>hidden/greyed</em> button picks what happens to the rest; ⟲ or a double-click resets.</td></tr>
+          <tr><td>min / max</td><td>Clamp the colour scale by hand (blank = auto for that end). <em>⇄</em> reverses the scale, <em>Auto</em> returns both ends to the data, <em>⤓</em> adopts the current handle window as min/max (it then spreads over the whole colormap and the handles reset).</td></tr>
+          <tr><td>∅</td><td>Objects without a value are never touched by the range handles — this button shows them grey or hides them.</td></tr>
+          <tr><td>Strip</td><td>The thin band under each colorbar sketches how the values are distributed along the scale.</td></tr>
+        </table>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Data &amp; Field plots (2D)</div>
+        <p>Two floating windows: <strong>◱ Data plots</strong> (Stars section — the real stars) and <strong>◱ Field plots</strong> (Field section — the mask voxels, live in the active frame). Both can be open at once and are drawn into PNG/PDF exports as shown.</p>
+        <table class="help-table">
+          <tr><td>Histogram</td><td>Distribution of one field. Left-drag selects an x-range (data and axis are cropped), right-drag pans, wheel zooms. <em>Fit</em> overlays Gauss / Log-norm / Power law / Exp / KDE — formula below the plot, parameters inside it.</td></tr>
+          <tr><td>Fit range</td><td>Button at the right end of the <em>Fit</em> row: restricts the fit to an x-range while the <strong>whole histogram stays drawn</strong> (fit a core, judge the tails). Type the bounds or take them <em>from lines</em> / <em>from axis</em>; one bound is enough. The excluded part is dimmed, so a restricted fit is recognizable in exports. Changing the field clears the bounds.</td></tr>
+          <tr><td>Scatter 2D</td><td>Two fields against each other, optionally coloured by a third. Wheel zooms, drag pans (right-drag: x only), double-click resets. Click a star point to pin it; pinned IDs can be copied.</td></tr>
+          <tr><td>Axis range ⋯</td><td>The <em>⋯</em> box in each axis row (scatter only) opens a min/max editor; an active override shows as <em>mn–mx</em>. Zoom/pan works on top — <em>⟲ full range</em> / double-click returns to these ends.</td></tr>
+          <tr><td>⟲ (axis)</td><td>Left of each axis dropdown: resets manual range, log and flip of that axis (histogram x also the drag-selected range).</td></tr>
+          <tr><td>⇄ / log</td><td>Per-axis flip and log scale. Log only engages for strictly positive data; an active log axis is marked <em>(log)</em> in its label.</td></tr>
+          <tr><td>Color by</td><td>Same controls as the 3D colorbars: range handles, <em>hidden/greyed</em>, min/max row with ⇄ / ⤓ / Auto, and the <strong>∅</strong> button.</td></tr>
+          <tr><td>Groups</td><td>(Star window) Opens the same <strong>Star groups</strong> window the 3D view uses. Starting <em>+ new group</em> from here draws in <strong>this plot</strong>: a box over the points in the scatter, or bar by bar in the histogram (click = one bar, right-drag = several). Switching between the two mid-drawing keeps what is already marked.</td></tr>
+          <tr><td>Star positions</td><td>Galactic x/y/z [pc] are available as plot axes and colour field (2D only — in 3D they would just paint a gradient).</td></tr>
+          <tr><td>Power spec.</td><td>(Field window) Spherically averaged 3D FFT power spectrum, log-log on logarithmic k-shells. <em>|v|</em> = total E(k) = ½ Σ|FFT(v<sub>c</sub>)|², <em>vx/vy/vz</em> = that component's E<sub>c</sub>(k) (they sum to the total), scalars = |FFT(f)|². <em>+ spectrum</em> overlays another field as a second curve, <em>✕ all</em> clears them. (Binning and slope lines follow Hutschenreuter et al. 2026.)</td></tr>
+          <tr><td>Lines</td><td><em>+ line</em> adds a dashed reference line: one value field with an <em>x =</em> / <em>y =</em> toggle and a colour. In the power spectrum it is a <strong>slope line</strong> instead (value = log-log slope, default Kolmogorov −11/3), drawn through the low-k end. Chips next to the button edit or remove single lines, <em>✕ all</em> removes all. Each mode keeps its own set; lines follow zoom/flip/log and appear in exports.</td></tr>
+          <tr><td>Isochrones</td><td>(Star window) In a colour-magnitude diagram (<em>BP−RP</em> or <em>G−RP</em> vs <em>abs. G mag</em>) an <em>Isochrones</em> row appears: <em>+ isochrone</em> overlays a pre-main-sequence isochrone of a chosen age (0.5–15 Myr), colour-coded and labelled in a legend. Curves from BHAC15 (Baraffe et al. 2015, Gaia bands).</td></tr>
+          <tr><td>Style</td><td>Button next to <em>Grid</em>: preset list for the 2D plots (theme, seaborn, matplotlib-light, …). Colormap sits under <em>Color by</em>; grid, bin count and plot colour keep their rows.</td></tr>
+        </table>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Screenshot &amp; video</div>
+        <p>The ⬇ button opens the screenshot panel. Only the 3D field is captured — never the sidebar or HUD. Colorbars can be attached to the right edge; unchecking everything exports the plain render.</p>
+        <p style="margin-top:4px;">The 360° video can instead fly through your camera bookmarks (<em>Camera path → Bookmark tour</em>): tick at least two bookmarks (visited in list order); the duration slider sets the seconds per leg.</p>
+      </div>
+
+      <div class="help-section">
         <div class="help-section-title">Loaded Result</div>
         <p>The dataset currently embedded in this file: <strong><span id="meta-info-modal">No data loaded</span></strong><span id="data-filename-modal"></span></p>
         <p style="margin-top:4px;color:var(--text3);font-size:8px;">Verification if this matches the result intended to visualise.</p>
@@ -1469,119 +1674,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
 
       <div class="help-section">
         <div class="help-section-title">Reference Objects</div>
-        <p>Real astronomical objects around Taurus, shown for spatial context. They sit <em>outside</em> the grid (zoom out to see them) and are coarse literature positions — not part of the reconstruction. Sources: star-forming regions from Zhou, Li &amp; Chen (2025); Musca/CrA/Pipe from Zucker et al. (2020, 2021); Per-Tau shell (centre + radius) from Bialy et al. (2021); Orion-Eridanus superbubble approximated after Joubaud et al. (2020) and Pon et al. (2014, 2016); Local Bubble surface from Pelgrims et al. (2020); dust map from Edenhofer et al. (2024).</p>
+        <p>Real astronomical objects around Taurus, shown for spatial context. They sit <em>outside</em> the grid (zoom out to see them) and are coarse literature positions — not part of the reconstruction. Sources: star-forming regions from Zhou, Li &amp; Chen (2025); Musca/CrA/Pipe from Zucker et al. (2020, 2021); Per-Tau shell from Bialy et al. (2021); Orion-Eridanus after Joubaud et al. (2020) and Pon et al. (2014, 2016); Local Bubble from Pelgrims et al. (2020); dust map from Edenhofer et al. (2024).</p>
         <table class="help-table">
-          <tr><td>Labels</td><td>Object names in 3D. The <em>Label size</em> slider scales them from 1× to 5× — turn it up to keep names readable when zoomed out to the Local Bubble or dust map.</td></tr>
+          <tr><td>Labels</td><td>Object names in 3D. The <em>Label size</em> slider scales them 1×–5× — turn it up to keep names readable when zoomed out.</td></tr>
           <tr><td>Sun</td><td>The Sun, at the origin (0, 0, 0).</td></tr>
           <tr><td>Taurus</td><td>Taurus's catalogue position and velocity as a single point (the grid itself is the full reconstruction).</td></tr>
           <tr><td>Regions</td><td>Nearby star-forming regions (Lupus, Ophiuchus, Chamaeleon, Perseus, Orion, λ Ori) as points, with optional velocity arrows.</td></tr>
           <tr><td>+ Musca/CrA/Pipe</td><td>Three more nearby clouds — position only, no velocity data.</td></tr>
           <tr><td>Per-Tau Shell</td><td>A spherical shell (radius ~78 pc) between Perseus and Taurus.</td></tr>
-          <tr><td>Orion-Eridanus</td><td>A rough stand-in ellipsoid for the Orion-Eridanus superbubble — illustrative shape only, no agreed geometry exists.</td></tr>
+          <tr><td>Orion-Eridanus</td><td>A rough stand-in ellipsoid for the superbubble — illustrative shape only, no agreed geometry exists.</td></tr>
           <tr><td>Local Bubble</td><td>The irregular dust-traced cavity around the Sun. The detail slider picks its resolution.</td></tr>
-          <tr><td>Dust map</td><td>Local 3D dust density around the Sun (Edenhofer 2024) as a soft cloud. Opacity/size sliders adjust it.</td></tr>
+          <tr><td>Dust map</td><td>Local 3D dust density around the Sun as a soft cloud. Opacity/size sliders adjust it.</td></tr>
         </table>
-      </div>
-
-      <div class="help-section">
-        <div class="help-section-title">Navigation</div>
-        <table class="help-table">
-          <tr><td>Left drag</td><td>Rotate</td></tr>
-          <tr><td>Right drag</td><td>Pan</td></tr>
-          <tr><td>Scroll</td><td>Zoom in / out</td></tr>
-          <tr><td>+X / +Y / +Z / Iso</td><td>Snap camera to preset viewpoint</td></tr>
-          <tr><td>Bookmarks</td><td>Save the current viewpoint under a name (Camera section) and click it to fly back to it anytime.</td></tr>
-        </table>
-      </div>
-
-      <div class="help-section">
-        <div class="help-section-title">Display</div>
-        <p>Turn each layer on or off. Each has its own settings section below when active.</p>
-        <table class="help-table">
-          <tr><td>Field</td><td>The velocity field as arrows / cones (or crosses / diamonds) at each grid point.</td></tr>
-          <tr><td>Streamlines</td><td>Lines / particles that follow the field.</td></tr>
-          <tr><td>Grid</td><td>The bounding box wireframe.</td></tr>
-          <tr><td>Axes</td><td>Labelled X/Y/Z axes with ticks.</td></tr>
-          <tr><td>Stars</td><td>The real stars as spheres (opens the Star coloring panel).</td></tr>
-          <tr><td>Density Cloud</td><td>A soft glowing cloud of the stellar mass (or kinetic energy) density. <em>Intensity</em> is a gain on the cloud's alpha, not a 0–100% opacity: each point's alpha is (radial glow × density) × intensity, which stays well below 1 nearly everywhere — so values above 1 mainly lift the faint outskirts while the dense cores saturate. <em>Strength</em> grows the points and brightens faint regions together.</td></tr>
-          <tr><td>Objects</td><td>The literature reference objects around Taurus (see above).</td></tr>
-        </table>
-      </div>
-
-      <div class="help-section">
-        <div class="help-section-title">Reference Frame</div>
-        <p>Chooses which velocity is subtracted from the field (arrows, streamlines, magnitude) before display. All four modes start from the same raw, heliocentric (Gaia) measurement — they only differ in what gets subtracted.</p>
-        <table class="help-table">
-          <tr><td>Gaia (raw)</td><td>No subtraction — the field as measured, in the Sun's rest frame.</td></tr>
-          <tr><td>Taurus</td><td>Subtracts Taurus's own bulk motion, leaving the internal motions relative to the cloud.</td></tr>
-          <tr><td>LSR</td><td>Subtracts the Sun's motion relative to the Local Standard of Rest (Schönrich et al. 2010).</td></tr>
-          <tr><td>Custom</td><td>Subtracts a velocity you type in (vx, vy, vz in km/s).</td></tr>
-        </table>
-        <p style="margin-top:4px;color:var(--text3);font-size:8px;">The PMRA/PMDec/RV extra components (under Velocity → Show as) follow the selected reference frame too.</p>
-      </div>
-
-      <div class="help-section">
-        <div class="help-section-title">Streamlines</div>
-        <table class="help-table">
-          <tr><td>Random seeds</td><td>Static lines traced from random starting points; opacity shows local speed.</td></tr>
-          <tr><td>Animated</td><td>Particles flowing along the field — faster where the field is stronger.</td></tr>
-          <tr><td>Count</td><td>How many streamlines / particles to show.</td></tr>
-          <tr><td>Reach</td><td>Line length and how far streamlines extend outside the mask (negative = shorter, inside only; positive = longer, reaching outside).</td></tr>
-          <tr><td>Opacity</td><td>Transparency of the streamlines.</td></tr>
-          <tr><td>Anim. speed</td><td>Playback speed in animated mode.</td></tr>
-        </table>
-      </div>
-
-      <div class="help-section">
-        <div class="help-section-title">Field</div>
-        <table class="help-table">
-          <tr><td>Velocity/Curl/Div/Std</td><td>Which quantity to show: the velocity field, its curl (rotation), divergence (expansion/contraction), or local spread. Streamlines always follow the velocity.</td></tr>
-          <tr><td>Show as</td><td>Vector = markers pointing along the field; Magnitude or a single X/Y/Z component = coloured scalar markers instead.</td></tr>
-          <tr><td>Marker shape</td><td>The button next to <em>Show as</em> switches the shape: vector views between <em>Arrows</em> (shaft + head) and <em>Cones</em>, scalar views between <em>Crosses</em> and <em>Diamonds</em>. Each mode remembers its own shape.</td></tr>
-          <tr><td>Mask level</td><td>Threshold on the exported KDE mass density that defines the voxel mask. The slider spans two decades below to one decade above the exported default (a decade higher, the mask is already empty) and updates the view live as you drag. ONE shared level controls the field markers, the streamline region and the density cloud — the twin sliders in the Field and Cloud menus are linked and move together. Auto colorbar ranges rescale to the current mask (manual min/max stay put); ⟲ returns to the exported default. The total-energy readout deliberately keeps the FIXED default mask so its value stays comparable and box-edge artefacts never enter the sum.</td></tr>
-          <tr><td>Size</td><td>Size of the markers.</td></tr>
-          <tr><td>Subsample</td><td>Draw only every Nth marker (1 = all). Higher = less clutter, faster.</td></tr>
-          <tr><td>Hover / Click</td><td>Hovering a marker shows its current value; clicking it opens a card with all of that voxel's values (velocity, pm/RV, divergence, curl, densities) in the active reference frame.</td></tr>
-          <tr><td>Colorbar strip</td><td>The thin band under each colorbar sketches how the values are distributed along the scale.</td></tr>
-          <tr><td>Range handles</td><td>Drag the two handles on the Field / Streamlines / Cloud / Stars colorbars to show only objects within that value range. The <em>hidden/greyed</em> button picks what happens to the rest; ⟲ or a double-click resets.</td></tr>
-          <tr><td>min / max</td><td>Clamp the colour scale by hand (blank = auto for that end). <em>⇄</em> reverses the scale, <em>Auto</em> returns both ends to the data. <em>⤓</em> takes the current range-handle window as the new min/max — the selected window then spreads over the whole colormap and the handles reset to full. Every colorbar has this row, the 2D plots included.</td></tr>
-        </table>
-      </div>
-
-      <div class="help-section">
-        <div class="help-section-title">Stars</div>
-        <p>Appears when <em>Stars</em> is active. Choose a field from the <em>Color by</em> dropdown to color stars by that property (age, rv, pmra, …). A colorbar shows the min/max range. Stars <strong>without</strong> a value for that field are drawn grey; the <strong>∅</strong> button next to the dropdown hides them (and brings them back). The colorbar's range handles never touch them — they filter only stars that do have a value.</p>
-        <p style="margin-top:4px;"><strong>Luhman group</strong> and <strong>SigMA group</strong> (the <em>Membership</em> group of the dropdown) are <em>categorical</em> colour fields: instead of a colorbar every group gets its own colour and a legend below the dropdown names them (swatch, name, star count). Stars in no group carry no value and follow the <strong>∅</strong> button.</p>
-        <p style="margin-top:4px;">Which groups are <em>shown</em> is set separately, in the <strong>Groups</strong> window (button at the end of this section, and in the star plot window — it is the same window). Tick a group off and its stars disappear from the 3D view, from both 2D plots and from every count and auto colour range at once, so you can compare group properties: colour by <em>age</em> or <em>rv</em> and leave only two clusters visible. The switch at the top picks whether the filter works on the Luhman or the SigMA grouping; <em>all</em> / <em>none</em> set everything at once, and the button is marked ● while a filter is narrowing the sample. The selection is saved between sessions, like the Mask dropdown.</p>
-        <p style="margin-top:4px;">The button at the top of the section cycles the star display through three modes: <strong>Dots</strong>, <strong>UVW vectors</strong> (the full 3D velocity as a 3D arrow — needs a measured radial velocity) and <strong>PM vectors</strong> (tangential velocity from the proper motion alone, radial velocity set to zero — shown for every star with a proper motion, no RV needed). In either vector mode a <strong>Marker</strong> button switches the shape between arrows (shaft + head) and plain cones, and the <strong>Vector size</strong> slider scales either shape. The <strong>Mask</strong> dropdown (All stars / Has RV / RV used in inference) filters which stars are shown — it applies to the dots and both vector modes. <strong>Colour works the same in all three modes:</strong> the arrows are coloured by whatever <em>Color by</em> field is selected (age, rv, group, …), not automatically by speed — including <em>Uniform</em>, whose colour picker stays available in the vector modes. The speeds are simply two of the fields: <em>Velocity magnitude (UVW)</em> and <em>Velocity magnitude (PM only)</em>, one per vector mode; picking the matching one reproduces the old speed colouring. Arrow LENGTH always encodes the speed.</p>
-        <p style="margin-top:4px;"><strong>Find ID</strong> (end of the section) flies the camera to a star by its Gaia source ID (several IDs comma-separated) and marks it with an orange ring; clicking a star opens its full data card.</p>
-        <p style="margin-top:4px;"><strong>Noise estimate η</strong> is the per-star rv noise factor of the Bayesian inference (inverse-gamma prior): the fit worked with the inflated uncertainty σ<sub>eff</sub> = σ<sub>rv</sub>·√η, so η ≈ 1 means "rv error as quoted", η ≫ 1 means the rv had to be down-weighted (potential outlier/binary). Only stars whose rv entered the fit carry a value; use <em>log₁₀ η</em> for 3D colouring (η is heavy-tailed). The <em>Residuals</em> group also offers the residuals in units of the measurement error ("/ σ") and, for rv, of the η-inflated error ("/ σ·√η").</p>
-      </div>
-
-      <div class="help-section">
-        <div class="help-section-title">Data &amp; Field plots (2D)</div>
-        <p>Two floating plot windows: <strong>◱ Data plots</strong> (Stars section — the real stars) and <strong>◱ Field plots</strong> (Field section — the mask voxels, live in the active reference frame). Both can be open at once and are drawn into PNG/PDF exports exactly as shown.</p>
-        <table class="help-table">
-          <tr><td>Histogram</td><td>Distribution of one field. Left-drag selects an x-range (only that data is shown and fitted), right-drag pans it, the wheel zooms it. <em>Fit</em> overlays Gauss / Log-norm / Power law / Exp / KDE — the formula appears below the plot, the fitted parameters inside it.</td></tr>
-          <tr><td>Fit range</td><td>The button at the right end of the <em>Fit</em> row restricts the fit to an x-range while the <strong>whole histogram stays drawn</strong> — the way to fit a core and then judge the tails against it (the drag-selection, in contrast, crops the data and the axis). Type the bounds, take them from two vertical reference lines (<em>from lines</em>) or from the visible axis (<em>from axis</em>); one bound is enough, the open end follows the axis. The excluded part is dimmed and the bounds are marked, so a restricted fit is recognizable in PNG/PDF exports; the line under the plot reports how many values were fitted. <em>auto</em> returns to the full range. Changing the plotted field clears the bounds (they are in its units). Like every small popup in the viewer, <strong>Enter</strong> applies what you typed and closes it, <strong>Esc</strong> closes without applying.</td></tr>
-          <tr><td>Scatter 2D</td><td>Two fields against each other, optionally coloured by a third. Wheel zooms, drag pans (right-drag: x only), double-click resets. Click a star point to pin it; pinned IDs can be copied.</td></tr>
-          <tr><td>Axis range ⋯</td><td>The small <em>⋯</em> box in each axis row (scatter only, left of ⇄/log) opens a min/max editor: ↑/↓/Tab (or ←/→ at a field's edge) hop between the two values, <strong>Enter</strong> applies both, Esc/outside click discards. An active override shows as <em>mn–mx</em> in the box. Zoom/pan still works on top — <em>⟲ full range</em> / double-click returns to these ends; changing the axis field clears its pair.</td></tr>
-          <tr><td>⟲ (axis)</td><td>The circular arrow left of each axis dropdown resets everything about that axis: manual range, log and flip (for the histogram x also the drag-selected range).</td></tr>
-          <tr><td>Groups</td><td>(Star window, next to <em>Mask</em>) Opens the shared <strong>Star groups</strong> window — which Luhman / SigMA groups are visible. It is a floating window rather than an inline list so this panel keeps its height, and the selection is the same one the 3D view uses.</td></tr>
-          <tr><td>Color by</td><td>The colour field gets the same controls as the 3D colorbars: two range handles (<em>hidden/greyed</em> for the rest), a min/max row directly under the colorbar with <em>⇄</em>, <em>⤓</em> (adopt the handle window) and <em>Auto</em>, and the <strong>∅</strong> button — points with no value for that field are grey, ∅ hides them.</td></tr>
-          <tr><td>Star positions</td><td>The stars' galactic coordinates x/y/z [pc] are available as plot axes and as a colour field (2D windows only — in 3D they would just paint a gradient across the scene).</td></tr>
-          <tr><td>Power spec.</td><td>(Field window) Spherically averaged 3D FFT power spectrum, always log-log, on logarithmically spaced k-shells (smooth curves, Hutschenreuter et al. 2026 style). <em>|v|</em> gives the total kinetic-energy spectrum E(k) = ½ Σ|FFT(v<sub>c</sub>)|²; <em>vx/vy/vz</em> give that component's E<sub>c</sub>(k) separately (they sum to the total); scalar fields give their power |FFT(f)|². <em>+ spectrum</em> overlays another field's spectrum as an extra colour-coded curve (a legend then names each curve) — compare vx/vy/vz/|v| on one plot; <em>✕ all</em> clears the overlays.</td></tr>
-          <tr><td>⇄ / log</td><td>Per-axis flip and log-scale toggles. Log only engages for strictly positive data; an active log axis is marked <em>(log)</em> in its axis label.</td></tr>
-          <tr><td>Lines</td><td><em>+ line</em> adds a dashed reference line and opens its settings: ONE value field with an <em>x =</em>/<em>y =</em> toggle to its left, colour via the colour picker (empty hex = auto). In the power spectrum the line is a <strong>slope line</strong> instead (value = the log-log slope, default Kolmogorov −11/3), drawn through the spectrum's low-k end — Hutschenreuter et al. 2026 style. Closing leaves a <em>lineN</em> chip next to the button — click it to edit again, ✕ inside removes one line, <em>✕ all</em> (far right) removes all. Every mode keeps its own line set. Lines follow zoom/flip/log and appear in exports.</td></tr>
-          <tr><td>Isochrones</td><td>(Star window) In a colour-magnitude diagram — a scatter with <em>BP−RP</em> or <em>G−RP</em> on x and <em>abs. G mag</em> on y — an <em>Isochrones</em> row appears. <em>+ isochrone</em> overlays a BHAC15 pre-main-sequence isochrone (Baraffe et al. 2015, Gaia bands) of a chosen age (0.5–15 Myr) as a colour-coded curve; a chip lets you change the age/colour, <em>✕ all</em> clears them. The curves follow the axis flip/log/zoom and are labelled in a legend, so they carry into PNG/PDF exports. The legend (this one and the spectrum-overlay one) is placed in whichever corner of the plot holds the fewest points, decided once from the full view — it stays put while you zoom or pan.</td></tr>
-          <tr><td>Style</td><td>The small <em>Style</em> button next to <em>Grid</em> opens the preset list (theme, seaborn, matplotlib-light, …; the active one is marked). The colormap select sits directly under the <em>Color by</em> dropdown; grid toggle, bin count and plot colour keep their rows.</td></tr>
-        </table>
-      </div>
-
-      <div class="help-section">
-        <div class="help-section-title">Screenshot</div>
-        <p>Click the ⬇ button to open the screenshot panel. Only the 3D field is captured — never the sidebar or HUD buttons. Optionally attach colorbars to the right edge of the image. Unchecking everything exports the plain render.</p>
-        <p style="margin-top:4px;">The 360° video can instead fly through your camera bookmarks (<em>Camera path → Bookmark tour</em>): tick which bookmarks to include (at least 2, visited in list order); the duration slider then sets the seconds per bookmark-to-bookmark leg.</p>
       </div>
 
       <div class="help-section">
@@ -1604,9 +1708,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
 let DATA = null;
 // Voxel-mask threshold on the exported KDE mass density (null = exported
 // default meta.mask_level). One shared level for field markers, streamlines
-// AND the density cloud, set via two LINKED sliders (Field + Cloud section).
+// AND the density cloud; the slider lives in the Mask section (July 2026 —
+// it used to be two linked sliders in the Field and Cloud menus).
 // TDZ: read by SETTINGS_TABLE — must live here in the STATE block.
 let maskLevel = null;
+// KDE settings of the Mask section: which bandwidth rule the density is
+// computed with, and whether only the stars the group filter shows enter it.
+// 'export' = the bandwidth factor the export used (meta.kde.smooth) — with
+// that and maskUseGroups off the exported values are used verbatim.
+// TDZ: read by SETTINGS_TABLE — must live here in the STATE block.
+let maskKdeMethod = 'export';    // 'export' | 'manual' (UI label "Custom")
+let maskKdeFactor = 0.20;        // bandwidth factor for method 'manual'
+let maskUseGroups = false;       // KDE over the group-filtered stars only
 let params = {
   streamCount: 200, stepSize: 0.1, maxSteps: 120,
   arrowScale: 0.40, arrowSub: 1,
@@ -1820,9 +1933,20 @@ const STAR_CAT_PALETTE = ['#4e9bd8','#e8743b','#5cbf6a','#d94f6e','#a97bd6',
 // from loadSettings() at parse time and reaches renderStarCatChips() →
 // isStarCatField() → these two. Declared further down they would still be in the
 // temporal dead zone there and abort the restore half-way.
-const STAR_CAT_FIELDS = new Set(['name_luhman', 'name_sigma']);
+const STAR_CAT_FIELDS = new Set(['name_luhman', 'name_sigma', 'name_custom']);
 function isStarCatField(f){ return STAR_CAT_FIELDS.has(f); }
 const _starCatCache = {};
+// User-drawn groups (third grouping next to Luhman and SigMA, July 2026):
+// { name, color, ids:[source_id …] }. Persisted, and materialised onto the star
+// records as s.name_custom by applyCustomGroups() — from there on they are just
+// another categorical field, so colouring, the legend, the group filter and the
+// mask KDE need no special case. TDZ: read by SETTINGS_TABLE → STATE block.
+let customGroups = [];
+// Escaping for group NAMES in generated markup (chips, rows, info card) — custom
+// ones are free text. In the STATE block per the TDZ rule: renderStarCatChips()
+// already runs from loadSettings() at parse time.
+const _escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                               .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 // Cached scale ends from the last buildStars(), so the handle-drag handler can
 // map mouse→value and repaint without a full rebuild.
 let _starCbAx = null;   // { mn, mx }
@@ -1924,7 +2048,85 @@ const PLOT_STYLES = {
   steelblue: { bg:'#9dc0dc', axis:'#25404f', tick:'#1c3540', lab:'#13232b', pt:'#d35400', grid:'#e8f1f8', gridA:0.6 },
 };
 let uniformStarColor = '#cccccc';   // user-editable colour for "Uniform" mode
-let isDark = true;
+// ── 3D viewer styles ────────────────────────────────────────────────────────
+// The counterpart of PLOT_STYLES for the 3D scene (July 2026, replaces the plain
+// dark/light switch). Each preset paints the RENDER: background, the three axes
+// (line + label) and the grid box, plus the default colour of 3D text sprites.
+//   dark  the chrome/CSS theme it comes with (.dark on :root) — it also decides
+//         the glow blending, since additive glow washes out on a light canvas
+//   ax/axl per-axis line and label colour (x, y, z)
+// Deliberately INDEPENDENT of the 2D plot styles: a plot keeps whatever preset
+// it is set to (only its 'theme' preset follows the light/dark chrome).
+// TDZ: read by SETTINGS_TABLE — must live here in the STATE block.
+// `ui` (optional) tints the interface with the preset: CSS variables set inline
+// on :root, on top of the base theme the `dark` flag picked. Midnight and
+// Daylight carry none — they ARE the two base themes, unchanged.
+const VIEWER_STYLES = {
+  midnight:  { label:'Midnight',  dark:true,  bg:'#070b12', box:'#2a4a80', txt:'#8ab4e8',
+               ax:['#dd4444','#44aa55','#4477ee'], axl:['#ee6666','#55cc66','#6699ff'] },
+  daylight:  { label:'Daylight',  dark:false, bg:'#f4f6fa', box:'#5580c0', txt:'#1a2540',
+               ax:['#cc3333','#228833','#2255cc'], axl:['#bb2222','#117722','#1144bb'] },
+  slate:     { label:'Slate',     dark:true,  bg:'#1b1b24', box:'#4a4a5c', txt:'#c8c8d8',
+               ax:['#c85a5a','#5aa86a','#5a86c8'], axl:['#e08a8a','#8ad09a','#8ab0e8'],
+               ui:{ '--bg':'#16161e', '--bg2':'#1b1b24', '--bg3':'#24242f',
+                    '--border':'rgba(150,150,175,0.22)', '--border2':'rgba(160,160,190,0.42)',
+                    '--section-divider':'rgba(150,150,185,0.5)',
+                    '--accent':'#8ab4f8', '--accent2':'#6ed3b0', '--accent3':'#e8a05a',
+                    '--text':'#dcdce8', '--text2':'#9a9ab0', '--text3':'#6e6e85' } },
+  blueprint: { label:'Blueprint', dark:true,  bg:'#0d2137', box:'#6f9fd0', txt:'#cfe4f7',
+               ax:['#e8c07a','#8fd6a8','#9fc7ee'], axl:['#f2d9a8','#bfe8cd','#cfe4f7'],
+               ui:{ '--bg':'#0a1a2b', '--bg2':'#0d2137', '--bg3':'#123049',
+                    '--border':'rgba(120,180,240,0.26)', '--border2':'rgba(140,195,245,0.5)',
+                    '--section-divider':'rgba(140,195,245,0.6)',
+                    '--accent':'#7fc4ff', '--accent2':'#8fd6a8', '--accent3':'#e8c07a',
+                    '--text':'#dcecfa', '--text2':'#9dc0dc', '--text3':'#6f93b3' } },
+  contrast:  { label:'Contrast',  dark:true,  bg:'#000000', box:'#666666', txt:'#ffffff',
+               ax:['#ff4d4d','#3dff6e','#4da3ff'], axl:['#ff8080','#7dff9c','#8ac4ff'],
+               ui:{ '--bg':'#000000', '--bg2':'#0a0a0a', '--bg3':'#161616',
+                    '--border':'rgba(255,255,255,0.22)', '--border2':'rgba(255,255,255,0.45)',
+                    '--section-divider':'rgba(255,255,255,0.55)',
+                    '--accent':'#4da3ff', '--accent2':'#3dff6e', '--accent3':'#ff9d4d',
+                    '--text':'#ffffff', '--text2':'#cccccc', '--text3':'#8f8f8f' } },
+  paper:     { label:'Paper',     dark:false, bg:'#ffffff', box:'#b0bccc', txt:'#111111',
+               ax:['#d62728','#2ca02c','#1f77b4'], axl:['#a81f20','#1f7a1f','#175a8a'],
+               ui:{ '--bg':'#f7f7f7', '--bg2':'#ffffff', '--bg3':'#ededed',
+                    '--border':'rgba(120,130,145,0.35)', '--border2':'rgba(90,100,120,0.5)',
+                    '--section-divider':'rgba(90,100,120,0.65)',
+                    '--accent':'#1f77b4', '--accent2':'#2ca02c', '--accent3':'#d62728',
+                    '--text':'#111111', '--text2':'#454545', '--text3':'#7a7a7a' } },
+  solarized: { label:'Solarized', dark:false, bg:'#fdf6e3', box:'#93a1a1', txt:'#586e75',
+               ax:['#dc322f','#859900','#268bd2'], axl:['#b02824','#6a7a00','#1c6fa8'],
+               ui:{ '--bg':'#eee8d5', '--bg2':'#fdf6e3', '--bg3':'#e6dfc8',
+                    '--border':'rgba(147,161,161,0.45)', '--border2':'rgba(101,123,131,0.55)',
+                    '--section-divider':'rgba(101,123,131,0.7)',
+                    '--accent':'#268bd2', '--accent2':'#859900', '--accent3':'#cb4b16',
+                    '--text':'#073642', '--text2':'#586e75', '--text3':'#93a1a1' } },
+  graphite:  { label:'Graphite',  dark:false, bg:'#d6d6d6', box:'#8c8c8c', txt:'#1a1a1a',
+               ax:['#8c2f2f','#2f6b3a','#2f4f8c'], axl:['#6b2222','#22522c','#22386b'],
+               ui:{ '--bg':'#cfcfcf', '--bg2':'#e2e2e2', '--bg3':'#c2c2c2',
+                    '--border':'rgba(80,80,80,0.35)', '--border2':'rgba(60,60,60,0.5)',
+                    '--section-divider':'rgba(60,60,60,0.6)',
+                    '--accent':'#2f4f8c', '--accent2':'#2f6b3a', '--accent3':'#8c2f2f',
+                    '--text':'#1a1a1a', '--text2':'#3d3d3d', '--text3':'#6a6a6a' } },
+  // The one MUTABLE preset: its colours are picked in the style list itself
+  // (swatches → the shared colour picker) and persisted as `viewerStyleCustom`.
+  // No `ui` block — the interface follows the plain dark/light theme of `dark`.
+  // Starts as a copy of Midnight and is re-seeded from the ACTIVE preset the
+  // first time it is chosen, so editing always begins from what is on screen.
+  custom:    { label:'Custom',    dark:true,  bg:'#070b12', box:'#2a4a80', txt:'#8ab4e8',
+               ax:['#dd4444','#44aa55','#4477ee'], axl:['#ee6666','#55cc66','#6699ff'] },
+};
+// which of the custom style's colours the editor offers (label + key)
+const VSTYLE_EDIT_ROWS = [['bg','Background'], ['ax0','X axis'], ['ax1','Y axis'], ['ax2','Z axis'],
+                          ['box','Grid box'], ['txt','Labels']];
+let customStyleEdited = false;      // false = still the untouched seed copy
+// every variable a preset may override — cleared before the next one is applied
+const VIEWER_STYLE_VARS = ['--bg','--bg2','--bg3','--border','--border2','--section-divider',
+                           '--accent','--accent2','--accent3','--text','--text2','--text3'];
+let viewerStyle = 'midnight';
+let isDark = true;                  // = VIEWER_STYLES[viewerStyle].dark, kept as its own
+                                    // flag because half the drawing code asks for it
+function activeViewerStyle(){ return VIEWER_STYLES[viewerStyle] || VIEWER_STYLES.midnight; }
 
 // Display units for star "color by" fields — single shared source so the
 // colorbar, the hover tooltip, and the screenshot/video colorbar list always
@@ -2004,11 +2206,21 @@ function camUpdate(){
 
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('mousedown', e => {
+  // while a custom group is being drawn HERE the RIGHT button pulls the
+  // selection box instead of panning — left-drag keeps rotating (user request).
+  // A group being drawn in the plot window must not also select behind it.
+  if(e.button===2 && groupSelectActive() && _grpSel.mode === '3d'){ _grpRectStart(e.clientX, e.clientY); return; }
   if(e.button===2) isRightDrag=true; else isDrag=true;
   prevM={x:e.clientX, y:e.clientY};
 });
-window.addEventListener('mouseup', () => { isDrag=false; isRightDrag=false; });
+window.addEventListener('mouseup', () => {
+  if(groupSelectActive()) _grpRectEnd();
+  isDrag=false; isRightDrag=false;
+});
+// on window, so the box survives a drag that leaves the canvas
+window.addEventListener('mousemove', e => { if(_grpSel && _grpSel.rect) _grpRectMove(e.clientX, e.clientY); });
 canvas.addEventListener('mousemove', e => {
+  if(_grpSel && _grpSel.rect) return;          // drawing a selection box, not orbiting
   const dx=e.clientX-prevM.x, dy=e.clientY-prevM.y;
   if(isDrag){
     // horizontal → rotate around Z (azimuth), vertical → tilt (polar)
@@ -2241,6 +2453,9 @@ function setLoading(active,msg='',pct=0){
 function initScene(){
   const m=DATA.meta;
   _deriveStarFields();
+  // restored custom groups become s.name_custom BEFORE the dropdowns are built,
+  // so "Custom group" is offered right away
+  applyCustomGroups();
   const resultName = m.result_name || 'unknown';
   // meta.repo ("T" = TaurusVelocityField, "C" = ClaudeVelocityField) markiert,
   // aus welchem Repo das Run-Verzeichnis stammt; alte Exporte haben den Key
@@ -2300,11 +2515,16 @@ function initScene(){
     camTheta = 1.1;   // ~63° tilt — nice iso view with Z up
     camPhi   = 0.8;
   }
-  // mask BEFORE buildAll: every builder + colorbar reads v.mask/_fixedMask
+  // mask BEFORE buildAll: every builder + colorbar reads v.mask/_fixedMask.
+  // The exported density is kept aside first — a restored (or later reset) KDE
+  // setting has to be able to put the baked values back verbatim.
+  DATA.voxels.forEach(v => { v._mdBaked = v.mass_density; v._dnBaked = v.density; });
+  _kdeFail = !recomputeMaskDensity();
   applyMaskLevel();
   document.querySelectorAll('.mask-level-row').forEach(el=>{
     el.style.display = maskAdjustable() ? 'flex' : 'none'; });
   _syncMaskSliders();
+  _syncMaskUI();
   camUpdate();
   buildAll();
   syncSectionVisibility();
@@ -2442,17 +2662,31 @@ function _maskFrac(){
 }
 // skipEl = the slider currently under the pointer: writing .value back to it on
 // every frame of a live drag can fight the drag, and it is already where the
-// user put it. The twin slider and both labels still follow.
+// user put it. The label still follows.
 function _syncMaskSliders(skipEl){
   const lv = effMaskLevel();
   const t = Math.round(_maskFrac()*1000);
-  ['mask-level-field','mask-level-cloud'].forEach(id=>{
-    const el = document.getElementById(id); if(el && el !== skipEl) el.value = t; });
-  const n = DATA ? DATA.voxels.reduce((a,v)=>a+(v.mask?1:0),0) : 0;
-  const txt = lv != null ? lv.toExponential(1) + ' · ' + n + ' vox' : '–';
-  ['sv-maskLevel-field','sv-maskLevel-cloud'].forEach(id=>{
-    const el = document.getElementById(id); if(el) el.textContent = txt; });
+  const el = document.getElementById('mask-level');
+  if(el && el !== skipEl) el.value = t;
+  const sv = document.getElementById('sv-maskLevel');
+  if(sv) sv.textContent = lv != null ? lv.toExponential(1) : '–';
+  _syncMaskInfo();
 }
+function maskVoxelCount(){ return DATA ? DATA.voxels.reduce((a,v)=>a+(v.mask?1:0),0) : 0; }
+// Exact level typed into the read-out (double-click, see wireSliderTyping). The
+// generic slider path can't serve this row: its slider position is the LOG
+// FRACTION over three decades, so a typed 3.2e-5 would land on the raw range
+// input as 0 ("nothing happens" for every small value). Set the level itself
+// and let the slider follow.
+function setMaskLevelExact(v){
+  if(!maskAdjustable() || !isFinite(v) || !(v > 0)) return;
+  const d = defaultMaskLevel();
+  maskLevel = Math.min(d * Math.pow(10, MASK_DEC_UP),
+                       Math.max(d * Math.pow(10, -MASK_DEC_DOWN), v));
+  _applyMaskChange();
+  saveSettings();
+}
+function _maskLevelTypeValue(){ const lv = effMaskLevel(); return lv != null ? lv : ''; }
 let _maskRafId = 0, _maskDragEl = null;
 function setMaskLevel(t, el){
   if(!maskAdjustable()) return;
@@ -2484,6 +2718,234 @@ function _applyMaskChange(skipEl, deferStreams){
   if(!deferStreams) buildStreamlines();
   updateColorbar(); updateStreamColorbar();
   renderAllPlots();
+}
+
+// ═══════════════════════════════════════════════════════════
+// LIVE KDE (Mask section)
+// ═══════════════════════════════════════════════════════════
+// The exported density fields are Gaussian KDEs over the star positions:
+// `mass_density` weighted by stellar mass (it defines the mask), `density`
+// unweighted. meta.kde carries the recipe (bandwidth factor + the evaluation
+// grid), so the viewer can re-run both — with another bandwidth rule, or over
+// only the stars the "Star groups" filter shows. Everything downstream (mask,
+// density cloud, energy density, auto colour ranges, plots) then follows.
+//
+// ⚠️ The evaluation grid is NOT the voxel grid: simple_functions.calculate_mask
+// lays `shape` points INCLUSIVE over [origin, origin+shape·distance], so its
+// step is shape/(shape-1)·distance while the voxel centres step by `distance`.
+// Reproducing the exported numbers means reproducing that grid — hence
+// origin/shape/distances in meta.kde instead of reading the voxel positions.
+function kdeAdjustable(){
+  return !!(DATA?.meta?.kde && maskAdjustable() && (DATA.real_stars || []).length >= 4);
+}
+// exported values are used verbatim while nothing is dialled away from them
+function kdeIsDefault(){ return maskKdeMethod === 'export' && !maskUseGroups; }
+function _kdeFactorLabel(){
+  return maskKdeMethod === 'manual' ? maskKdeFactor.toFixed(2)
+                                    : (DATA?.meta?.kde?.smooth ?? 0).toFixed(2);
+}
+// Stars that enter the KDE: the group filter's selection when "Apply to mask"
+// is on, everything otherwise. Deliberately NOT the display mask (all/has RV/
+// used) — that one is about what is drawn, not about what the cloud is made of.
+function kdeStars(){
+  const all = DATA?.real_stars || [];
+  if(!maskUseGroups) return all;
+  const g = starGroupPred();
+  return g ? all.filter(g) : all;
+}
+// Only two rules are offered: the factor the export used, or a hand-set one
+// (the n_eff-derived Scott/Silverman rules were dropped on user request — they
+// are tuned for a single smooth blob and only over-smoothed the complex).
+function _kdeFactor(){
+  return maskKdeMethod === 'manual' ? maskKdeFactor : (DATA?.meta?.kde?.smooth ?? 0.2);
+}
+// Gaussian KDE of `stars` on the exported evaluation grid, returned in the
+// voxel order (ix*ny+iy)*nz+iz. weighted = mass-weighted (mass-less stars drop
+// out, exactly like the export); otherwise every star counts once. Matches
+// scipy.stats.gaussian_kde(values, weights, bw_method=factor)(grid)·Σweights.
+function computeKdeDensity(stars, weighted){
+  const K = DATA?.meta?.kde; if(!K) return null;
+  const n0 = stars.length;
+  const px = new Float64Array(n0), py = new Float64Array(n0), pz = new Float64Array(n0),
+        wt = new Float64Array(n0);
+  let n = 0, anyMass = false;
+  for(let i = 0; i < n0; i++){
+    const s = stars[i];
+    if(!isFinite(s.x) || !isFinite(s.y) || !isFinite(s.z)) continue;
+    let w = 1;
+    if(weighted){
+      const m = s.mass;
+      if(typeof m === 'number' && isFinite(m)){ w = m; anyMass = true; }
+      else continue;                      // no mass → not in the mass KDE
+    }
+    if(!(w > 0)) continue;
+    px[n] = s.x; py[n] = s.y; pz[n] = s.z; wt[n] = w; n++;
+  }
+  // a mass-weighted run over a sample without any masses is not meaningful
+  if(n < 4 || (weighted && !anyMass)) return null;
+
+  // weighted mean + covariance — np.cov(…, aweights=w, bias=False), i.e.
+  // normalised by Σw − Σw²/Σw (that is n−1 for uniform weights)
+  let W = 0, W2 = 0;
+  for(let i = 0; i < n; i++){ W += wt[i]; W2 += wt[i]*wt[i]; }
+  let mx = 0, my = 0, mz = 0;
+  for(let i = 0; i < n; i++){ mx += wt[i]*px[i]; my += wt[i]*py[i]; mz += wt[i]*pz[i]; }
+  mx /= W; my /= W; mz /= W;
+  let sxx=0, sxy=0, sxz=0, syy=0, syz=0, szz=0;
+  for(let i = 0; i < n; i++){
+    const dx = px[i]-mx, dy = py[i]-my, dz = pz[i]-mz, w = wt[i];
+    sxx += w*dx*dx; sxy += w*dx*dy; sxz += w*dx*dz;
+    syy += w*dy*dy; syz += w*dy*dz; szz += w*dz*dz;
+  }
+  const nrm = W - W2/W;
+  if(!(nrm > 0)) return null;
+  const f = _kdeFactor(), f2 = f*f;
+  const c00 = sxx/nrm*f2, c01 = sxy/nrm*f2, c02 = sxz/nrm*f2,
+        c11 = syy/nrm*f2, c12 = syz/nrm*f2, c22 = szz/nrm*f2;
+  // inverse + determinant of the symmetric 3×3 bandwidth matrix
+  const a00 = c11*c22 - c12*c12, a01 = c02*c12 - c01*c22, a02 = c01*c12 - c02*c11;
+  const det = c00*a00 + c01*a01 + c02*a02;
+  if(!(det > 0)) return null;
+  const p00 = a00/det, p01 = a01/det, p02 = a02/det,
+        p11 = (c00*c22 - c02*c02)/det, p12 = (c02*c01 - c00*c12)/det,
+        p22 = (c00*c11 - c01*c01)/det;
+  const pref = 1 / Math.sqrt(Math.pow(2*Math.PI, 3) * det);
+
+  const nx = K.shape[0], ny = K.shape[1], nz = K.shape[2];
+  const ox = K.origin[0], oy = K.origin[1], oz = K.origin[2];
+  const hx = nx > 1 ? nx*K.distances[0]/(nx-1) : 0,
+        hy = ny > 1 ? ny*K.distances[1]/(ny-1) : 0,
+        hz = nz > 1 ? nz*K.distances[2]/(nz-1) : 0;
+  const out = new Float64Array(nx*ny*nz);
+  // Each kernel is truncated at KDE_CUT Mahalanobis radii, and only the grid
+  // window around the star is touched — on the real export that is ~900 of the
+  // 25000 voxels per star, which is what makes the whole thing interactive. At
+  // 7 radii (e^-24.5) the omitted tail is ~1e-11 of a single kernel's peak, far
+  // below the 8 decimals the export itself keeps. The largest |Δ_a| inside that
+  // ellipsoid is r·√C_aa, which gives the per-axis window.
+  const KDE_CUT = 7;
+  const wx = KDE_CUT*Math.sqrt(c00), wy = KDE_CUT*Math.sqrt(c11), wz = KDE_CUT*Math.sqrt(c22);
+  const sz2 = Math.exp(-p22*hz*hz);   // constant ratio-of-ratios along z
+  for(let i = 0; i < n; i++){
+    const sx = px[i], sy = py[i], sz = pz[i], w = wt[i]*pref;
+    const ix0 = hx ? Math.max(0, Math.ceil((sx-wx-ox)/hx)) : 0,
+          ix1 = hx ? Math.min(nx-1, Math.floor((sx+wx-ox)/hx)) : nx-1;
+    const iy0 = hy ? Math.max(0, Math.ceil((sy-wy-oy)/hy)) : 0,
+          iy1 = hy ? Math.min(ny-1, Math.floor((sy+wy-oy)/hy)) : ny-1;
+    const iz0 = hz ? Math.max(0, Math.ceil((sz-wz-oz)/hz)) : 0,
+          iz1 = hz ? Math.min(nz-1, Math.floor((sz+wz-oz)/hz)) : nz-1;
+    for(let ix = ix0; ix <= ix1; ix++){
+      const dx = ox + ix*hx - sx;
+      for(let iy = iy0; iy <= iy1; iy++){
+        const dy = oy + iy*hy - sy;
+        // q(Δz) = p22·Δz² + 2Δz·(p02·Δx + p12·Δy) + (p00Δx² + 2p01ΔxΔy + p11Δy²)
+        const b = p02*dx + p12*dy;
+        const c = p00*dx*dx + 2*p01*dx*dy + p11*dy*dy;
+        const z0 = oz + iz0*hz - sz;
+        const q0 = p22*z0*z0 + 2*z0*b + c;
+        let e = w*Math.exp(-0.5*q0);
+        // walk z by multiplication instead of an exp() per voxel: with q
+        // quadratic in Δz the ratio e_{k+1}/e_k itself has a constant ratio
+        const z1 = z0 + hz;
+        let g = Math.exp(-0.5*((p22*z1*z1 + 2*z1*b + c) - q0));
+        let base = (ix*ny + iy)*nz;
+        for(let iz = iz0; iz <= iz1; iz++){ out[base+iz] += e; e *= g; g *= sz2; }
+      }
+    }
+  }
+  return out;
+}
+// Recompute both density fields into the voxels (or restore the exported ones).
+// Returns false when the current selection can't produce a KDE (too few stars);
+// the voxels are then left untouched so the view stays usable.
+function recomputeMaskDensity(){
+  if(!DATA || !kdeAdjustable()) return true;
+  if(kdeIsDefault()){
+    DATA.voxels.forEach(v => { v.mass_density = v._mdBaked; v.density = v._dnBaked; });
+    return true;
+  }
+  const stars = kdeStars();
+  const md = computeKdeDensity(stars, true);
+  if(!md) return false;
+  const dn = computeKdeDensity(stars, false);
+  const ny = DATA.meta.kde.shape[1], nz = DATA.meta.kde.shape[2];
+  DATA.voxels.forEach(v => {
+    const k = (v.ix*ny + v.iy)*nz + v.iz;
+    v.mass_density = md[k];
+    if(dn) v.density = dn[k];
+  });
+  return true;
+}
+// One entry point for every KDE-changing control: recompute, re-mask, redraw.
+// `live` = called from a slider drag: coalesce to one pass per animation frame
+// (a full pass is KDE + mask + rebuilds, too much to run per input event).
+// Discrete controls run it synchronously — they change nothing per frame.
+let _kdeRafId = 0, _kdeFail = false;
+function applyKdeChange(live){
+  if(!DATA) return;
+  if(!live){ _kdeApply(); return; }
+  if(!_kdeRafId) _kdeRafId = requestAnimationFrame(() => { _kdeRafId = 0; _kdeApply(); });
+}
+function _kdeApply(){
+  _kdeFail = !recomputeMaskDensity();
+  _energyCache.sig = null; _ekinCache.sig = null;
+  _applyMaskChange();
+  updateCloudColorbar();
+  _syncMaskUI();
+}
+function setMaskKdeMethod(m){
+  maskKdeMethod = m;
+  _syncMaskUI(); applyKdeChange(); saveSettings();
+}
+function setMaskKdeFactor(v, el){
+  maskKdeFactor = Math.max(0.02, Math.min(2, +v || 0.2));
+  const sv = document.getElementById('sv-maskKdeFactor');
+  if(sv) sv.textContent = maskKdeFactor.toFixed(2);
+  if(maskKdeMethod !== 'manual'){ maskKdeMethod = 'manual'; _syncMaskUI(); }
+  applyKdeChange(!!el);
+  debounce('maskKdeSave', saveSettings, 400);
+}
+function toggleMaskUseGroups(){
+  maskUseGroups = !maskUseGroups;
+  _syncMaskUI(); applyKdeChange(); saveSettings();
+}
+// Status line under the section: how big the mask is, and what density it came
+// from. Also the read-out for the voxel count while the cut slider is dragged
+// (the value box next to the slider only has room for the level itself).
+function _syncMaskInfo(){
+  const info = document.getElementById('mask-kde-info');
+  if(!info) return;
+  const n = maskVoxelCount();
+  let txt = n + (n === 1 ? ' voxel' : ' voxels');
+  if(kdeAdjustable()){
+    const nAll = (DATA?.real_stars || []).length, nUse = maskUseGroups ? kdeStars().length : nAll;
+    txt += _kdeFail
+      ? ' · too few stars for a KDE (' + nUse + ') — density unchanged'
+      : (kdeIsDefault() ? ` · exported KDE · ${nAll} stars · bw ${_kdeFactorLabel()}`
+                        : ` · live KDE · ${nUse}${nUse === nAll ? '' : ' of ' + nAll} stars · bw ${_kdeFactorLabel()}`);
+  }
+  info.textContent = txt;
+  info.style.color = _kdeFail ? 'var(--accent3)' : '';
+}
+// Mask-section widgets: bandwidth row, group toggle, status line.
+function _syncMaskUI(){
+  const sec = document.getElementById('section-mask');
+  if(sec) sec.style.display = maskAdjustable() ? '' : 'none';
+  const kdeOn = kdeAdjustable();
+  ['mask-kde-row','mask-bw-row','mask-groups-row'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.style.display = kdeOn ? '' : 'none'; });
+  _syncMaskInfo();
+  if(!kdeOn) return;
+  const sel = document.getElementById('mask-kde-select');
+  if(sel && sel.value !== maskKdeMethod){ sel.value = maskKdeMethod; sel.dispatchEvent(new Event('cdrop-sync')); }
+  const bw = document.getElementById('mask-bw-row');
+  if(bw) bw.style.display = maskKdeMethod === 'manual' ? 'flex' : 'none';
+  const br = document.getElementById('mask-bw-range');
+  if(br) br.value = Math.round(maskKdeFactor*100);
+  const sv = document.getElementById('sv-maskKdeFactor');
+  if(sv) sv.textContent = maskKdeFactor.toFixed(2);
+  const g = document.getElementById('mask-usegroups-btn');
+  if(g) g.classList.toggle('on', maskUseGroups);
 }
 // Frame-independent min/max of the derived fields over the CURRENT mask —
 // replaces the baked meta.curl_min/… so auto colorbars follow the mask slider
@@ -3110,7 +3572,8 @@ function buildBox(){
   disposeGroup(G.box);
   const ext=DATA.meta.extent;
   const geo=new THREE.BoxGeometry(ext.x[1]-ext.x[0],ext.y[1]-ext.y[0],ext.z[1]-ext.z[0]);
-  const mesh=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x2a4a80,transparent:true,opacity:0.4}));
+  const mesh=new THREE.LineSegments(new THREE.EdgesGeometry(geo),
+    new THREE.LineBasicMaterial({color:activeViewerStyle().box,transparent:true,opacity:0.4}));
   mesh.position.set((ext.x[0]+ext.x[1])/2,(ext.y[0]+ext.y[1])/2,(ext.z[0]+ext.z[1])/2);
   G.box.add(mesh); G.box.visible=vis.box;
 }
@@ -3585,7 +4048,7 @@ function refreshLocalBubbleSlider(){
 }
 
 function makeTextSprite(text,color,fontSize=28,bold=false,depthTest=false){
-  color=color||(isDark?'#8ab4e8':'#1a2540');
+  color=color||activeViewerStyle().txt;
   const cv=document.createElement('canvas');
   const ctx=cv.getContext('2d');
   const font=`${bold?'700':'500'} ${fontSize}px "IBM Plex Mono",monospace`;
@@ -3660,9 +4123,8 @@ function buildAxes(){
       ts.scale.set(18,4.5,1); ts.position.copy(tl); G.axes.add(ts);
     });
   }
-  drawAxis('x',isDark?0xdd4444:0xcc3333,isDark?'#ee6666':'#bb2222');
-  drawAxis('y',isDark?0x44aa55:0x228833,isDark?'#55cc66':'#117722');
-  drawAxis('z',isDark?0x4477ee:0x2255cc,isDark?'#6699ff':'#1144bb');
+  const _vs = activeViewerStyle();
+  ['x','y','z'].forEach((a,i) => drawAxis(a, _vs.ax[i], _vs.axl[i]));
   G.axes.visible=vis.axes; // respect the restored/saved toggle, not always-on
 }
 
@@ -4096,7 +4558,7 @@ function debounce(key,fn,ms=120){
 // override just the displayed text here, the underlying value/key is unchanged.
 const STAR_FIELD_LABELS = {
   rv_used: 'rv used in inference',
-  name_luhman: 'Luhman group', name_sigma: 'SigMA group',
+  name_luhman: 'Luhman group', name_sigma: 'SigMA group', name_custom: 'Custom group',
   uvw_mag: 'Velocity magnitude (UVW)', pm_mag: 'Velocity magnitude (PM only)',
   pmra: 'pmRA', pmdec: 'pmDec', rv: 'rv',
   U: 'U', V: 'V', W: 'W',
@@ -4138,7 +4600,7 @@ const STAR_FIELD_GROUPS = [
   // CATEGORICAL (see STAR_CAT_FIELDS): the Luhman group a star belongs to.
   // Not a number — coloured from a qualitative palette, with a clickable name
   // list instead of a colorbar. 3D colour only (no plot axis, no 2D colour).
-  { label: 'Membership', fields: ['name_luhman', 'name_sigma'] },
+  { label: 'Membership', fields: ['name_luhman', 'name_sigma', 'name_custom'] },
   // heliocentric galactic cartesian position, same coordinates as the 3D view —
   // 2D-plot axes and colour only (see STAR_3D_COLOR_EXCLUDE): colouring the 3D
   // dots by their own coordinate just paints a gradient across the scene
@@ -4324,6 +4786,13 @@ function starCatInfo(field){
   const nAll = DATA?.real_stars?.length || 0;
   const c = _starCatCache[field];
   if(c && c.n === nAll) return c.list;
+  // custom groups keep the colour they were created with (and their creation
+  // order) — renaming or shrinking one must not repaint the others
+  if(field === 'name_custom'){
+    const list = customGroups.map(g => ({ name:g.name, count:g.ids.length, color:g.color }));
+    _starCatCache[field] = { n:nAll, list, map:new Map(list.map(e => [e.name, e])) };
+    return list;
+  }
   const cnt = new Map();
   (DATA?.real_stars || []).forEach(s => {
     const v = s[field];
@@ -4352,6 +4821,12 @@ function starCatCounts(field){
   const cnt = new Map();
   (DATA?.real_stars || []).forEach(s => {
     if(!pred(s)) return;
+    // overlapping custom groups: a star counts in EVERY group it belongs to,
+    // so each row states how many stars that group really holds
+    if(field === 'name_custom' && s._customAll && s._customAll.length){
+      s._customAll.forEach(n => cnt.set(n, (cnt.get(n) || 0) + 1));
+      return;
+    }
     const k = s[field] == null ? NO_GROUP : s[field];
     cnt.set(k, (cnt.get(k) || 0) + 1);
   });
@@ -4371,9 +4846,9 @@ function renderStarCatChips(){
   const list = starCatInfo(starColorField);
   const cnt = starCatCounts(starColorField);
   const chips = list.map(e => {
-    const n = cnt.get(e.name) || 0;
-    return `<span class="cat-chip legend${n ? '' : ' off'}" title="${e.name} — ${n} star${n===1?'':'s'} shown">
-              <span class="cat-sw" style="background:${e.color}"></span>${e.name}<span class="cat-n">${n}</span></span>`;
+    const n = cnt.get(e.name) || 0, nm = _escHtml(e.name);   // custom names are free text
+    return `<span class="cat-chip legend${n ? '' : ' off'}" title="${nm} — ${n} star${n===1?'':'s'} shown">
+              <span class="cat-sw" style="background:${e.color}"></span>${nm}<span class="cat-n">${n}</span></span>`;
   }).join('');
   document.getElementById('star-cat-chips').innerHTML = chips ||
     '<span style="color:var(--text3);font-size:8px;">no groups in the data</span>';
@@ -4387,21 +4862,25 @@ function renderStarCatChips(){
 // tall, and a list of 23 SigMA clusters would push its controls off screen.
 // It sets which groups are VISIBLE; the selection flows through starMaskPred,
 // so the 3D view, the 2D plots and every count/auto-range follow in one step.
+// 'name_custom' is always offered — that tab is where a first custom group is
+// drawn, so it can't wait for a star to already carry one.
 function starGroupFields(){
-  return [...STAR_CAT_FIELDS].filter(f => DATA?.real_stars?.some(s => s[f] != null));
+  return [...STAR_CAT_FIELDS].filter(f => f === 'name_custom' || DATA?.real_stars?.some(s => s[f] != null));
 }
 function _groupHasNone(f){ return (DATA?.real_stars || []).some(s => s[f] == null); }
+let _groupPopBtn = null;   // which entry point opened it (2D drawing comes from the plot one)
 function toggleGroupPop(btn){
   const pop = document.getElementById('group-pop');
   if(!pop) return;
   if(_groupPopOpen){ closeGroupPop(); return; }
   const avail = starGroupFields();          // fall back to a grouping the data has
   if(avail.length && !avail.includes(starGroupField)) starGroupField = avail[0];
+  _groupPopBtn = btn || _groupPopBtn;
   _groupPopOpen = true;
   pop.style.display = 'flex';
   renderGroupPop();
   const r = btn.getBoundingClientRect();
-  const pw = pop.offsetWidth || 210, ph = pop.offsetHeight || 240;
+  const pw = pop.offsetWidth || 228, ph = pop.offsetHeight || 240;
   const x = Math.min(Math.max(4, r.left), window.innerWidth - pw - 4);
   let   y = r.bottom + 4;
   if(y + ph > window.innerHeight - 4) y = Math.max(4, r.top - ph - 4);
@@ -4435,48 +4914,291 @@ function _applyGroupFilter(){
   _syncGroupButtons();
   updateColorbar();
   renderAllPlots();
+  // "Apply to mask": the KDE is built from the shown groups, so the density,
+  // the mask and everything derived from it follow the selection too
+  if(maskUseGroups) applyKdeChange();
   saveSettings();
 }
 function renderGroupPop(){
   if(!_groupPopOpen) return;
   const avail = starGroupFields();
+  const custom = starGroupField === 'name_custom';
   document.getElementById('group-pop-fields').innerHTML = avail.map(f =>
     `<button class="tog${f === starGroupField ? ' on' : ''}" onclick="setStarGroupField('${f}')"
        title="Filter by the ${starFieldLabel(f)}">${starFieldLabel(f).replace(' group','')}</button>`).join('');
   const list = starCatInfo(starGroupField);
   const cnt  = starCatCounts(starGroupField);
   const hid  = starGroupHidden[starGroupField] || new Set();
-  const rows = list.map(e => _groupRow(e.name, e.color, cnt.get(e.name) || 0, hid.has(e.name)));
+  const rows = list.map((e,i) => _groupRow(e.name, e.color, cnt.get(e.name) || 0, hid.has(e.name),
+                                           null, custom ? i : -1));
   if(_groupHasNone(starGroupField))
     rows.push(_groupRow(NO_GROUP, null, cnt.get(NO_GROUP) || 0, hid.has(NO_GROUP), 'no group'));
   document.getElementById('group-pop-list').innerHTML = rows.join('') ||
-    '<span style="color:var(--text3);font-size:8px;">no groups in the data</span>';
+    `<span style="color:var(--text3);font-size:8px;">${custom ? 'no custom groups yet — draw one below' : 'no groups in the data'}</span>`;
+  document.getElementById('group-pop-new-row').style.display = custom ? 'flex' : 'none';
   document.getElementById('group-pop-info').textContent =
     hid.size ? `${rows.length - hid.size} of ${rows.length} shown` : `all ${rows.length} shown`;
+  if(_renameIdx >= 0){
+    const inp = document.querySelector('#group-pop-list .grp-rename');
+    if(inp){ inp.focus(); inp.select(); }
+  }
 }
-function _groupRow(name, color, n, hidden, labelOverride){
-  const lbl = labelOverride || name;
+// idx >= 0 marks a user-drawn group: those rows carry rename + delete buttons,
+// so they are a div with a clickable span rather than one big button.
+function _groupRow(name, color, n, hidden, labelOverride, idx = -1){
+  // custom group names are free text — escape before they go into the markup
+  const lbl = _escHtml(labelOverride || name);
   const sw = `<span class="cat-sw" style="background:${color || 'var(--text3)'};${color ? '' : 'opacity:.45'}"></span>`;
-  return `<button class="grp-row${hidden ? ' off' : ''}" onclick="toggleStarGroup(${JSON.stringify(name).replace(/"/g,'&quot;')})"
-            title="${lbl} — ${n} star${n===1?'':'s'}. Click to ${hidden ? 'show' : 'hide'} this group.">
-            <span class="grp-box">${hidden ? '' : '✓'}</span>${sw}<span class="grp-name">${lbl}</span><span class="cat-n">${n}</span></button>`;
+  const jn = JSON.stringify(name).replace(/"/g,'&quot;');
+  if(idx < 0)
+    return `<button class="grp-row${hidden ? ' off' : ''}" onclick="toggleStarGroup(${jn})"
+              title="${lbl} — ${n} star${n===1?'':'s'}. Click to ${hidden ? 'show' : 'hide'} this group.">
+              <span class="grp-box">${hidden ? '' : '✓'}</span>${sw}<span class="grp-name">${lbl}</span><span class="cat-n">${n}</span></button>`;
+  const body = idx === _renameIdx
+    // ENTER/ESC must not bubble to the window's own _POPUP_KEYS handler — that
+    // one would close the whole group window right after the rename
+    ? `<input class="grp-rename" value="${lbl}"
+         onkeydown="if(event.key==='Enter'){event.preventDefault();event.stopPropagation();commitRenameCustomGroup(${idx},this.value);}
+                    else if(event.key==='Escape'){event.preventDefault();event.stopPropagation();cancelRenameCustomGroup();}"
+         onblur="commitRenameCustomGroup(${idx},this.value)">`
+    : `<span class="grp-hit" onclick="toggleStarGroup(${jn})"
+         title="${lbl} — ${n} star${n===1?'':'s'}. Click to ${hidden ? 'show' : 'hide'} this group.">
+         <span class="grp-box">${hidden ? '' : '✓'}</span>${sw}<span class="grp-name">${lbl}</span><span class="cat-n">${n}</span></span>`;
+  return `<div class="grp-row${hidden ? ' off' : ''}">${body}
+            <button class="grp-mini" onclick="startRenameCustomGroup(${idx})" title="Rename this group">✎</button>
+            <button class="grp-mini" onclick="deleteCustomGroup(${idx})" title="Delete this group">✕</button></div>`;
 }
+
+// ── Custom (user-drawn) star groups ──────────────────────────────────────────
+// customGroups (STATE block) holds { name, color, ids }. They are written onto
+// the stars as s.name_custom, so from there on they behave exactly like the
+// Luhman / SigMA groups: colouring, legend, group filter, plot windows and —
+// with "Apply to mask" — the KDE density all read them through the same paths.
+// Custom groups may OVERLAP (user request July 2026): a star can sit in several
+// of them, so it carries BOTH
+//   s._customAll  — every group it belongs to, in creation order → the FILTER
+//                   (starGroupPred) keeps it visible while ANY of them is shown
+//   s.name_custom — one name for the categorical machinery (colour, legend,
+//                   plot axes). The NEWEST group wins, which is what drawing a
+//                   group over existing stars looked like when it still stole
+//                   them. Deliberately independent of what is hidden, so
+//                   toggling a group never repaints the others.
+let _renameIdx = -1;
+function applyCustomGroups(){
+  const byId = new Map();                        // source_id → [group names]
+  customGroups.forEach(g => (g.ids || []).forEach(id => {
+    const k = String(id);
+    (byId.get(k) || byId.set(k, []).get(k)).push(g.name);
+  }));
+  (DATA?.real_stars || []).forEach(s => {
+    const names = byId.size ? (byId.get(String(s.source_id)) || null) : null;
+    s._customAll = names;
+    s.name_custom = names ? names[names.length - 1] : null; });
+  delete _starCatCache['name_custom'];
+}
+// everything a changed custom group can touch, in one place
+function customGroupsChanged(){
+  applyCustomGroups();
+  const sel = document.getElementById('star-color-select');
+  const cur = sel ? sel.value : null;
+  populateStarDropdown();                       // the "Custom group" option appears/disappears with the groups
+  if(sel){ sel.value = [...sel.options].some(o => o.value === cur) ? cur : 'none';
+           if(sel.value === 'none' && starColorField === 'name_custom') setStarColorField('none');
+           sel.dispatchEvent(new Event('cdrop-sync')); }
+  if(DATA && starsVisible) buildStars();
+  renderStarCatChips();
+  renderGroupPop();
+  _syncGroupButtons();
+  updateColorbar();
+  renderAllPlots();
+  if(maskUseGroups) applyKdeChange();
+  saveSettings();
+}
+function _nextCustomName(){
+  const used = new Set(customGroups.map(g => g.name));
+  for(let i = 1; ; i++){ const n = 'Group ' + i; if(!used.has(n)) return n; }
+}
+function _nextCustomColor(){
+  const used = new Set(customGroups.map(g => g.color));
+  return STAR_CAT_PALETTE.find(c => !used.has(c)) || STAR_CAT_PALETTE[customGroups.length % STAR_CAT_PALETTE.length];
+}
+function deleteCustomGroup(i){
+  const g = customGroups[i]; if(!g) return;
+  if(starGroupHidden.name_custom) starGroupHidden.name_custom.delete(g.name);
+  customGroups.splice(i, 1);
+  customGroupsChanged();
+}
+function startRenameCustomGroup(i){ _renameIdx = i; renderGroupPop(); }
+function cancelRenameCustomGroup(){ _renameIdx = -1; renderGroupPop(); }
+function commitRenameCustomGroup(i, raw){
+  if(_renameIdx !== i) return;                 // the re-render's blur must not fire twice
+  _renameIdx = -1;
+  const g = customGroups[i];
+  const name = String(raw || '').trim();
+  if(g && name && name !== g.name && !customGroups.some(o => o.name === name)){
+    if(starGroupHidden.name_custom?.delete(g.name)) starGroupHidden.name_custom.add(name);
+    g.name = name;
+    customGroupsChanged();
+  } else renderGroupPop();
+}
+
+// ── Drawing a group (selection mode) ─────────────────────────────────────────
+// Leaves the window and marks stars in the 3D view (or, when started from the
+// star plot window's scatter, in that plot): right-drag pulls a box, a click
+// toggles a single star, ENTER creates the group, ESC leaves. Left-drag keeps
+// rotating the scene, which is why the box is on the RIGHT button.
+let _grpSel = null;   // { mode:'3d'|'2d', stars:Set, rect, saved:[stars] }
+function groupSelectActive(){ return !!_grpSel; }
+function startGroupSelect(){
+  if(_grpSel) return;
+  // started from the star plot window → draw in THAT plot (scatter: a box over
+  // the points, histogram: the bars themselves), otherwise in the 3D view
+  const fromPlot = _groupPopBtn && _groupPopBtn.id === 'plot-groups-btn';
+  const mode = fromPlot ? '2d' : '3d';
+  closeGroupPop();
+  _grpSel = { mode, stars:new Set(), rect:null, saved:_searchMarkerStars.slice() };
+  if(mode === '3d' && !starsVisible) toggleStars();   // nothing to pick otherwise
+  const bar = document.getElementById('grpsel-bar');
+  if(bar) bar.style.display = 'flex';
+  _syncGrpSelHint();
+  _syncGrpSel();
+}
+// The gesture differs per target, and the star plot can switch between scatter
+// and histogram WHILE drawing — so the hint is refreshed, not set once.
+function _syncGrpSelHint(){
+  const hint = document.getElementById('grpsel-hint');
+  if(!hint || !_grpSel) return;
+  hint.textContent = _grpSel.mode !== '2d'
+    ? 'right-drag = box · left-drag rotates · click = toggle · Enter/Esc'
+    : (PLOT_STATE.star.type === 'hist'
+        ? 'in the histogram: right-drag = bars · click = toggle a bar · Enter/Esc'
+        : 'right-drag = box · click = toggle · Enter/Esc');
+}
+function _endGroupSelect(){
+  const sel = _grpSel; _grpSel = null;
+  const bar = document.getElementById('grpsel-bar'); if(bar) bar.style.display = 'none';
+  const r = document.getElementById('grpsel-rect'); if(r) r.style.display = 'none';
+  if(sel) setSearchMarkers(sel.saved);          // put the user's own marks back
+  renderPlot('star');
+  return sel;
+}
+function cancelGroupSelect(){ if(_grpSel) _endGroupSelect(); }
+function finishGroupSelect(){
+  if(!_grpSel) return;
+  const stars = [..._grpSel.stars];
+  _endGroupSelect();
+  if(stars.length === 0) return;                // nothing marked → same as cancel
+  // groups may overlap: the new one does NOT take its stars from the older ones
+  const ids = stars.map(s => String(s.source_id));
+  customGroups.push({ name:_nextCustomName(), color:_nextCustomColor(), ids });
+  starGroupField = 'name_custom';
+  customGroupsChanged();
+  if(_groupPopBtn) toggleGroupPop(_groupPopBtn);   // back to the list, with the new group in it
+}
+function _toggleGrpSelStar(s){
+  if(!_grpSel || !s) return;
+  if(_grpSel.stars.has(s)) _grpSel.stars.delete(s); else _grpSel.stars.add(s);
+  _syncGrpSel();
+}
+function _syncGrpSel(){
+  if(!_grpSel) return;
+  const n = _grpSel.stars.size;
+  const info = document.getElementById('grpsel-info');
+  if(info) info.textContent = n + (n === 1 ? ' star' : ' stars');
+  if(_grpSel.mode === '3d') setSearchMarkers([..._grpSel.stars]);   // same orange ring as the ID search
+  else renderPlot('star');
+}
+// rubber band: one fixed div in viewport coordinates, shared by both modes
+function _grpRectStart(x, y){
+  if(!_grpSel) return;
+  _grpSel.rect = { x0:x, y0:y, x1:x, y1:y };
+  const r = document.getElementById('grpsel-rect');
+  if(r){ r.style.display = 'block'; _grpRectPaint(); }
+}
+function _grpRectMove(x, y){
+  if(!_grpSel || !_grpSel.rect) return;
+  _grpSel.rect.x1 = x; _grpSel.rect.y1 = y; _grpRectPaint();
+}
+function _grpRectPaint(){
+  const r = document.getElementById('grpsel-rect'), b = _grpSel && _grpSel.rect;
+  if(!r || !b) return;
+  r.style.left = Math.min(b.x0,b.x1)+'px'; r.style.top = Math.min(b.y0,b.y1)+'px';
+  r.style.width = Math.abs(b.x1-b.x0)+'px'; r.style.height = Math.abs(b.y1-b.y0)+'px';
+}
+// A second box never UNselects — that is what the single click is for.
+function _grpRectEnd(){
+  if(!_grpSel || !_grpSel.rect) return;
+  const b = _grpSel.rect; _grpSel.rect = null;
+  const r = document.getElementById('grpsel-rect'); if(r) r.style.display = 'none';
+  const lo = { x:Math.min(b.x0,b.x1), y:Math.min(b.y0,b.y1) },
+        hi = { x:Math.max(b.x0,b.x1), y:Math.max(b.y0,b.y1) };
+  if(hi.x-lo.x < 2 && hi.y-lo.y < 2) return;    // a right-click, not a box
+  if(_grpSel.mode === '3d'){
+    const rect = canvas.getBoundingClientRect();
+    const pred = starMaskPred(starDisplayMask);
+    const v = new THREE.Vector3();
+    (DATA?.real_stars || []).forEach(s => {
+      if(!pred(s)) return;                      // only stars that are actually shown
+      v.set(s.x, s.y, s.z).project(camera);
+      if(v.z > 1) return;                       // behind the camera
+      const px = rect.left + (v.x*0.5 + 0.5)*rect.width;
+      const py = rect.top  + (0.5 - v.y*0.5)*rect.height;
+      if(px >= lo.x && px <= hi.x && py >= lo.y && py <= hi.y) _grpSel.stars.add(s);
+    });
+  } else {
+    const cv = _pEl('star','canvas'); if(!cv) return;
+    const cr = cv.getBoundingClientRect();
+    if(PLOT_STATE.star.type === 'hist'){
+      // histogram: single points can't be hit, so the box sweeps BARS — every
+      // bar it touches horizontally contributes all of its stars
+      (PLOT_STATE.star.histBars || []).forEach(b => {
+        if(!b.recs) return;
+        const bl = cr.left + b.x, br = cr.left + b.x + b.w;
+        if(br >= lo.x && bl <= hi.x) b.recs.forEach(r => _grpSel.stars.add(r));
+      });
+    } else {
+      (PLOT_STATE.star.screenPts || []).forEach(p => {
+        const px = cr.left + p.x, py = cr.top + p.y;
+        if(px >= lo.x && px <= hi.x && py >= lo.y && py <= hi.y) _grpSel.stars.add(p.r);
+      });
+    }
+  }
+  _syncGrpSel();
+}
+// One bar = all of its stars. Fully selected → the click takes them out again.
+function _toggleGrpSelBar(b){
+  if(!_grpSel || !b || !b.recs || !b.recs.length) return;
+  const all = b.recs.every(r => _grpSel.stars.has(r));
+  b.recs.forEach(r => all ? _grpSel.stars.delete(r) : _grpSel.stars.add(r));
+  _syncGrpSel();
+}
+// (the box is ended by the window-level mouseup next to the canvas handlers)
+document.addEventListener('keydown', e => {
+  if(!_grpSel) return;
+  const t = e.target;
+  if(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  // stopImmediatePropagation: while drawing, ESC leaves the SELECTION only —
+  // the global handler further down would otherwise also close the plot window
+  // the group is being drawn in (and ENTER must not reach popup handlers).
+  if(e.key === 'Enter'){ e.preventDefault(); e.stopImmediatePropagation(); finishGroupSelect(); }
+  else if(e.key === 'Escape'){ e.preventDefault(); e.stopImmediatePropagation(); cancelGroupSelect(); }
+});
 // both entry points show whether a filter is currently narrowing the sample
 function _syncGroupButtons(){
   const active = starGroupFilterActive();
-  ['star-groups-btn','plot-groups-btn'].forEach(id => {
+  ['star-groups-btn','plot-groups-btn','mask-groups-btn'].forEach(id => {
     const b = document.getElementById(id); if(!b) return;
     b.classList.toggle('on', active || _groupPopOpen);
     b.textContent = active ? 'Groups ●' : 'Groups';
     b.title = active ? `Star groups — filter active (${starFieldLabel(starGroupField)})`
-                     : 'Show or hide stars by their Luhman / SigMA group';
+                     : 'Show or hide stars by their group';
   });
 }
 document.addEventListener('mousedown', e => {
   if(!_groupPopOpen) return;
   const pop = document.getElementById('group-pop');
   if(pop && pop.contains(e.target)) return;
-  if(e.target.closest && e.target.closest('#star-groups-btn,#plot-groups-btn')) return;
+  if(e.target.closest && e.target.closest('#star-groups-btn,#plot-groups-btn,#mask-groups-btn')) return;
   closeGroupPop();
 });
 
@@ -4561,6 +5283,8 @@ function _pickerColor(){
     const o = _isoTarget != null && PLOT_STATE.star.isochrones[_isoTarget];
     hex = (o && o.color) || _isoAutoColor(_isoTarget);
   }
+  // 'vs-<key>' = one colour of the editable 3D style (style list)
+  else if(_pickerTarget.startsWith('vs-')) hex = _customStyleColor(_pickerTarget.slice(3));
   else hex = uniformStarColor;
   let h = String(hex || '').trim().replace(/^#/, '');
   if(/^[0-9a-fA-F]{3}$/.test(h)) h = h.split('').map(c=>c+c).join('');
@@ -4573,6 +5297,7 @@ function _pickerApply(hex){
   else if(_pickerTarget === 'pline') _plineApply('color', hex);
   else if(_pickerTarget === 'pspec') _pspecApply('color', hex);
   else if(_pickerTarget === 'iso') _isoApply('color', hex);
+  else if(_pickerTarget.startsWith('vs-')) _setCustomStyleColor(_pickerTarget.slice(3), hex);
   else setUniformStarColor(hex);
 }
 
@@ -4688,10 +5413,14 @@ function openColorPicker(target, anchor){
   pop.style.display = 'block';
   drawStarSLSquare();
   syncPickerWidgets();
-  // place next to the clicked swatch, clamped inside the viewport
+  // place next to the clicked swatch, clamped inside the viewport. Swatches in
+  // the style list get the popup BESIDE the list — under them it would cover
+  // the other colours of the very style being edited.
   const r = anchor.getBoundingClientRect();
   const pw = pop.offsetWidth, ph = pop.offsetHeight;
-  let x = r.left, y = r.bottom + 6;
+  const inList = anchor.closest && anchor.closest('#vstyle-pop');
+  let x = inList ? inList.getBoundingClientRect().right + 6 : r.left,
+      y = inList ? r.top - 6 : r.bottom + 6;
   if(x + pw > innerWidth  - 6) x = innerWidth  - pw - 6;
   if(y + ph > innerHeight - 6) y = r.top - ph - 6;
   pop.style.left = Math.max(6, x) + 'px';
@@ -5442,11 +6171,16 @@ function wireSliderTyping(){
       if(row.querySelector('.slider-type-box')) return;   // already editing
       const m = (range.getAttribute('oninput')||'').match(/this\.value\s*\/\s*(\d+)/);
       const fac = m ? +m[1] : 1;
+      // Rows whose slider position isn't the value itself (the mask level rides
+      // a log scale over three decades) opt out via data-type-set/-get and take
+      // the typed number directly — the generic path would map e.g. 3.2e-5 onto
+      // slider step 0 and appear to do nothing.
+      const setFn = window[row.dataset.typeSet], getFn = window[row.dataset.typeGet];
       const inp = document.createElement('input');
       inp.type = 'number'; inp.step = 'any';
       inp.className = 'cmax-input slider-type-box';
       inp.style.width = '46px'; inp.style.flexShrink = '0';
-      inp.value = parseFloat(sv.textContent);
+      inp.value = (typeof getFn === 'function') ? getFn() : parseFloat(sv.textContent);
       sv.style.display = 'none';
       sv.after(inp);
       inp.focus(); inp.select();
@@ -5456,9 +6190,12 @@ function wireSliderTyping(){
         if(apply){
           const v = parseFloat(inp.value);
           if(isFinite(v)){
-            const st = parseFloat(range.step) || 1;
-            range.value = Math.round(v * fac / st) * st;   // browser clamps to min/max
-            range.dispatchEvent(new Event('input'));
+            if(typeof setFn === 'function') setFn(v);
+            else {
+              const st = parseFloat(range.step) || 1;
+              range.value = Math.round(v * fac / st) * st;   // browser clamps to min/max
+              range.dispatchEvent(new Event('input'));
+            }
           }
         }
         inp.remove(); sv.style.display = '';
@@ -5529,25 +6266,175 @@ function setCustomRefVec(axis, rawVal){
   if(refFrameMode === 'custom' && DATA) rebuildForRefFrame();
   saveSettings();
 }
-function toggleDarkMode(){
-  isDark=!isDark;
-  document.documentElement.classList.toggle('dark',isDark);
-  const btn=document.getElementById('tog-darkmode');
-  btn.textContent=isDark?'☀ Light':'🌙 Dark';
-  btn.classList.toggle('on',isDark);
-  renderer.setClearColor(isDark?0x070b12:0xf4f6fa);
+// Apply a 3D style preset: the render's own colours (background, axes, box, text
+// sprites) plus the light/dark chrome it comes with. The 2D plot windows keep
+// their own preset — only a plot set to 'theme' follows the chrome.
+function setViewerStyle(id){
+  if(!VIEWER_STYLES[id]) return;
+  viewerStyle = id;
+  const st = VIEWER_STYLES[id];
+  isDark = st.dark;
+  const root = document.documentElement;
+  root.classList.toggle('dark', isDark);
+  // base theme from the class, the preset's own tint inline on top of it
+  VIEWER_STYLE_VARS.forEach(v => root.style.removeProperty(v));
+  Object.entries(st.ui || {}).forEach(([k,v]) => root.style.setProperty(k, v));
+  root.style.setProperty('--renderer-bg', st.bg);
+  renderer.setClearColor(st.bg);
+  _syncViewerStyleBtn();
   // swap the glow blending mode in place — dust/density clouds can hold
   // millions of points, so update their materials without a geometry rebuild;
   // the glow sprites live in G.objects, which is cheap to rebuild.
   const bl = glowBlending();
   if(dustPoints){  dustPoints.material.blending  = bl; dustPoints.material.needsUpdate  = true; }
   if(cloudPoints){ cloudPoints.material.blending = bl; cloudPoints.material.needsUpdate = true; }
-  // colorbar KDE strips are tinted with the theme's accent colour — redraw
-  // them (buildStars already refreshes the star one via its colorbar path)
-  if(DATA){buildAxes(); buildStars(); buildObjects(); updateColorbar(); updateStreamColorbar(); updateCloudColorbar();}
+  // axes/box carry the style's colours, the labels its text colour; the colorbar
+  // KDE strips are tinted with the theme accent (buildStars refreshes the star one)
+  if(DATA){ buildAxes(); buildBox(); buildStars(); buildObjects();
+            updateColorbar(); updateStreamColorbar(); updateCloudColorbar(); }
   renderAllPlots();   // re-theme the plot canvases if a window is open
   // auto colours (--accent*) changed: refresh line chips + plot colour swatches
   ['star','field'].forEach(w => { renderPlotLinesUI(w); syncPlotColorWidgets(w); });
+}
+// legacy entry point (old saves stored only isDark): jump to the default preset
+// of the other base theme
+function toggleDarkMode(){ setViewerStyle(isDark ? 'daylight' : 'midnight'); }
+// The button carries the NAME only — the colour chips live in the list below it
+// (user request July 2026: the header row stayed calmer without them).
+function _syncViewerStyleBtn(){
+  const btn = document.getElementById('vstyle-btn');
+  if(!btn) return;
+  btn.textContent = activeViewerStyle().label;
+  btn.title = `3D style: ${activeViewerStyle().label} — click for the preset list`;
+}
+// ── Style previews ───────────────────────────────────────────────────────────
+// The prominent colours of a preset as a little chip strip, shown next to the
+// name in both style lists (3D presets and 2D plot presets) and on the button.
+function _styleSwatches(cols){
+  return `<span class="sw-strip">` +
+    cols.map(c => `<span class="sw" style="background:${c}"></span>`).join('') + `</span>`;
+}
+function _viewerStyleSwatches(id){
+  const s = VIEWER_STYLES[id] || VIEWER_STYLES.midnight;
+  return [s.bg, s.ax[0], s.ax[1], s.ax[2]];
+}
+function _plotStyleSwatches(id){
+  const s = PLOT_STYLES[id];
+  return s ? [s.bg, s.pt, s.grid, s.axis]
+           // 'theme' follows the app chrome — show what it currently resolves to
+           : [_cssVar('--bg'), _cssVar('--accent2'), _cssVar('--border2'), _cssVar('--text3')];
+}
+// ── #vstyle-pop: the 3D style list (same widget as the plot one) ─────────────
+// The list is where the colour previews live, and — with "Custom" active — the
+// editor for its six colours. It STAYS OPEN while the shared colour picker is
+// used on one of its swatches (that popup is not inside it).
+let _vstylePopOpen = false;
+function toggleViewerStylePop(btn){
+  const pop = document.getElementById('vstyle-pop');
+  if(!pop) return;
+  if(_vstylePopOpen){ closeViewerStylePop(); return; }
+  _vstylePopOpen = true;
+  renderViewerStylePop();
+  pop.style.display = 'flex';
+  const r = btn.getBoundingClientRect();
+  const pw = pop.offsetWidth || 170, ph = pop.offsetHeight || 200;
+  const x = Math.min(Math.max(4, r.left), window.innerWidth - pw - 4);
+  let y = r.bottom + 4;
+  if(y + ph > window.innerHeight - 4) y = Math.max(4, r.top - ph - 4);
+  pop.style.left = x + 'px'; pop.style.top = y + 'px';
+}
+function renderViewerStylePop(){
+  const pop = document.getElementById('vstyle-pop');
+  if(!pop || !_vstylePopOpen) return;
+  let html = Object.entries(VIEWER_STYLES).map(([id,s]) =>
+    `<button class="${id === viewerStyle ? 'on' : ''}" onclick="_viewerStylePick('${id}')"
+       title="${s.label} — ${s.dark ? 'dark' : 'light'} interface">
+       ${_styleSwatches(_viewerStyleSwatches(id))}<span>${s.label}</span></button>`).join('');
+  if(viewerStyle === 'custom'){
+    const st = VIEWER_STYLES.custom;
+    html += `<div class="vstyle-edit">` +
+      VSTYLE_EDIT_ROWS.map(([k,lbl]) =>
+        `<div class="vsr"><span>${lbl}</span>
+           <span class="vsw color-swatch-btn" style="background:${_customStyleColor(k)}"
+                 title="${lbl} — click to pick a colour"
+                 onclick="openColorPicker('vs-${k}', this)"></span></div>`).join('') +
+      `<div class="vsr"><span>Interface</span>
+         <button class="tog" onclick="toggleCustomStyleDark()"
+           title="Base theme of the sidebar and panels for this style">${st.dark ? 'Dark' : 'Light'}</button></div>` +
+      `</div>`;
+  }
+  pop.innerHTML = html;
+}
+function _viewerStylePick(id){
+  // first visit to Custom: start from what is currently on screen
+  if(id === 'custom' && !customStyleEdited && viewerStyle !== 'custom') _seedCustomStyle(viewerStyle);
+  setViewerStyle(id);
+  if(id === 'custom') renderViewerStylePop(); else closeViewerStylePop();
+  saveSettings();
+}
+function closeViewerStylePop(){
+  _vstylePopOpen = false;
+  const p = document.getElementById('vstyle-pop'); if(p) p.style.display = 'none';
+}
+document.addEventListener('mousedown', e => {
+  if(!_vstylePopOpen) return;
+  const pop = document.getElementById('vstyle-pop');
+  if(pop && pop.contains(e.target)) return;
+  // the colour picker is a sibling popup opened FROM this list — it must not
+  // close the list under it (the swatch it is anchored to lives there)
+  if(e.target.closest && e.target.closest('#color-picker-pop,#vstyle-btn')) return;
+  closeViewerStylePop();
+});
+// ── The editable "Custom" style ──────────────────────────────────────────────
+// Six colours, addressed by the same short keys the picker targets use
+// ('vs-bg', 'vs-ax0' … ). Axis LABEL colours are not edited by hand: they are
+// derived from the axis colour, lifted away from the background.
+function _customStyleColor(k){
+  const st = VIEWER_STYLES.custom;
+  return k.startsWith('ax') ? st.ax[+k.slice(2)] : st[k];
+}
+function _seedCustomStyle(fromId){
+  const s = VIEWER_STYLES[fromId] || VIEWER_STYLES.midnight, c = VIEWER_STYLES.custom;
+  c.dark = s.dark; c.bg = s.bg; c.box = s.box; c.txt = s.txt;
+  c.ax = s.ax.slice(); c.axl = s.axl.slice();
+}
+// axis label = the axis colour pulled towards white (dark style) or black (light)
+function _axLabelColor(hex, dark){
+  const n = parseInt(String(hex).replace('#',''), 16);
+  if(!isFinite(n)) return hex;
+  const t = 0.35, tgt = dark ? 255 : 0;
+  const mix = c => Math.round(c + (tgt - c)*t).toString(16).padStart(2,'0');
+  return '#' + mix((n>>16)&255) + mix((n>>8)&255) + mix(n&255);
+}
+// One colour of the custom style: applied with the SMALLEST refresh that shows
+// it (the picker fires this on every drag frame), not a full setViewerStyle.
+function _setCustomStyleColor(k, hex){
+  const st = VIEWER_STYLES.custom;
+  customStyleEdited = true;
+  if(k.startsWith('ax')){ const i = +k.slice(2); st.ax[i] = hex; st.axl[i] = _axLabelColor(hex, st.dark); }
+  else st[k] = hex;
+  if(viewerStyle !== 'custom'){ setViewerStyle('custom'); }
+  else {
+    if(k === 'bg'){
+      document.documentElement.style.setProperty('--renderer-bg', hex);
+      renderer.setClearColor(hex);
+    } else if(DATA){
+      if(k.startsWith('ax') || k === 'txt') buildAxes();
+      if(k === 'box') buildBox();
+      if(k === 'txt') buildObjects();      // object labels use the style's text colour
+    }
+  }
+  renderViewerStylePop();
+  saveSettings();
+}
+function toggleCustomStyleDark(){
+  const st = VIEWER_STYLES.custom;
+  st.dark = !st.dark;
+  st.ax.forEach((c,i) => st.axl[i] = _axLabelColor(c, st.dark));
+  customStyleEdited = true;
+  setViewerStyle('custom');
+  renderViewerStylePop();
+  saveSettings();
 }
 // ═══════════════════════════════════════════════════════════
 // SETTINGS PERSISTENCE (localStorage)
@@ -5588,6 +6475,16 @@ const SETTINGS_TABLE = [
   // absolute mask threshold (KDE mass density); null = exported default level
   { key:'maskLevel', get:()=>maskLevel,
     set:v=>{ maskLevel = (typeof v==='number' && isFinite(v) && v>0) ? v : null; } },
+  // KDE recipe of the Mask section — state only (initScene recomputes the
+  // density once the data is in and syncs the widgets via _syncMaskUI)
+  { key:'maskKde', get:()=>({ method:maskKdeMethod, factor:maskKdeFactor, groups:maskUseGroups }),
+    set:v=>{ if(!v || typeof v !== 'object') return;
+      // legacy saves may still carry the dropped scott/silverman rules → exported
+      if(['export','manual'].includes(v.method)) maskKdeMethod = v.method;
+      else if(v.method) maskKdeMethod = 'export';
+      if(typeof v.factor === 'number' && isFinite(v.factor) && v.factor > 0)
+        maskKdeFactor = Math.max(0.02, Math.min(2, v.factor));
+      maskUseGroups = !!v.groups; } },
   { key:'params',       get:()=>({ ...params }),       set:v=>{ Object.assign(params, v);
       // legacy migration: cloudSize/cloudGamma/cloudCutoff merged into ONE
       // cloudStrength (July 2026) — derive it from the old gamma so a save
@@ -5630,7 +6527,24 @@ const SETTINGS_TABLE = [
       // lbubbleLevelIdx: refreshLocalBubbleSlider() in buildAll() clamps it to
       // the available levels and updates the slider once the data is loaded.
     } },
+  // legacy key (pre-styles saves stored only the dark flag) — 'viewerStyle'
+  // below is restored AFTER it and wins whenever it is present
   { key:'isDark',       get:()=>isDark,                set:v=>{ if(v !== isDark) toggleDarkMode(); } },
+  // the editable style's own colours — BEFORE 'viewerStyle', so that restoring
+  // viewerStyle='custom' applies the saved colours and not the seed copy
+  { key:'viewerStyleCustom',
+    get:()=>{ const c = VIEWER_STYLES.custom;
+              return { edited:customStyleEdited, dark:c.dark, bg:c.bg, box:c.box, txt:c.txt,
+                       ax:c.ax.slice(), axl:c.axl.slice() }; },
+    set:v=>{ if(!v || typeof v !== 'object') return;
+             const c = VIEWER_STYLES.custom;
+             if(typeof v.dark === 'boolean') c.dark = v.dark;
+             ['bg','box','txt'].forEach(k => { if(typeof v[k] === 'string') c[k] = v[k]; });
+             if(Array.isArray(v.ax)  && v.ax.length  === 3) c.ax  = v.ax.slice();
+             if(Array.isArray(v.axl) && v.axl.length === 3) c.axl = v.axl.slice();
+             else c.axl = c.ax.map(x => _axLabelColor(x, c.dark));
+             customStyleEdited = !!v.edited; } },
+  { key:'viewerStyle',  get:()=>viewerStyle,           set:v=>{ if(VIEWER_STYLES[v] && v !== viewerStyle) setViewerStyle(v); } },
   { key:'autoRot',      get:()=>autoRot,               set:v=>{ autoRot = v; _togSync('btn-autorot', autoRot); } },
   { key:'streamMode',   get:()=>streamMode,            set:v=>{ if(v){ streamMode = v; setStreamMode(streamMode); } } },
   // star plot window — legacy per-property keys kept so old saves restore
@@ -5753,6 +6667,13 @@ const SETTINGS_TABLE = [
   { key:'starDisplayMask',   get:()=>starDisplayMask,  set:v=>{ if(v){ starDisplayMask = v; _selSync('star-mask-select', starDisplayMask); } } },
   // Group filter ("Star groups" window). A data selection like the display mask
   // above, so it persists; Sets are stored as arrays of the HIDDEN names.
+  // user-drawn groups: names + colours + member source_ids. Restored as state
+  // only — initScene materialises them onto the stars (applyCustomGroups).
+  { key:'customGroups',
+    get:()=>customGroups.map(g => ({ name:g.name, color:g.color, ids:g.ids })),
+    set:v=>{ if(!Array.isArray(v)) return;
+      customGroups = v.filter(g => g && typeof g.name === 'string' && Array.isArray(g.ids))
+                      .map(g => ({ name:g.name, color:String(g.color || '#4e9bd8'), ids:g.ids.map(String) })); } },
   { key:'starGroupField',    get:()=>starGroupField,   set:v=>{ if(v) starGroupField = v; } },
   { key:'starGroupHidden',
     get:()=>{ const o={}; for(const k in starGroupHidden) o[k] = [...starGroupHidden[k]]; return o; },
@@ -5789,6 +6710,7 @@ function saveSettings(){
 // UI syncs that depend on MORE than one restored key — they run once after the
 // table pass, unconditionally (they also establish the defaults on first load).
 function _postRestoreSync(){
+  _syncViewerStyleBtn();   // unconditional: the default preset needs its label + preview too
   ['x','y','z'].forEach(axis=>{ const el = document.getElementById('rf-custom-v'+axis); if(el) el.value = customRefVec[axis]; });
   // keep the active field's memory in sync with the restored component (also
   // back-fills perFieldComponent from an older save that lacked it); the
@@ -6285,6 +7207,17 @@ function handleViewerClick(e){
   _mouse2D.x =  ((e.clientX - rect.left) / rect.width)  * 2 - 1;
   _mouse2D.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
   _raycaster.setFromCamera(_mouse2D, camera);
+  // drawing a custom group: a click adds or removes the star it hits and
+  // nothing else (no info card, no voxel pick)
+  if(groupSelectActive() && _grpSel.mode === '3d'){
+    const hit = starsVisible ? _raycaster.intersectObjects(G.stars.children, false)[0] : null;
+    if(hit){
+      const s = (starVectorsOn() && hit.instanceId != null)
+        ? _starVectorStars[hit.instanceId] : hit.object.userData?.star;
+      _toggleGrpSelStar(s);
+    }
+    return;
+  }
   // Both layers are clickable (field markers AND stars) — pick whichever the
   // ray hits first, so a star in front of an arrow wins and vice versa.
   const px = e.clientX - rect.left, py = e.clientY - rect.top;
@@ -6358,6 +7291,9 @@ function _starSearchMsg(txt){
 // are NOT cleared by clicking around any more — only by the "✕ marks" button
 // (clearSearchMarkers) or the next search. Geometry + material are shared.
 let _searchMarkers = [];
+// the stars behind them — the group-drawing mode borrows the markers and has to
+// put the user's own marks back when it leaves
+let _searchMarkerStars = [];
 let _searchRingMat = null, _searchRingGeo = null;
 function _searchRingMaterial(){
   if(_searchRingMat) return _searchRingMat;
@@ -6398,6 +7334,7 @@ function _updateClearMarkersBtn(){
 function clearSearchMarkers(){
   _searchMarkers.forEach(m => scene.remove(m));   // shared geo/material kept
   _searchMarkers = [];
+  _searchMarkerStars = [];
   _updateClearMarkersBtn();
 }
 function addSearchMarker(s){
@@ -6416,6 +7353,7 @@ function addSearchMarker(s){
 function setSearchMarkers(stars){
   clearSearchMarkers();
   stars.forEach(addSearchMarker);
+  _searchMarkerStars = stars.slice();
   _updateClearMarkersBtn();
 }
 // Frame the camera so ALL given stars are safely in view: centre on their
@@ -6498,7 +7436,7 @@ function showStarInfo(s, px, py){
   // categorical memberships (Luhman group): a name, so they never made it into
   // the numeric loop above. '–' where the star belongs to no group.
   STAR_CAT_FIELDS.forEach(k => { if(k in s)
-    rows += `<tr><td>${starFieldLabel(k)}</td><td>${s[k] == null ? '–' : s[k]}</td></tr>`; });
+    rows += `<tr><td>${starFieldLabel(k)}</td><td>${s[k] == null ? '–' : _escHtml(s[k])}</td></tr>`; });
   document.getElementById('sip-table').innerHTML = rows;
   // position near the click, clamped inside the viewer
   pop.style.display = 'block';
@@ -7294,7 +8232,8 @@ function toggleStylePop(w, btn){
   const pop = document.getElementById('style-pop');
   const sel = _pEl(w,'style-select');
   pop.innerHTML = Array.from(sel.options).map(o =>
-    `<button class="${o.value === PLOT_STATE[w].style ? 'on' : ''}" onclick="_stylePick('${o.value}')">${o.textContent}</button>`
+    `<button class="${o.value === PLOT_STATE[w].style ? 'on' : ''}" onclick="_stylePick('${o.value}')">
+       ${_styleSwatches(_plotStyleSwatches(o.value))}<span>${o.textContent}</span></button>`
   ).join('');
   pop.style.display = 'flex';
   const r = btn.getBoundingClientRect();
@@ -7647,6 +8586,8 @@ function togglePlotWindow(w='star'){
   win.classList.toggle('open', open);
   document.getElementById('tog-' + _pid(w) + '-window')?.classList.toggle('on', open);
   if(!open && _pickerTarget === (w === 'field' ? 'fplot' : 'plot')) closeColorPicker();
+  // a group being drawn IN this window has nothing left to draw on once it closes
+  if(!open && w === 'star' && groupSelectActive() && _grpSel.mode === '2d') cancelGroupSelect();
   if(open){
     populatePlotSelects(w);                 // applies persisted field prefs (if pending)
     setPlotType(PLOT_STATE[w].type, w);     // restore hist/scatter UI + row visibility
@@ -7702,6 +8643,8 @@ function setPlotType(t, w='star'){
   syncPlotColorWidgets(w);   // theme auto colour differs between hist/scatter
   updatePlotColorControls(w);
   st.hoverPt = null; st.histHover = -1; st.drag = null;
+  // a group drawn in this window survives the switch — only the gesture changes
+  if(w === 'star' && groupSelectActive() && _grpSel.mode === '2d') _syncGrpSelHint();
   const tip = _pEl(w,'tooltip'); if(tip) tip.style.display = 'none';
   _syncRangeReset(w);
   renderPlot(w);
@@ -7838,10 +8781,15 @@ function starMaskPred(which){
 }
 // null when nothing is filtered (fast path); otherwise a predicate over the
 // ACTIVE grouping field. Stars without a group are one entry, keyed by NO_GROUP.
+// Custom groups may overlap, so a star stays visible while ANY group it belongs
+// to is shown (s._customAll, written by applyCustomGroups).
 function starGroupPred(){
   const hid = starGroupHidden[starGroupField];
   if(!hid || hid.size === 0) return null;
   const f = starGroupField;
+  if(f === 'name_custom')
+    return s => { const a = s._customAll;
+                  return a && a.length ? a.some(n => !hid.has(n)) : !hid.has(NO_GROUP); };
   return s => !hid.has(s[f] == null ? NO_GROUP : s[f]);
 }
 function starGroupFilterActive(){ const h = starGroupHidden[starGroupField]; return !!h && h.size > 0; }
@@ -8274,15 +9222,24 @@ function drawDataPlot(w, ctx, W, H, interactive){
 
   if(stw.type === 'hist'){
     const xf = _pEl(w,'x-select').value;
-    let vals = [];
-    recs.forEach(r => { const v = src.val(r, xf); if(v != null) vals.push(v); });
+    // While a custom group is drawn in this window the bars must know THEIR
+    // stars (a click/box selects whole bins), so the records are carried along
+    // in parallel to the values — only in the star window, where that is possible.
+    const keepRecs = interactive && !!src.pinning;
+    let vals = [], vrecs = keepRecs ? [] : null;
+    recs.forEach(r => { const v = src.val(r, xf);
+      if(v != null){ vals.push(v); if(keepRecs) vrecs.push(r); } });
     const nAll = vals.length;
     let mn, mx;
     if(stw.range){
       // drag-selected x-range: the axis spans the selection and only the data
       // inside it is shown AND fitted
       mn = stw.range[0]; mx = stw.range[1];
-      vals = vals.filter(v => v >= mn && v <= mx);
+      if(keepRecs){
+        const kv = [], kr = [];
+        vals.forEach((v,i) => { if(v >= mn && v <= mx){ kv.push(v); kr.push(vrecs[i]); } });
+        vals = kv; vrecs = kr;
+      } else vals = vals.filter(v => v >= mn && v <= mx);
     } else {
       mn = Infinity; mx = -Infinity;
       vals.forEach(v => { if(v < mn) mn = v; if(v > mx) mx = v; });
@@ -8300,7 +9257,10 @@ function drawDataPlot(w, ctx, W, H, interactive){
     // engaged only for a positive range. _axFrac linearises the mapping so the
     // bin index, bar position and tick labels all fall out of the same fraction.
     const lgX = !!stw.logX && _axLogOK(mn, mx);
-    vals.forEach(v => { let i = Math.floor(_axFrac(v, mn, mx, lgX) * bins); if(i<0)i=0; if(i>=bins)i=bins-1; counts[i]++; });
+    const binRecs = keepRecs ? new Array(bins) : null;
+    vals.forEach((v,vi) => { let i = Math.floor(_axFrac(v, mn, mx, lgX) * bins); if(i<0)i=0; if(i>=bins)i=bins-1;
+      counts[i]++;
+      if(keepRecs){ if(!binRecs[i]) binRecs[i] = []; binRecs[i].push(vrecs[vi]); } });
     const mc = Math.max(...counts);
     const fx = !!stw.flipX;   // X-axis flip (max→min); bars + ticks mirror to match
     // ymn/ymx = the count axis (for horizontal reference lines at y=…)
@@ -8309,6 +9269,9 @@ function drawDataPlot(w, ctx, W, H, interactive){
     // axis/grid instead of the whole row collapsing (y-axis/grid/fit info
     // used to vanish together with the last visible bin)
     drawFrame(); gridLines(); xTicks(mn, mx, fx, lgX); yTicks(0, mc || 1);
+    // marked stars while a group is drawn in this window: the selected share of
+    // each bar is painted in the marker colour (same accent as the 3D rings)
+    const grpDraw = keepRecs && groupSelectActive() && _grpSel.mode === '2d' && w === 'star';
     for(let i=0;i<bins;i++){
       if(!counts[i]) continue;
       const bwpx = (x1-x0)/bins;
@@ -8317,10 +9280,17 @@ function drawDataPlot(w, ctx, W, H, interactive){
       const bw2 = Math.max(bwpx-1,1);
       ctx.fillStyle = col.bar;
       ctx.fillRect(bx+0.5, y1-bh, bw2, bh);
+      if(grpDraw){
+        const selN = (binRecs[i] || []).reduce((n,r) => n + (_grpSel.stars.has(r) ? 1 : 0), 0);
+        if(selN){
+          const sh = (selN/mc)*(y1-y0);
+          ctx.fillStyle = col.pin; ctx.fillRect(bx+0.5, y1-sh, bw2, sh);
+        }
+      }
       if(interactive){
         // hovered bin gets a contrast overlay (adapts to the style's background)
         if(i === stw.histHover){ ctx.fillStyle = hoverTint; ctx.fillRect(bx+0.5, y1-bh, bw2, bh); }
-        stw.histBars.push({ idx:i, x:bx+0.5, w:bw2, top:y1-bh, bottom:y1,
+        stw.histBars.push({ idx:i, x:bx+0.5, w:bw2, top:y1-bh, bottom:y1, recs:keepRecs ? (binRecs[i] || []) : null,
                             count:counts[i], lo:_axVal(i/bins, mn, mx, lgX), hi:_axVal((i+1)/bins, mn, mx, lgX) });
       }
     }
@@ -8521,6 +9491,15 @@ function drawDataPlot(w, ctx, W, H, interactive){
     ctx.strokeStyle = col.pin; ctx.lineWidth = 1.4;
     ctx.beginPath(); ctx.arc(p.x, p.y, 4.2, 0, 6.283); ctx.stroke();
   });
+  // stars marked while drawing a custom group — the 2D counterpart of the
+  // orange rings the 3D view shows
+  if(src.pinning && groupSelectActive() && _grpSel.mode === '2d') _grpSel.stars.forEach(s => {
+    const a = src.val(s, xf), b = src.val(s, yf);
+    if(a == null || b == null || !src.inMask(s)) return;
+    const p = toScreen({ a, b });
+    ctx.strokeStyle = '#ffb454'; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 5.2, 0, 6.283); ctx.stroke();
+  });
   if(interactive && stw.hoverPt){
     const a = src.val(stw.hoverPt, xf), b = src.val(stw.hoverPt, yf);
     if(a != null && b != null){
@@ -8670,6 +9649,10 @@ function _wirePlotWindow(w){
     if(e.button !== 0 && e.button !== 2) return;
     const { mx, my } = pos(e);
     if(!inPlot(mx, my)) return;
+    // drawing a custom group in THIS plot: right-drag is the selection box
+    if(e.button === 2 && groupSelectActive() && _grpSel.mode === '2d' && w === 'star'){
+      _grpRectStart(e.clientX, e.clientY); e.preventDefault(); return;
+    }
     const right = e.button === 2;
     // left-drag: hist = range select, scatter = free pan.
     // right-drag: pan along x at the current zoom level — scatter pans x only,
@@ -8736,12 +9719,24 @@ function _wirePlotWindow(w){
   });
   cv.addEventListener('click', e => {
     if(st.suppressClick){ st.suppressClick = false; return; }   // was a drag
+    // drawing a group in a HISTOGRAM: a click toggles the bar under the cursor
+    // (single stars aren't addressable there — user request July 2026)
+    if(st.type === 'hist' && groupSelectActive() && _grpSel.mode === '2d' && w === 'star'){
+      const { mx, my } = pos(e);
+      // hit by COLUMN, not by the bar rectangle — a one-star bar is a sliver
+      const bar = (st.histBars || []).find(b => mx >= b.x - 0.5 && mx <= b.x + b.w + 0.5
+                                                && my >= (st.ax ? st.ax.y0 : b.top) && my <= b.bottom);
+      if(bar) _toggleGrpSelBar(bar);
+      return;
+    }
     if(st.type !== 'scatter' || !src.pinning) return;
     const { mx, my } = pos(e);
     let best = null, bestD = 49;
     st.screenPts.forEach(p => { const d = (p.x-mx)*(p.x-mx) + (p.y-my)*(p.y-my); if(d < bestD){ bestD = d; best = p; } });
     if(!best) return;
     const s = best.r;
+    // while drawing a group the click adds/removes instead of pinning
+    if(groupSelectActive() && _grpSel.mode === '2d' && w === 'star'){ _toggleGrpSelStar(s); return; }
     plotPinned = plotPinned.includes(s) ? plotPinned.filter(p => p !== s) : [...plotPinned, s];
     renderPlotPinned(); renderPlot(w);
   });
@@ -9601,9 +10596,12 @@ function colorbarPanelDims(cw, ch, n){
 function compositeColorbarsOnto(octx, srcCanvas, selectedBars){
   const cw = srcCanvas.width, ch = srcCanvas.height;
   const n = selectedBars.length;
-  const bg = isDark ? '#0c1220' : '#ffffff';
-  const text = isDark ? '#d0e0f8' : '#1a2540';
-  const divider = isDark ? 'rgba(60,110,200,0.3)' : 'rgba(160,180,220,0.4)';
+  // The panel matches the RENDER's background (the 3D style), so the strip that
+  // carries the colorbars can't sit next to the image as a differently coloured
+  // block; text/divider come from the tinted chrome variables.
+  const bg = activeViewerStyle().bg;
+  const text = _cssVar('--text');
+  const divider = _cssVar('--border2');
   const dims = colorbarPanelDims(cw, ch, n);
 
   octx.fillStyle = bg; octx.fillRect(0, 0, dims.width, dims.height);
