@@ -41,6 +41,19 @@
   footer{ margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border);
           color:var(--text3); font-size:.85rem; }
   a{ color:var(--accent); }
+  .runs{ display:flex; flex-direction:column; gap:.6rem; }
+  .run{ display:flex; flex-wrap:wrap; align-items:baseline; gap:.35rem .6rem;
+        background:var(--bg2); border:1px solid var(--border); border-radius:8px;
+        padding:.75rem .9rem; }
+  .run-name{ font:600 .95rem/1.3 ui-monospace,monospace; color:var(--text); }
+  .run-tag{ font:600 10px/1 ui-monospace,monospace; letter-spacing:.06em;
+            text-transform:uppercase; color:var(--accent2); border:1px solid var(--border);
+            border-radius:4px; padding:.2rem .35rem; }
+  .run-desc{ flex:1 1 16rem; color:var(--text2); font-size:.9rem; }
+  .run-links{ font-size:.9rem; white-space:nowrap; }
+  .run-links a{ text-decoration:none; }
+  .run-links a:hover{ text-decoration:underline; }
+  .run-links span{ color:var(--text3); }
 </style>
 </head>
 <body>
@@ -56,7 +69,7 @@
       <div class="badge">recommended on desktop</div>
       <p>Everything: the velocity field and the stellar sample. Additionally the Edenhofer 3D dust map
       and a model of the Local Bubble surface.</p>
-      <div class="meta">17 MB file · ≈5 MB transferred</div>
+      <div class="meta">12 MB file</div>
     </a>
 
     <a class="card" href="vectorfield_viewer_light.html">
@@ -64,7 +77,7 @@
       <div class="badge">faster to load</div>
       <p>Same field and stellar data, but without the dust map and with less detail of the
       Local Bubble surface which essentially are not important for the rest of the analysis.</p>
-      <div class="meta">7 MB file · ≈1.5 MB transferred</div>
+      <div class="meta">2 MB file</div>
     </a>
   </div>
 
@@ -80,6 +93,81 @@
           colour–magnitude diagrams, power spectra.</li>
       <li><b>Export</b> — screenshots and videos.</li>
     </ul>
+  </section>
+
+  <section>
+    <h3>Other runs</h3>
+    <p style="margin:0 0 .9rem;color:var(--text2);font-size:.92rem;">
+      The same viewer with a different reconstruction embedded, as light versions. Press <b>I</b> inside any of them
+      for its exact parameters and convergence record.</p>
+    <div class="runs">
+
+      <div class="run">
+        <span class="run-name">test_with_sigma</span>
+        <span class="run-tag">rewritten pipeline</span>
+        <span class="run-desc">Same data and grid as the default run, but the stars are allowed a motion
+          of their own on top of the field: one common dispersion is inferred alongside the field and
+          added to every measurement uncertainty, so a deviating star no longer has to be absorbed by
+          bending the field towards it.</span>
+        <span class="run-links"><a href="Runs/test_with_sigma_light.html">open →</a></span>
+      </div>
+
+      <div class="run">
+        <span class="run-name">test_no_sigma_seed</span>
+        <span class="run-tag">rewritten pipeline</span>
+        <span class="run-desc">A repetition of the default run with a different random seed. The seed
+          controls every random number the inference uses: the field it starts from, and the samples it
+          draws to trace the posterior. A different seed sends the run along a different path, which
+          separates the features the data demand from those the algorithm was free to invent.</span>
+        <span class="run-links"><a href="Runs/test_no_sigma_seed_light.html">open →</a></span>
+      </div>
+
+      <div class="run">
+        <span class="run-name">test_no_sigma_seed2</span>
+        <span class="run-tag">rewritten pipeline</span>
+        <span class="run-desc">A second repetition with yet another seed. Here the prior on the power
+          spectrum is also pushed towards smoother fields, which suppresses structure on the smallest
+          scales.</span>
+        <span class="run-links"><a href="Runs/test_no_sigma_seed2_light.html">open →</a></span>
+      </div>
+
+      <div class="run">
+        <span class="run-name">parameters_old</span>
+        <span class="run-tag">original pipeline</span>
+        <span class="run-desc">One of the first runs, with the early priors, which left the field free
+          to vary strongly and on small scales. The noise estimation is active, radial
+          velocities are restricted to −30…30 km/s and the RUWE cut comes from a
+          position-dependent Gaia query, leaving 89 stars with a radial velocity. It carries the same
+          code error as ruwe_test, but shows the usual behaviour of the noise estimation: a median
+          η of 5 inflates the radial-velocity errors by more than a factor of two, against 1.95 in
+          ruwe_test.</span>
+        <span class="run-links"><a href="Runs/parameters_old_light.html">open →</a></span>
+      </div>
+
+      <div class="run">
+        <span class="run-name">ruwe_test</span>
+        <span class="run-tag">original pipeline</span>
+        <span class="run-desc">The exception among the runs with an active noise estimation: instead of
+          discarding the radial velocities it only inflates their errors by about 40 per cent (median η
+          of 1.95), so they keep constraining the field and the split along <em>U</em> that the other such
+          runs develop stays away. The RUWE threshold is fixed at 1.4 here rather than taken from the
+          position-dependent query, and a code error let 112 stars into the fit where the cuts should
+          have kept 114.</span>
+        <span class="run-links"><a href="Runs/ruwe_test_light.html">open →</a></span>
+      </div>
+
+      <div class="run">
+        <span class="run-name">test_new_param</span>
+        <span class="run-tag">original pipeline</span>
+        <span class="run-desc">A later run of the original pipeline, close to the setup the rewritten
+          pipeline still uses: no noise estimation, and a much tighter prior on how strongly the field
+          may vary. The RUWE cut is dropped in favour of a cut on the
+          radial-velocity error, which keeps 156 stars with a radial velocity, and the field offsets
+          are centred on the mean motion of Galli et al. (2019).</span>
+        <span class="run-links"><a href="Runs/test_new_param_light.html">open →</a></span>
+      </div>
+
+    </div>
   </section>
 
   <footer>

@@ -228,19 +228,27 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
 
 
 /* help overlay */
-#help-overlay{
+#help-overlay, #info-overlay{
   display:none;position:fixed;inset:0;z-index:200;
   background:rgba(4,8,20,.6);backdrop-filter:blur(3px);
   align-items:center;justify-content:center;
 }
-#help-overlay.open{display:flex;}
-#help-modal{
+#help-overlay.open, #info-overlay.open{display:flex;}
+/* monospace blocks in the info modal: the run's own text, scrollable, never
+   re-wrapped — the pprint dump and minisanity are column-aligned */
+.info-pre{
+  margin:0;padding:8px 10px;max-height:34vh;overflow:auto;
+  background:var(--bg1);border:1px solid var(--border);border-radius:4px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:8.5px;line-height:1.5;color:var(--text2);white-space:pre;
+}
+#help-modal, #info-modal{
   background:var(--bg2);border:1px solid var(--border2);border-radius:6px;
   width:560px;max-width:92vw;max-height:82vh;
   display:flex;flex-direction:column;overflow:hidden;
   box-shadow:0 8px 40px rgba(0,0,0,.4);
 }
-#help-header{
+#help-header, #info-header{
   display:flex;align-items:center;justify-content:space-between;
   padding:12px 16px;border-bottom:1px solid var(--border);
   background:var(--bg3);flex-shrink:0;
@@ -251,7 +259,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
   cursor:pointer;padding:2px 6px;border-radius:2px;transition:color .15s;
 }
 #help-header button:hover{color:var(--text);}
-#help-body{
+#help-body, #info-body{
   overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:14px;
 }
 #help-body::-webkit-scrollbar{width:4px;}
@@ -584,6 +592,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
          than twin sliders in the Field and Cloud menus (July 2026). -->
     <div class="ctrl-section" id="section-mask" style="display:none">
       <div class="ctrl-title">Mask</div>
+      <div class="slider-row" id="mask-source-row" style="gap:5px;margin-top:2px;">
+        <label class="sel-label">Weight</label>
+        <button class="tog" id="mask-source-btn" onclick="toggleMaskDensityKind()" style="font-size:8px;padding:3px 8px;"
+          title="Off: plain stellar number density. On: KDE weighted by stellar mass">By mass</button>
+      </div>
       <div class="slider-row mask-level-row" data-type-set="setMaskLevelExact" data-type-get="_maskLevelTypeValue"
            title="Threshold on the KDE mass density — voxels above it are the mask that field markers, streamlines and the density cloud live in. Double-click the read-out to type an exact level. ⟲ returns to the exported default.">
         <label>Cut level</label>
@@ -591,19 +604,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
         <span class="slider-val" id="sv-maskLevel">–</span>
         <button class="tog" onclick="resetMaskLevel()" style="flex:0 0 auto;padding:2px 5px;" title="Reset to the exported default level">⟲</button>
       </div>
-      <div class="slider-row" id="mask-kde-row" style="gap:6px;margin-top:2px;"
-           title="Bandwidth of the Gaussian KDE the density is built from. 'Exported' reuses the values the export baked in; 'Custom' recomputes the density in the browser with the factor you set.">
-        <label class="sel-label">Bandwidth</label>
-        <select id="mask-kde-select" class="mini-select" onchange="setMaskKdeMethod(this.value)">
-          <option value="export">Exported</option>
-          <option value="manual">Custom</option>
-        </select>
-      </div>
-      <div class="slider-row" id="mask-bw-row" style="display:none"
-           title="Bandwidth factor: the KDE covariance is the sample covariance times this squared (the export used 0.20)">
-        <label>Factor</label>
+      <div class="slider-row" id="mask-bw-row"
+           title="Bandwidth factor of the Gaussian KDE the density is built from: the covariance is the sample covariance times this squared. ⟲ returns to the value the export used.">
+        <label>Bandwidth</label>
         <input type="range" id="mask-bw-range" min="2" max="200" value="20" oninput="setMaskKdeFactor(+this.value/100,this)">
         <span class="slider-val" id="sv-maskKdeFactor">0.20</span>
+        <button class="tog" onclick="resetMaskKdeFactor()" style="flex:0 0 auto;padding:2px 5px;" title="Reset to the exported bandwidth (0.20)">⟲</button>
       </div>
       <div class="slider-row" id="mask-groups-row" style="gap:5px;margin-top:2px;">
         <label class="sel-label">Stars</label>
@@ -819,6 +825,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
         <label class="sel-label">Field</label>
         <select id="cloud-field-select" class="mini-select" onchange="setCloudField(this.value)">
           <option value="density" selected>Mass density (ρ)</option>
+          <option value="stellar_density">Stellar density (n)</option>
           <option value="energy_density">Energy density (½ρv²)</option>
         </select>
       </div>
@@ -838,8 +845,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       </div>
       <div class="slider-row cb-filter-row">
         <button class="tog" id="cloud-cb-clip" onclick="toggleCbFilterGray('cloud')" title="Out-of-range voxels: hidden or greyed out">hidden</button>
-        <span id="cloud-ekin" class="hint" style="display:none;flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-          title="Total kinetic energy of the field in the active reference frame — integrated over the FIXED exported default mask (independent of the mask-level slider, so the value stays comparable and box-edge artefacts are excluded)"></span>
+        <span id="cloud-ekin" class="hint" style="display:none;flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+          title="Total kinetic energy of the field in the active reference frame — integrated over the default mask"></span>
         <button class="tog" id="cloud-cb-reset" onclick="resetCbFilterSel('cloud')" style="margin-left:auto;display:none;" title="Reset the range handles to full">⟲ full</button>
       </div>
       <div class="slider-row cb-minmax" data-cbl="cloud"></div>
@@ -1524,6 +1531,37 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
   </div>
 </div>
 
+<!-- ── INFO MODAL (key I): technical record of the loaded run ── -->
+<div id="info-overlay" onclick="if(event.target===this) toggleInfo()">
+  <div id="info-modal">
+    <div id="info-header">
+      <span>Run Information</span>
+      <button onclick="toggleInfo()">✕</button>
+    </div>
+    <div id="info-body">
+
+      <div class="help-section">
+        <div class="help-section-title">Loaded Result</div>
+        <p>The dataset currently embedded in this file: <strong><span id="meta-info-modal">No data loaded</span></strong><span id="data-filename-modal"></span></p>
+        <p style="margin-top:4px;color:var(--text3);font-size:8px;">Verification if this matches the result intended to visualise.</p>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Convergence (last minisanity block)</div>
+        <p style="margin-bottom:4px;">Reduced χ² per likelihood factor and per latent of the final iteration. Likelihood factors near 1 mean the field fits the data within its uncertainties; the <em>_xi</em> priors should sit at 1.000.</p>
+        <pre id="info-minisanity" class="info-pre">–</pre>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Run parameters</div>
+        <p id="info-params-note" style="margin-bottom:4px;color:var(--text3);">–</p>
+        <pre id="info-params" class="info-pre">–</pre>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <!-- ── HELP MODAL ── -->
 <div id="help-overlay" onclick="if(event.target===this) toggleHelp()">
   <div id="help-modal">
@@ -1541,6 +1579,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
           <tr><td>Scroll</td><td>Zoom in / out</td></tr>
           <tr><td>+X / +Y / +Z / Iso</td><td>Snap camera to a preset viewpoint</td></tr>
           <tr><td>Bookmarks</td><td>Save the current viewpoint by name (Camera section); click it to fly back.</td></tr>
+          <tr><td>Keys</td><td><strong>H</strong> / <strong>?</strong> this help · <strong>I</strong> run information ·
+            <strong>S</strong> screenshot &amp; video · <strong>M</strong> sidebar · <strong>R</strong> auto-rotate ·
+            <strong>Esc</strong> close whatever is open</td></tr>
         </table>
       </div>
 
@@ -1661,12 +1702,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       </div>
 
       <div class="help-section">
-        <div class="help-section-title">Loaded Result</div>
-        <p>The dataset currently embedded in this file: <strong><span id="meta-info-modal">No data loaded</span></strong><span id="data-filename-modal"></span></p>
-        <p style="margin-top:4px;color:var(--text3);font-size:8px;">Verification if this matches the result intended to visualise.</p>
-      </div>
-
-      <div class="help-section">
         <div class="help-section-title">About this Visualisation</div>
         <p>This viewer shows a 3D velocity field of the <strong>Taurus star-forming region</strong>, reconstructed from stellar proper motions and radial velocities using <strong>NIFTy</strong> (Numerical Information Field Theory). A regular grid is placed around the data, divided into voxels of <strong>3 × 3 × 3 pc</strong> each — every voxel carries an inferred 3D velocity vector. A <strong>density mask</strong> derived from kernel density estimation of the stellar positions marks which voxels actually contain stars; this lets you isolate the physically relevant regions from the surrounding empty grid. The <strong>streamlines</strong> are purely a visualisation aid — they trace paths through the inferred velocity field and are not physical trajectories.</p>
         <p style="margin-top:4px;">Beyond viewing the field in 3D, the viewer doubles as an analysis tool for individual aspects of the field and the underlying data: velocities can be shown in different <strong>reference frames</strong> (raw / Taurus / LSR / custom) or projected back into the observables PMRA/PMDec/RV; besides velocity, derived fields (<strong>curl, divergence, uncertainty, density, kinetic energy</strong>) can be displayed and the total kinetic energy is integrated live. Every voxel and star is <strong>clickable</strong> for its full data record, stars are searchable by Gaia ID, and interactive <strong>colorbar range filters</strong> isolate value ranges directly in 3D. The <strong>plot windows</strong> (Field plots / Star plots) add histograms with distribution fits, scatter plots and power spectra — with reference lines, log axes and PNG/PDF export. Camera bookmarks, screenshots and video recording round it off.</p>
@@ -1686,6 +1721,26 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
           <tr><td>Local Bubble</td><td>The irregular dust-traced cavity around the Sun. The detail slider picks its resolution.</td></tr>
           <tr><td>Dust map</td><td>Local 3D dust density around the Sun as a soft cloud. Opacity/size sliders adjust it.</td></tr>
         </table>
+      </div>
+
+      <div class="help-section">
+        <div class="help-section-title">Save &amp; load settings</div>
+        <p>Your setup is kept in this browser automatically, per file. To carry it elsewhere — another
+          computer, another run, or simply to keep several views side by side — save it as a small
+          <strong>.json</strong> file and load it back when needed.</p>
+        <p style="margin-top:4px;">The file holds everything the viewer remembers: visible layers, all slider
+          values, reference frame, colormaps and colorbar ranges, mask level and KDE settings, star colouring
+          and group filters, both plot windows, camera position and camera bookmarks. Loading a file replaces
+          the current setup and reloads the page.</p>
+        <p style="margin-top:4px;">Files can be exchanged between runs: options that do not fit the other data
+          set are skipped, the rest applies.</p>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+          <button class="btn" style="letter-spacing:.09em;" onclick="saveSettingsFile()">⬇ Save settings to file</button>
+          <button class="btn" style="letter-spacing:.09em;" onclick="document.getElementById('settings-file-input').click()">⬆ Load settings from file</button>
+          <span id="settings-file-note" style="font-size:9px;color:var(--text2);"></span>
+        </div>
+        <input type="file" id="settings-file-input" accept="application/json,.json"
+               style="display:none;" onchange="loadSettingsFile(this)">
       </div>
 
       <div class="help-section">
@@ -1717,8 +1772,18 @@ let maskLevel = null;
 // 'export' = the bandwidth factor the export used (meta.kde.smooth) — with
 // that and maskUseGroups off the exported values are used verbatim.
 // TDZ: read by SETTINGS_TABLE — must live here in the STATE block.
-let maskKdeMethod = 'export';    // 'export' | 'manual' (UI label "Custom")
-let maskKdeFactor = 0.20;        // bandwidth factor for method 'manual'
+// Bandwidth is always the live one now (the "Exported" choice disappeared with
+// the baked density columns): `maskKdeFactor` is seeded from meta.kde.smooth,
+// and "default" simply means it still sits on that value.
+// Which KDE the mask threshold is applied to. 'mass' = mass-weighted density
+// (M☉/pc³, what the export's default level refers to), 'stars' = plain number
+// density (stars/pc³). The two have different units, so each keeps its own
+// level; the stellar default is scaled by the ratio of the field peaks so that
+// switching starts from a comparable region instead of an empty/full box.
+let maskDensityKind = 'mass';    // 'mass' | 'stars'
+let maskLevelStars = null, maskLevelMass = null;
+let maskKdeFactor = 0.20;        // KDE bandwidth; seeded from meta.kde.smooth
+let _kdeFactorRestored = false;  // a saved bandwidth wins over that seed
 let maskUseGroups = false;       // KDE over the group-filtered stars only
 let params = {
   streamCount: 200, stepSize: 0.1, maxSteps: 120,
@@ -2448,10 +2513,105 @@ function setLoading(active,msg='',pct=0){
 }
 
 // ═══════════════════════════════════════════════════════════
+// VOXEL HYDRATION (column format → voxel objects)
+// ═══════════════════════════════════════════════════════════
+// Exports carry `voxel_columns` (one array per quantity) instead of one object
+// per voxel: the 18 field names repeated ~26k times were half the voxel payload.
+// Everything that is reproducible here is NOT transmitted — positions/indices
+// (grid geometry from meta) and curl/div (finite differences of vx/vy/vz).
+// This function rebuilds exactly the voxel objects the rest of the viewer
+// expects, so no other code path knows about the wire format. Old exports (and
+// drag&dropped JSON) already carry `voxels` and pass through untouched.
+
+// np.gradient equivalent along one axis: central differences inside, one-sided
+// at the two boundaries — the export used np.gradient, so the formulas must
+// match or curl/div would drift from meta.curl_min/max.
+function _grad3(f, nx, ny, nz, axis, h){
+  const out = new Float64Array(f.length);
+  const at = (i,j,k) => (i*ny + j)*nz + k;
+  const n = [nx,ny,nz][axis];
+  for(let i=0;i<nx;i++) for(let j=0;j<ny;j++) for(let k=0;k<nz;k++){
+    const t = at(i,j,k);
+    if(n < 2){ out[t] = 0; continue; }          // np.gradient would raise here
+    const p = [i,j,k], q = [i,j,k];
+    const c = [i,j,k][axis];
+    let den;
+    if(c === 0){        p[axis] = 1;     q[axis] = 0;     den = h; }
+    else if(c === n-1){ p[axis] = n-1;   q[axis] = n-2;   den = h; }
+    else {              p[axis] = c+1;   q[axis] = c-1;   den = 2*h; }
+    out[t] = (f[at(p[0],p[1],p[2])] - f[at(q[0],q[1],q[2])]) / den;
+  }
+  return out;
+}
+
+function _hydrateVoxels(){
+  if(!DATA || DATA.voxels || !DATA.voxel_columns) return;
+  const m = DATA.meta, C = DATA.voxel_columns;
+  const nx = m.shape[0], ny = m.shape[1], nz = m.shape[2];
+  const dx = m.spacing[0], dy = m.spacing[1], dz = m.spacing[2];
+  const ox = m.extent.x[0], oy = m.extent.y[0], oz = m.extent.z[0];
+  const n = nx*ny*nz;
+  // null (non-finite in the export) must stay NaN — Number(null) would be 0 and
+  // would quietly poison the derivatives of its neighbours.
+  const num = a => { const o = new Float64Array(n);
+    for(let t=0;t<n;t++){ const v = a ? a[t] : null; o[t] = (v==null) ? NaN : v; }
+    return o; };
+  const vx = num(C.vx), vy = num(C.vy), vz = num(C.vz);
+  const dvx = [_grad3(vx,nx,ny,nz,0,dx), _grad3(vx,nx,ny,nz,1,dy), _grad3(vx,nx,ny,nz,2,dz)];
+  const dvy = [_grad3(vy,nx,ny,nz,0,dx), _grad3(vy,nx,ny,nz,1,dy), _grad3(vy,nx,ny,nz,2,dz)];
+  const dvz = [_grad3(vz,nx,ny,nz,0,dx), _grad3(vz,nx,ny,nz,1,dy), _grad3(vz,nx,ny,nz,2,dz)];
+  // same rounding the export used to apply, so numbers shown in the UI and the
+  // exported meta ranges stay consistent with earlier files
+  const r3 = v => Math.round(v*1e3)/1e3, r5 = v => Math.round(v*1e5)/1e5;
+  const fin = v => isFinite(v) ? v : null;
+  const out = new Array(n);
+  for(let i=0;i<nx;i++) for(let j=0;j<ny;j++) for(let k=0;k<nz;k++){
+    const t = (i*ny + j)*nz + k;
+    out[t] = {
+      x: r3(ox + i*dx), y: r3(oy + j*dy), z: r3(oz + k*dz),
+      ix: i, iy: j, iz: k,
+      vx: C.vx[t], vy: C.vy[t], vz: C.vz[t],
+      curl_x: fin(r5(dvz[1][t] - dvy[2][t])),
+      curl_y: fin(r5(dvx[2][t] - dvz[0][t])),
+      curl_z: fin(r5(dvy[0][t] - dvx[1][t])),
+      div:    fin(r5(dvx[0][t] + dvy[1][t] + dvz[2][t])),
+      std_x: C.std_x[t], std_y: C.std_y[t], std_z: C.std_z[t],
+      density: C.density ? C.density[t] : 0,
+      mass_density: C.mass_density ? C.mass_density[t] : 0,
+    };
+  }
+  DATA.voxels = out;
+  // The two KDE densities are not transmitted either: the viewer can already
+  // rebuild them live (bandwidth slider, per-group KDE), so the export only
+  // ships the recipe in meta.kde. ~18 ms for both on the real dataset.
+  // loadSettings() ran at parse time — a saved bandwidth wins over the export's
+  if(!_kdeFactorRestored) maskKdeFactor = _exportBandwidth();
+  if(!C.density || !C.mass_density) _seedKdeDensities();
+}
+
+// Fill mass_density/density from meta.kde — the state every "Default" bandwidth
+// run must reproduce. Kept separate from recomputeMaskDensity() because it runs
+// before any UI state exists.
+function _seedKdeDensities(){
+  const K = DATA?.meta?.kde; if(!K) return;
+  const stars = DATA.real_stars || [];
+  const md = computeKdeDensity(stars, true, K.smooth);
+  const dn = computeKdeDensity(stars, false, K.smooth);
+  const ny = K.shape[1], nz = K.shape[2];
+  DATA.voxels.forEach(v => {
+    const k = (v.ix*ny + v.iy)*nz + v.iz;
+    if(md) v.mass_density = md[k];
+    if(dn) v.density = dn[k];
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
 // SCENE INIT
 // ═══════════════════════════════════════════════════════════
 function initScene(){
   const m=DATA.meta;
+  _hydrateVoxels();
+  _fillRunInfo();
   _deriveStarFields();
   // restored custom groups become s.name_custom BEFORE the dropdowns are built,
   // so "Custom group" is offered right away
@@ -2622,7 +2782,36 @@ function scanMax(key){
 // and the unconstrained field outside the calibrated mask (esp. box edges)
 // never enters the sum. Old exports (baked v.mask, no mass_density): the
 // sliders hide and the mask stays baked.
-function defaultMaskLevel(){ return DATA?.meta?.mask_level ?? null; }
+function _defaultMassLevel(){ return DATA?.meta?.mask_level ?? null; }
+let _peakCache = {sig:null, mass:0, stars:0};
+function _densityPeaks(){
+  const sig = (DATA?.voxels?.length || 0) + '|' + maskKdeFactor + '|' + maskUseGroups;
+  if(_peakCache.sig !== sig){
+    let pm = 0, pd = 0;
+    (DATA?.voxels || []).forEach(v => {
+      const a = v.mass_density ?? 0, b = v.density ?? 0;
+      if(a > pm) pm = a; if(b > pd) pd = b;
+    });
+    _peakCache = {sig, mass:pm, stars:pd};
+  }
+  return _peakCache;
+}
+// The exported default level is in M☉/pc³. For the stellar-density mask it is
+// rescaled by the ratio of the two field peaks, so switching the source starts
+// from a comparable region instead of an empty or a completely full box.
+function defaultMaskLevel(){
+  const base = _defaultMassLevel();
+  if(base == null || maskDensityKind !== 'stars') return base;
+  const p = _densityPeaks();
+  return (p.mass > 0 && p.stars > 0) ? base * (p.stars / p.mass) : base;
+}
+function setMaskDensityKind(kind){
+  if((kind !== 'mass' && kind !== 'stars') || kind === maskDensityKind) return;
+  if(maskDensityKind === 'stars') maskLevelStars = maskLevel; else maskLevelMass = maskLevel;
+  maskDensityKind = kind;
+  maskLevel = (kind === 'stars') ? maskLevelStars : maskLevelMass;
+  _applyMaskChange(); _syncMaskUI(); updateCloudColorbar(); saveSettings();
+}
 function maskAdjustable(){
   return !!(DATA && DATA.voxels.length && DATA.voxels[0].mass_density !== undefined
             && defaultMaskLevel() != null);
@@ -2643,10 +2832,13 @@ function applyMaskLevel(){
     return;
   }
   const lv = effMaskLevel(), dlv = defaultMaskLevel();
+  const stars = maskDensityKind === 'stars';
   DATA.voxels.forEach(v=>{
-    const md = v.mass_density ?? 0;
+    const md = (stars ? v.density : v.mass_density) ?? 0;
     v.mask = md > lv;
-    v._fixedMask = md > dlv;
+    // the energy integral is mass-weighted by definition — its fixed mask stays
+    // on the mass density regardless of what the display mask shows
+    v._fixedMask = (v.mass_density ?? 0) > (stars ? _defaultMassLevel() : dlv);
   });
 }
 // Slider mapping: log-uniform over default/10^MASK_DEC_DOWN … default·10^MASK_DEC_UP.
@@ -2739,9 +2931,12 @@ function kdeAdjustable(){
   return !!(DATA?.meta?.kde && maskAdjustable() && (DATA.real_stars || []).length >= 4);
 }
 // exported values are used verbatim while nothing is dialled away from them
-function kdeIsDefault(){ return maskKdeMethod === 'export' && !maskUseGroups; }
+function _exportBandwidth(){ return DATA?.meta?.kde?.smooth ?? 0.2; }
+function kdeIsDefault(){
+  return Math.abs(maskKdeFactor - _exportBandwidth()) < 1e-12 && !maskUseGroups;
+}
 function _kdeFactorLabel(){
-  return maskKdeMethod === 'manual' ? maskKdeFactor.toFixed(2)
+  return true ? maskKdeFactor.toFixed(2)
                                     : (DATA?.meta?.kde?.smooth ?? 0).toFixed(2);
 }
 // Stars that enter the KDE: the group filter's selection when "Apply to mask"
@@ -2757,13 +2952,13 @@ function kdeStars(){
 // (the n_eff-derived Scott/Silverman rules were dropped on user request — they
 // are tuned for a single smooth blob and only over-smoothed the complex).
 function _kdeFactor(){
-  return maskKdeMethod === 'manual' ? maskKdeFactor : (DATA?.meta?.kde?.smooth ?? 0.2);
+  return maskKdeFactor;
 }
 // Gaussian KDE of `stars` on the exported evaluation grid, returned in the
 // voxel order (ix*ny+iy)*nz+iz. weighted = mass-weighted (mass-less stars drop
 // out, exactly like the export); otherwise every star counts once. Matches
 // scipy.stats.gaussian_kde(values, weights, bw_method=factor)(grid)·Σweights.
-function computeKdeDensity(stars, weighted){
+function computeKdeDensity(stars, weighted, bwOverride){
   const K = DATA?.meta?.kde; if(!K) return null;
   const n0 = stars.length;
   const px = new Float64Array(n0), py = new Float64Array(n0), pz = new Float64Array(n0),
@@ -2799,7 +2994,7 @@ function computeKdeDensity(stars, weighted){
   }
   const nrm = W - W2/W;
   if(!(nrm > 0)) return null;
-  const f = _kdeFactor(), f2 = f*f;
+  const f = (bwOverride != null ? bwOverride : _kdeFactor()), f2 = f*f;
   const c00 = sxx/nrm*f2, c01 = sxy/nrm*f2, c02 = sxz/nrm*f2,
         c11 = syy/nrm*f2, c12 = syz/nrm*f2, c22 = szz/nrm*f2;
   // inverse + determinant of the symmetric 3×3 bandwidth matrix
@@ -2813,9 +3008,13 @@ function computeKdeDensity(stars, weighted){
 
   const nx = K.shape[0], ny = K.shape[1], nz = K.shape[2];
   const ox = K.origin[0], oy = K.origin[1], oz = K.origin[2];
-  const hx = nx > 1 ? nx*K.distances[0]/(nx-1) : 0,
-        hy = ny > 1 ? ny*K.distances[1]/(ny-1) : 0,
-        hz = nz > 1 ? nz*K.distances[2]/(nz-1) : 0;
+  // Evaluation grid: `kde.spacing` carries the step the export actually used —
+  // the two pipelines disagree (mgrid with inclusive ends vs. field nodes), and
+  // guessing one of them put the live KDE on a grid stretched by up to 5 %.
+  // Exports without `spacing` are the old taurus-style ones → mgrid formula.
+  const hx = K.spacing ? K.spacing[0] : (nx > 1 ? nx*K.distances[0]/(nx-1) : 0),
+        hy = K.spacing ? K.spacing[1] : (ny > 1 ? ny*K.distances[1]/(ny-1) : 0),
+        hz = K.spacing ? K.spacing[2] : (nz > 1 ? nz*K.distances[2]/(nz-1) : 0);
   const out = new Float64Array(nx*ny*nz);
   // Each kernel is truncated at KDE_CUT Mahalanobis radii, and only the grid
   // window around the star is touched — on the real export that is ~900 of the
@@ -2893,17 +3092,19 @@ function _kdeApply(){
   updateCloudColorbar();
   _syncMaskUI();
 }
-function setMaskKdeMethod(m){
-  maskKdeMethod = m;
-  _syncMaskUI(); applyKdeChange(); saveSettings();
-}
 function setMaskKdeFactor(v, el){
   maskKdeFactor = Math.max(0.02, Math.min(2, +v || 0.2));
   const sv = document.getElementById('sv-maskKdeFactor');
   if(sv) sv.textContent = maskKdeFactor.toFixed(2);
-  if(maskKdeMethod !== 'manual'){ maskKdeMethod = 'manual'; _syncMaskUI(); }
   applyKdeChange(!!el);
   debounce('maskKdeSave', saveSettings, 400);
+}
+function resetMaskKdeFactor(){
+  maskKdeFactor = _exportBandwidth();
+  _syncMaskUI(); applyKdeChange(); saveSettings();
+}
+function toggleMaskDensityKind(){
+  setMaskDensityKind(maskDensityKind === 'mass' ? 'stars' : 'mass');
 }
 function toggleMaskUseGroups(){
   maskUseGroups = !maskUseGroups;
@@ -2921,8 +3122,7 @@ function _syncMaskInfo(){
     const nAll = (DATA?.real_stars || []).length, nUse = maskUseGroups ? kdeStars().length : nAll;
     txt += _kdeFail
       ? ' · too few stars for a KDE (' + nUse + ') — density unchanged'
-      : (kdeIsDefault() ? ` · exported KDE · ${nAll} stars · bw ${_kdeFactorLabel()}`
-                        : ` · live KDE · ${nUse}${nUse === nAll ? '' : ' of ' + nAll} stars · bw ${_kdeFactorLabel()}`);
+      : ` · ${maskDensityKind === 'mass' ? 'mass' : 'stellar'} KDE · ${nUse}${nUse === nAll ? '' : ' of ' + nAll} stars · bw ${_kdeFactorLabel()}`;
   }
   info.textContent = txt;
   info.style.color = _kdeFail ? 'var(--accent3)' : '';
@@ -2932,14 +3132,14 @@ function _syncMaskUI(){
   const sec = document.getElementById('section-mask');
   if(sec) sec.style.display = maskAdjustable() ? '' : 'none';
   const kdeOn = kdeAdjustable();
-  ['mask-kde-row','mask-bw-row','mask-groups-row'].forEach(id => {
+  const srcBtn = document.getElementById('mask-source-btn');
+  if(srcBtn) srcBtn.classList.toggle('on', maskDensityKind === 'mass');
+  const srow = document.getElementById('mask-source-row');
+  if(srow) srow.style.display = maskAdjustable() ? '' : 'none';
+  ['mask-bw-row','mask-groups-row'].forEach(id => {
     const el = document.getElementById(id); if(el) el.style.display = kdeOn ? '' : 'none'; });
   _syncMaskInfo();
   if(!kdeOn) return;
-  const sel = document.getElementById('mask-kde-select');
-  if(sel && sel.value !== maskKdeMethod){ sel.value = maskKdeMethod; sel.dispatchEvent(new Event('cdrop-sync')); }
-  const bw = document.getElementById('mask-bw-row');
-  if(bw) bw.style.display = maskKdeMethod === 'manual' ? 'flex' : 'none';
   const br = document.getElementById('mask-bw-range');
   if(br) br.value = Math.round(maskKdeFactor*100);
   const sv = document.getElementById('sv-maskKdeFactor');
@@ -2956,18 +3156,23 @@ function _derivedRange(kind){
   const lv = effMaskLevel() ?? 'baked';
   if(_derivedCache.lv !== lv){
     const c = { curl:[Infinity,-Infinity], std:[Infinity,-Infinity],
-                div:[Infinity,-Infinity], density:[Infinity,-Infinity] };
+                div:[Infinity,-Infinity], density:[Infinity,-Infinity],
+                mass_density:[Infinity,-Infinity] };
     (DATA?.voxels || []).forEach(v=>{
       if(!v.mask) return;
       const cm = Math.sqrt((v.curl_x??0)**2 + (v.curl_y??0)**2 + (v.curl_z??0)**2);
       const sm = Math.sqrt((v.std_x??0)**2 + (v.std_y??0)**2 + (v.std_z??0)**2);
-      const dv = v.div ?? 0, de = v.density;
+      const dv = v.div ?? 0, de = v.density, dm = v.mass_density;
       if(cm < c.curl[0]) c.curl[0]=cm; if(cm > c.curl[1]) c.curl[1]=cm;
       if(sm < c.std[0])  c.std[0]=sm;  if(sm > c.std[1])  c.std[1]=sm;
       if(dv < c.div[0])  c.div[0]=dv;  if(dv > c.div[1])  c.div[1]=dv;
       if(de != null && isFinite(de)){
         if(de < c.density[0]) c.density[0]=de;
         if(de > c.density[1]) c.density[1]=de;
+      }
+      if(dm != null && isFinite(dm)){
+        if(dm < c.mass_density[0]) c.mass_density[0]=dm;
+        if(dm > c.mass_density[1]) c.mass_density[1]=dm;
       }
     });
     _derivedCache = { lv, vals: c };
@@ -4232,11 +4437,20 @@ function kineticEnergyIntegral(){
 }
 
 const CLOUD_FIELDS = {
+  // key stays 'density' so saved settings keep resolving; it is the MASS
+  // density (it used to read the unweighted column while claiming M☉/pc³)
   density: {
     label: 'Mass density (ρ)',
     unit: 'M☉/pc³',
     // auto range live over the CURRENT mask (the cloud is mask-filtered);
     // meta values only as empty-mask fallback
+    getMin: () => _derivedRange('mass_density')?.[0] ?? 0,
+    getMax: () => _derivedRange('mass_density')?.[1] ?? 1,
+    getVal: v => v.mass_density,
+  },
+  stellar_density: {
+    label: 'Stellar density (n)',
+    unit: 'stars/pc³',
     getMin: () => _derivedRange('density')?.[0] ?? DATA?.meta?.density_min ?? 0,
     getMax: () => _derivedRange('density')?.[1] ?? DATA?.meta?.density_max ?? 1,
     getVal: v => v.density,
@@ -6460,6 +6674,78 @@ function resetSettings(){
   location.reload();
 }
 
+// ── Settings as a portable file ──────────────────────────────────────────────
+// Same payload as the localStorage save, wrapped in a small header so a loaded
+// file can be recognised (and so a stray JSON — say an exported data file —
+// can be rejected). Loading writes the payload into localStorage and reloads:
+// that reuses the ONE proven restore path (loadSettings runs before initScene),
+// instead of a second, half-live apply that would have to rebuild every layer,
+// camera and plot by hand. Camera bookmarks and custom star groups travel with
+// the file, since they are ordinary SETTINGS_TABLE entries.
+const SETTINGS_FILE_TAG = 'vfv-settings';
+
+function _settingsPayload(){
+  const s = {};
+  SETTINGS_TABLE.forEach(e => { try{ s[e.key] = e.get(); }catch(err){} });
+  return s;
+}
+
+function saveSettingsFile(){
+  const run = (DATA && DATA.meta && DATA.meta.result_name) || 'export';
+  const blob = new Blob([JSON.stringify({
+    _format: SETTINGS_FILE_TAG, _version: 1,
+    result_name: run, repo: (DATA && DATA.meta && DATA.meta.repo) || null,
+    saved_at: new Date().toISOString(),
+    settings: _settingsPayload(),
+  }, null, 2)], {type:'application/json'});
+  downloadBlob(blob, 'vfv-settings_' + run + '_' +
+                     new Date().toISOString().slice(0,10) + '.json');
+  _settingsFileNote('Saved.');
+}
+
+// Text → {settings} or {error}. Kept separate from the file plumbing so the
+// accept/reject rules are testable without a FileReader.
+function _settingsFromText(text){
+  let obj;
+  try { obj = JSON.parse(text); }
+  catch(e){ return {error:'Not a valid JSON file.'}; }
+  // accept the wrapped format and a bare settings object (hand-edited files)
+  const s = (obj && obj._format === SETTINGS_FILE_TAG) ? obj.settings : obj;
+  if(!s || typeof s !== 'object' || Array.isArray(s))
+    return {error:'No settings found in that file.'};
+  if(!SETTINGS_TABLE.some(e => s[e.key] !== undefined))
+    return {error:'That file holds no viewer settings.'};
+  return {settings:s};
+}
+
+function loadSettingsFile(input){
+  const file = input && input.files && input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  const fail = msg => { _settingsFileNote(msg, true); input.value=''; };
+  reader.onload = () => {
+    const res = _settingsFromText(reader.result);
+    if(res.error) return fail(res.error);
+    // A file from another run stays usable — keys that do not fit this data set
+    // are simply skipped by the table pass, exactly as with an older save.
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(res.settings)); }
+    catch(e){ return fail('Could not store the settings.'); }
+    input.value = '';
+    location.reload();
+  };
+  reader.onerror = () => fail('Could not read that file.');
+  reader.readAsText(file);
+}
+
+function _settingsFileNote(msg, bad){
+  const el = document.getElementById('settings-file-note');
+  if(!el) return;
+  el.textContent = msg;
+  el.style.color = bad ? 'var(--accent3)' : 'var(--text2)';
+  clearTimeout(_settingsFileNote._t);
+  _settingsFileNote._t = setTimeout(()=>{ el.textContent=''; }, 4000);
+}
+
 // ── Declarative persistence table ────────────────────────────────────────────
 // One entry per stored key: `get` produces the value saveSettings() writes,
 // `set` restores it AND syncs the dependent UI (buttons, selects, inputs).
@@ -6477,13 +6763,25 @@ const SETTINGS_TABLE = [
     set:v=>{ maskLevel = (typeof v==='number' && isFinite(v) && v>0) ? v : null; } },
   // KDE recipe of the Mask section — state only (initScene recomputes the
   // density once the data is in and syncs the widgets via _syncMaskUI)
-  { key:'maskKde', get:()=>({ method:maskKdeMethod, factor:maskKdeFactor, groups:maskUseGroups }),
+  { key:'maskSource', get:()=>({ kind:maskDensityKind, mass:maskLevelMass, stars:maskLevelStars }),
     set:v=>{ if(!v || typeof v !== 'object') return;
-      // legacy saves may still carry the dropped scott/silverman rules → exported
-      if(['export','manual'].includes(v.method)) maskKdeMethod = v.method;
-      else if(v.method) maskKdeMethod = 'export';
-      if(typeof v.factor === 'number' && isFinite(v.factor) && v.factor > 0)
+      if(['mass','stars'].includes(v.kind)) maskDensityKind = v.kind;
+      maskLevelMass  = (typeof v.mass  === 'number' && isFinite(v.mass))  ? v.mass  : null;
+      maskLevelStars = (typeof v.stars === 'number' && isFinite(v.stars)) ? v.stars : null; } },
+  { key:'maskKde', get:()=>({ factor:maskKdeFactor, groups:maskUseGroups }),
+    set:v=>{ if(!v || typeof v !== 'object') return;
+      // legacy saves carry method:'export' — that meant "the bandwidth the export
+      // used", which is exactly what the factor falls back to
+      // legacy saves carry method:'export' (and older ones scott/silverman) —
+      // all of them meant "the bandwidth the export used", so drop their factor
+      // and let the seed in _hydrateVoxels() put meta.kde.smooth back
+      if(v.method && v.method !== 'manual'){
+        maskKdeFactor = _exportBandwidth();
+        _kdeFactorRestored = false;
+      } else if(typeof v.factor === 'number' && isFinite(v.factor) && v.factor > 0){
         maskKdeFactor = Math.max(0.02, Math.min(2, v.factor));
+        _kdeFactorRestored = true;
+      }
       maskUseGroups = !!v.groups; } },
   { key:'params',       get:()=>({ ...params }),       set:v=>{ Object.assign(params, v);
       // legacy migration: cloudSize/cloudGamma/cloudCutoff merged into ONE
@@ -10725,6 +11023,23 @@ function triggerDownload(blob){
 function toggleHelp(){
   document.getElementById('help-overlay').classList.toggle('open');
 }
+// Technical record of the run (key I): what the inference actually ran with.
+// meta.run_info is filled by the export; older files simply have none.
+function toggleInfo(){
+  document.getElementById('info-overlay').classList.toggle('open');
+}
+function _fillRunInfo(){
+  const ri = DATA?.meta?.run_info || {};
+  const ms = document.getElementById('info-minisanity');
+  if(ms) ms.textContent = ri.minisanity || 'No minisanity.txt was exported with this run.';
+  const pn = document.getElementById('info-params-note');
+  const pp = document.getElementById('info-params');
+  if(pn) pn.textContent = ri.parameters_note || 'No parameter record was exported with this run.';
+  if(pp){
+    pp.textContent = ri.parameters || '';
+    pp.style.display = ri.parameters ? '' : 'none';
+  }
+}
 document.addEventListener('keydown', e => {
   // ignore shortcuts while typing in a text field / select, otherwise letters
   // like 'r' (auto-rotate) fire mid-typing (e.g. in the screenshot filename).
@@ -10734,10 +11049,13 @@ document.addEventListener('keydown', e => {
     return;
   }
   if(e.key === '?' || e.key === 'h' || e.key === 'H') toggleHelp();
+  if(e.key === 'i' || e.key === 'I') toggleInfo();
+  if(e.key === 's' || e.key === 'S') openScreenshotModal();
   if(e.key === 'm' || e.key === 'M') toggleSidebar();
   if(e.key === 'r' || e.key === 'R') toggleAutoRot();
   if(e.key === 'Escape'){
     document.getElementById('help-overlay').classList.remove('open');
+    document.getElementById('info-overlay').classList.remove('open');
     closeScreenshotModal();
     hideStarInfo();
     closeCdrop();

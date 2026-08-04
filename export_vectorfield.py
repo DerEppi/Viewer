@@ -29,7 +29,7 @@ bleiben global außerhalb der Feld-Schleife.
 """
 
 # ── Repo-Wahl ─────────────────────────────────────────────────────────────────
-REPO = "taurus"          # "taurus" | "claude"  (CLI-Argument 1 überschreibt)
+REPO = "claude"          # "taurus" | "claude"  (CLI-Argument 1 überschreibt)
 
 import json
 import math
@@ -78,7 +78,7 @@ else:
 # ── Ausgabe-Konfiguration ──────────────────────────────────────────────────────
 HTML_TEMPLATE          = VIEWER_DIR / "vectorfield_viewer.html"
 HTML_OUTPUT            = VIEWER_DIR / "vectorfield_viewer_data.html"
-SAVE_JSON              = True
+SAVE_JSON              = False
 JSON_OUTPUT            = VIEWER_DIR / "saves/vectorfield_data.json"
 SAVE_HTML_LIGHT        = True
 HTML_OUTPUT_LIGHT      = VIEWER_DIR / "vectorfield_viewer_light.html"
@@ -98,13 +98,13 @@ FIELDS_BY_REPO = {
     ],
     "claude": [
         dict(
-            result_name = "test_run",
+            result_name = "test_no_sigma",
             star_csv    = "Data/taurus_core_sigma_age-Feb-2025-luhman-comparison.csv",
             masses_csv  = "../Chronos/Masses/results.csv",
             label       = "Taurus",
             # KDE-Massendichte-Schwelle für die Viewer-Maske (die neuen Configs
             # haben keine posterior_plotting-Sektion mehr; Wert wie plot_data.py)
-            mask_level  = 0.0005,
+            mask_level  = 0.001,
         ),
     ],
 }
@@ -192,6 +192,86 @@ def _num(x):
     x = float(x)
     return x if math.isfinite(x) else None
 
+def _col(arr, decimals):
+    """Voxel-Spalte → gerundete Python-Liste, NaN/Inf → None (wie `_num`)."""
+    a = np.round(np.asarray(arr, dtype=float).ravel(), decimals)
+    return [float(v) if math.isfinite(v) else None for v in a]
+
+def _col_sig(arr, digits, floor=0.0):
+    """Wie `_col`, aber auf `digits` SIGNIFIKANTE Stellen statt Nachkommastellen.
+
+    Für die Dichten: sie überstreichen viele Größenordnungen (mass_density
+    reicht von ~1e-8 bis 2e-2). Feste Nachkommastellen würden die kleinen Werte
+    auf ein Raster zwingen, das grob genug ist, um Vergleiche am unteren Ende
+    des Masken-Sliders kippen zu lassen — mit 6 Nachkommastellen wanderten bei
+    Level 1e-5 fünfzig Voxel in bzw. aus der Maske. Relative Rundung hält die
+    Maske auf allen Slider-Stufen exakt und kostet dasselbe an Bytes.
+
+    `floor` schneidet den unteren KDE-Schwanz ab (Werte wie 2e-63, die als
+    volle Mantisse im JSON stehen würden). Mit 1e-9 liegt der Schnitt vier
+    Dekaden unter der kleinsten erreichbaren Maskenstufe.
+    """
+    out = []
+    for v in np.asarray(arr, dtype=float).ravel():
+        if not math.isfinite(v):
+            out.append(None)
+        elif v == 0.0 or abs(v) < floor:
+            out.append(0.0)
+        else:
+            out.append(round(float(v), -int(math.floor(math.log10(abs(v)))) + digits - 1))
+    return out
+
+def _minisanity_tail(result_name):
+    """Letzter Iterationsblock aus minisanity.txt (Konvergenz-Diagnose)."""
+    path = (REPO_ROOT / "Runs" / result_name /
+            ("minisanity.txt" if REPO == "claude" else "results/minisanity.txt"))
+    if not path.exists():
+        return f"minisanity.txt not found ({path.name})"
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    # Die Datei wächst pro Iteration; interessant ist die letzte. Jeder Block
+    # beginnt mit der Zeile über die Sampling-Schritte.
+    starts = [i for i, l in enumerate(lines)
+              if l.startswith("OPTIMIZE_KL: #(Nonlinear sampling steps)")]
+    block = lines[starts[-1]:] if starts else lines[-40:]
+    return "\n".join(block).rstrip()
+
+
+def _parameters_dump(result_name, parameters):
+    """Der Konfigurations-Dump des Runs als Text + Herkunftsvermerk.
+
+    claude schreibt `parameters_used.txt` neben den Checkpoint — die kann per
+    Konstruktion nicht vom Run abgedriftet sein. taurus kennt das nicht; dort
+    wird das Parameter-Modul geladen und im selben pprint-Format ausgegeben.
+    Existiert es nicht mehr, sagt der Viewer das ehrlich, statt etwas zu zeigen,
+    das vielleicht gar nicht der Run war.
+    """
+    if REPO == "claude":
+        path = REPO_ROOT / "Runs" / result_name / "parameters_used.txt"
+        if path.exists():
+            return path.read_text(encoding="utf-8", errors="replace").rstrip(), \
+                   "parameters_used.txt, written by the run itself"
+        return "", "No parameters_used.txt next to the checkpoint."
+    py = REPO_ROOT / "Parameters" / f"{result_name}.py"
+    if py.exists() and parameters is not None:
+        import pprint
+        return pprint.pformat(parameters, width=100).rstrip(), \
+               f"rebuilt from Parameters/{result_name}.py (this pipeline does not " \
+               "write a parameter dump; the file may have been edited since the run)"
+    return "", ("The exact parameters of this run are no longer available — "
+                f"Parameters/{result_name}.py does not exist any more.")
+
+
+def _kde_eval_spacing(shape, distances):
+    """Schrittweite des Gitters, auf dem `calculate_mask` die KDE auswertet.
+
+    Seit Juli 2026 werten BEIDE Repos auf den Feldknoten aus (origin + k*d) —
+    der alte np.mgrid-Weg mit inklusiven Enden im Taurus-Repo ist korrigiert.
+    Der Wert wandert trotzdem in den Export: der Viewer soll das Gitter lesen
+    statt eine Konvention zu raten, und bereits gebackene HTML-Dateien ohne
+    diesen Key fallen dort auf die alte Formel zurück, die für sie richtig ist.
+    """
+    return [float(d) for d in distances]
+
 def _gal_lbd_to_xyz(l, b, d_pc):
     lr, br = np.radians(l), np.radians(b)
     return [float(d_pc*np.cos(br)*np.cos(lr)),
@@ -247,6 +327,42 @@ def _eta_parallax_bad(parameters, gaia):
     return par_integral < parameters["data"]["data_set_kwargs"]["par_min_prob_mass"]
 
 
+_RUWE_Q_CACHE = VIEWER_DIR / "saves" / "values" / "ruwe_threshold_gaia.npz"
+
+
+def _ruwe_query_threshold(gaia):
+    """Positionsabhängige RUWE-Schwelle (gaiaunlimited, crowding=True) für die
+    Zeilen von Data/Gaia.csv — so haben die frühen Runs gefiltert, bevor die
+    Schwelle im Code hart verdrahtet wurde.
+
+    ⚠️ Immer aus DIESEM Frame abfragen, nie eine fertige .npy übernehmen:
+    Data/Gaia.csv steht in einer anderen Zeilenreihenfolge als das Stern-CSV
+    (der Aufrufer hat schon per source_id umsortiert, wie die Inferenz selbst in
+    `stellar_data.load_stellar_data`), und `saves/values/ruwe_threshold.npy` im
+    Taurus-Repo gehört zum Stern-CSV — gleiche Länge, andere Zuordnung. Gibt
+    None zurück, wenn gaiaunlimited fehlt oder die Abfrage nicht geht (Export
+    läuft dann ohne diesen Kandidaten weiter).
+    """
+    sid = np.asarray(gaia.index.values, dtype=str)
+    if _RUWE_Q_CACHE.exists():
+        d = np.load(_RUWE_Q_CACHE)
+        if np.array_equal(d["source_id"], sid):
+            return d["threshold"]
+    try:
+        from astropy.coordinates import SkyCoord
+        from gaiaunlimited.selectionfunctions import binaries as gubi
+
+        thr = np.asarray(gubi.BinarySystemsSelectionFunction().query_RUWE(
+            SkyCoord(ra=np.asarray(gaia["ra"].values) * u_ap.deg,
+                     dec=np.asarray(gaia["dec"].values) * u_ap.deg), crowding=True))
+    except Exception as exc:
+        print(f"eta: RUWE-Abfrage (gaiaunlimited) nicht möglich — {exc}")
+        return None
+    _RUWE_Q_CACHE.parent.mkdir(parents=True, exist_ok=True)
+    np.savez(_RUWE_Q_CACHE, source_id=sid, threshold=thr)
+    return thr
+
+
 def _eta_from_posterior(parameters, samples, gaia, n_stars):
     """→ (eta_mean, eta_std, has_rv_mask), alles CSV-zeilengleich; NaN/None wenn
     der Run keine Noise-Estimation hat oder die Sternmenge nicht verifizierbar ist."""
@@ -287,11 +403,19 @@ def _eta_from_posterior(parameters, samples, gaia, n_stars):
     # Kandidaten-Strategien für die rv-Sternmenge, in Prioritätsreihenfolge:
     # 1) heutiger stellar_data.py-Stand mit den Parameterfile-Werten,
     # 2) Legacy-Stand der final_run-Ära (ruwe 1.4 hart verdrahtet, fehlerhafte
-    #    rv_integral-Formel mit rv_err statt rv, noch kein filter_rv_error).
+    #    rv_integral-Formel mit rv_err statt rv, noch kein filter_rv_error),
+    # 3) die frühesten Runs: dieselbe fehlerhafte Formel, aber die Schwelle noch
+    #    aus der positionsabhängigen gaiaunlimited-Abfrage (kostet einen Query,
+    #    deshalb lazy — nur wenn 1) und 2) nicht treffen).
     cands = []
     if not dsk.get("filter_ruwe") or dsk.get("ruwe_threshold") is not None:
-        cands.append(("aktuell", has_rv_mask(dsk.get("ruwe_threshold"), False, dsk.get("filter_rv_error"))))
-    cands.append(("legacy-2026", has_rv_mask(1.4, True, None)))
+        cands.append(("aktuell", lambda: has_rv_mask(dsk.get("ruwe_threshold"), False, dsk.get("filter_rv_error"))))
+    cands.append(("legacy-2026", lambda: has_rv_mask(1.4, True, None)))
+    if dsk.get("filter_ruwe"):
+        def _query_mask():
+            thr = _ruwe_query_threshold(gaia)
+            return None if thr is None else has_rv_mask(thr, True, None)
+        cands.append(("legacy-ruwe-query", _query_mask))
 
     key_b = base_keys[0]
     key_s = sampled_keys[0] if sampled_keys else None
@@ -302,13 +426,17 @@ def _eta_from_posterior(parameters, samples, gaia, n_stars):
         return nan, nan, None
     bad_par = _eta_parallax_bad(parameters, gaia) if key_s else np.zeros(n_stars, bool)
 
-    for strat, m in cands:
+    got = []
+    for strat, make_mask in cands:
+        m = make_mask()
+        if m is None:
+            continue
         m_b = m & ~bad_par
         m_s = m & bad_par
+        got.append(f"{strat}: {int(m_b.sum())}+{int(m_s.sum())}")
         if m_b.sum() == n_b and m_s.sum() == n_s:
             break
     else:
-        got = [f"{s}: {int((m & ~bad_par).sum())}+{int((m & bad_par).sum())}" for s, m in cands]
         print(f"eta: keine Strategie trifft Posterior ({n_b}+{n_s}); Kandidaten: {got} — übersprungen.")
         return nan, nan, None
 
@@ -337,7 +465,7 @@ def _eta_from_posterior(parameters, samples, gaia, n_stars):
 def process_field(cfg):
     """
     Lädt NIFTy-Ergebnisse und Sterndaten, berechnet alle abgeleiteten Größen,
-    gibt das fertige Feld-Dict zurück (voxels, real_stars, meta).
+    gibt das fertige Feld-Dict zurück (voxel_columns, real_stars, meta).
     """
     result_name = cfg["result_name"]
     print(f"\n── Feld: {cfg['label']} ({result_name}) ──")
@@ -500,7 +628,8 @@ def process_field(cfg):
     mass_density = calculate_mask(**_kde_kw, masses=mass)
     mask_level   = cfg.get("mask_level")
     if mask_level is None:  # alte Configs tragen den Wert in posterior_plotting
-        mask_level = parameters["posterior_plotting"]["density_mask_level"]
+        mask_level = parameters.get("posterior_plotting", {}).get(
+            "density_mask_level", 0.001)  # nicht jedes Parameterfile hat die Sektion
     mask_bool    = mass_density > mask_level
     mask_bool_flat = mask_bool.ravel()
 
@@ -583,28 +712,31 @@ def process_field(cfg):
     density_min = float(np.nanmin(density))
     density_max = float(np.nanmax(density))
 
-    # ── Voxel-Array aufbauen ─────────────────────────────────────────────────
-    IX, IY, IZ = np.meshgrid(np.arange(nx), np.arange(ny), np.arange(nz), indexing="ij")
-    columns = {
-        "x": np.round(X.ravel(), 3), "y": np.round(Y.ravel(), 3), "z": np.round(Z.ravel(), 3),
-        "ix": IX.ravel().astype(int), "iy": IY.ravel().astype(int), "iz": IZ.ravel().astype(int),
-        "vx": np.round(vx.ravel(), 4), "vy": np.round(vy.ravel(), 4), "vz": np.round(vz.ravel(), 4),
-        "curl_x": np.round(curl_x.ravel(), 5), "curl_y": np.round(curl_y.ravel(), 5),
-        "curl_z": np.round(curl_z.ravel(), 5),
-        "div":    np.round(divergence.ravel(), 5),
-        "std_x":  np.round(vx_std.ravel(), 4), "std_y": np.round(vy_std.ravel(), 4),
-        "std_z":  np.round(vz_std.ravel(), 4),
-        "density": np.round(density.ravel(), 6),
-        # KDE-MASSENdichte pro Voxel: der Viewer berechnet die Maske daraus
-        # LIVE (mass_density > mask_level, einstellbar per Slider). Deshalb kein
-        # gebackenes mask-Bool mehr, und curl/div/std bleiben ÜBERALL erhalten
-        # (bei kleinerem Level braucht der Viewer sie auch außerhalb der
-        # Default-Maske).
-        "mass_density": np.round(mass_density.ravel(), 8),
+    _params_dump, _params_note = _parameters_dump(result_name, parameters)
+    print(f"run info: minisanity + parameters ({_params_note.split(',')[0]})")
+
+    # ── Voxel-Spalten aufbauen ───────────────────────────────────────────────
+    # SPALTENFORMAT (Juli 2026): ein Array pro Größe statt eines Dicts pro Voxel.
+    # Die 18 Feldnamen standen vorher in JEDEM der ~26k Voxel — allein das waren
+    # 3.2 der 6.4 MB. Der Viewer baut daraus in `_hydrateVoxels()` wieder seine
+    # Voxel-Objekte, das Format ist also rein „on the wire".
+    # Reihenfolge = C-Order über (ix, iy, iz), Index = (ix*ny + iy)*nz + iz.
+    # NICHT exportiert, weil im Viewer exakt reproduzierbar:
+    #   x/y/z, ix/iy/iz  — aus meta.extent + meta.spacing + Arrayposition
+    #   curl_x/y/z, div  — np.gradient-Äquivalent aus vx/vy/vz (dieselben
+    #                      Randformeln; der Viewer rechnet sie beim Laden nach)
+    # Rundung: Geschwindigkeiten/Streuungen auf 3 Nachkommastellen (der Effekt
+    # auf curl/div liegt bei 5e-4 gegenüber Wertebereichen von ~±2), die beiden
+    # Dichten auf 5 SIGNIFIKANTE Stellen — siehe `_col_sig`.
+    voxel_columns = {
+        "vx": _col(vx, 3), "vy": _col(vy, 3), "vz": _col(vz, 3),
+        "std_x": _col(vx_std, 3), "std_y": _col(vy_std, 3), "std_z": _col(vz_std, 3),
+        # density/mass_density gehen NICHT mit: der Viewer rechnet beide KDEs
+        # beim Laden aus `meta.kde` (Rezept + Sternpositionen/-massen) selbst —
+        # er kann das ohnehin für Bandbreiten- und Gruppenwechsel und trifft die
+        # exportierten Werte auf 7e-7 bei Peak 0.087. Kostet dort ~18 ms und
+        # spart 0.42 MB, in der Light-Version knapp ein Fünftel.
     }
-    keys = list(columns.keys())
-    voxels = [{k: (int(v) if k in ("ix","iy","iz") else _num(v)) for k, v in zip(keys, row)}
-              for row in zip(*[columns[k].tolist() for k in keys])]
     print(f"Maskenvoxel (Default-Level {mask_level}): {int(mask_bool_flat.sum())}")
 
     # ── Sternobjekte ─────────────────────────────────────────────────────────
@@ -669,23 +801,32 @@ def process_field(cfg):
             "mask_level":     float(mask_level),
             # KDE-Rezept der Massendichte, damit der Viewer sie LIVE neu rechnen
             # kann (Bandbreite umstellen, nur ausgewählte Sterngruppen gewichten).
-            # ⚠️ Das Auswertegitter von simple_functions.calculate_mask ist NICHT
-            # das Voxelgitter: np.mgrid legt `shape` Punkte INKLUSIVE beider Enden
-            # über [origin, origin+shape·distance], die Schrittweite ist dort also
-            # shape/(shape-1)·distance statt distance (xyz oben ist endpoint=False).
-            # origin/shape/distances gehen deshalb roh mit — der Viewer baut damit
-            # exakt dasselbe Gitter und reproduziert die exportierte Dichte.
+            # `spacing` = Schrittweite des KDE-Auswertegitters (beide Repos:
+            # Feldknoten, origin + k·distances). Der Viewer LIEST sie, statt eine
+            # Konvention zu raten: vor Juli 2026 wertete das Taurus-Repo auf einem
+            # np.mgrid mit inklusiven Enden aus (Schritt shape/(shape-1)·distance),
+            # und der Viewer hatte genau diese Formel fest verdrahtet — bei
+            # Claude-Exporten rechnete er dadurch auf einem um bis zu 5 %
+            # gedehnten Gitter, die Live-KDE wich um das halbe Feld ab.
             "kde": {
                 "smooth":    float(KDE_SMOOTH),
                 "origin":    [float(v) for v in BOX_ORIGIN],
                 "shape":     [int(v) for v in BOX_SHAPE],
                 "distances": [float(v) for v in BOX_DISTANCES],
+                "spacing":   _kde_eval_spacing(BOX_SHAPE, BOX_DISTANCES),
             },
             "curl_min": round(curl_min,5), "curl_max": round(curl_max,5),
             "div_min":  round(div_min,5),  "div_max":  round(div_max,5),
             "std_min":  round(std_min,4),  "std_max":  round(std_max,4),
             "density_min": round(density_min,6), "density_max": round(density_max,6),
             "result_name": result_name,
+            # Technische Run-Info für das Info-Menü (Taste I) des Viewers:
+            # letzter minisanity-Block + der Konfigurations-Dump des Runs.
+            "run_info": {
+                "minisanity": _minisanity_tail(result_name),
+                "parameters": _params_dump,
+                "parameters_note": _params_note,
+            },
             # Quell-Repo des Runs: "T" = TaurusVelocityField, "C" =
             # ClaudeVelocityField — der Viewer zeigt "[T] <result_name>".
             "repo": REPO_TAG,
@@ -699,7 +840,7 @@ def process_field(cfg):
                 "U", "V", "W", "BP-RP", "G-RP", "abs_g_mag",
             ],
         },
-        "voxels":     voxels,
+        "voxel_columns": voxel_columns,
         "real_stars": real_stars,
     }
 
@@ -843,7 +984,7 @@ processed_fields = [process_field(cfg) for cfg in FIELDS]
 field = processed_fields[0]
 data = {
     "meta":              field["meta"],
-    "voxels":            field["voxels"],
+    "voxel_columns":     field["voxel_columns"],
     "real_stars":        field["real_stars"],
     "reference_objects": reference_objects,
 }

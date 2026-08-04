@@ -10,7 +10,5 @@ saves/*
 *.json
 *.fits
 *.pkl
-*.py
 
-!export_vectorfield.py
 
