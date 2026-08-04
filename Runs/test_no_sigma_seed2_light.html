@@ -10112,13 +10112,19 @@ function renderPlotPinned(){
   box.appendChild(clr);
 }
 
-// ── Plot export (PNG at 3× / single-page PDF) ────────────────────────────────
+// ── Plot export (PNG and single-page PDF, both at PLOT_EXPORT_SCALE) ─────────
 // The PDF is written by hand: one page containing the plot rendered to a JPEG
 // (DCTDecode) — no library needed, works offline, opens everywhere.
+// The canvas is drawn in CSS px and placed on the page at 100 px/inch, so the
+// scale factor IS the resolution: 6× → 600 dpi at an unchanged physical size.
+// Raising the factor therefore never changes how large the figure comes out in
+// a document, only how fine it is (August 2026, was 3× / 300 dpi).
+const PLOT_EXPORT_SCALE = 6;
 function _canvasToPdfBlob(cv){
   const jpegB64 = cv.toDataURL('image/jpeg', 0.95).split(',')[1];
   const img = Uint8Array.from(atob(jpegB64), c => c.charCodeAt(0));
-  const wPt = cv.width * 72/300, hPt = cv.height * 72/300;   // place at 300 dpi
+  const dpi = 100 * PLOT_EXPORT_SCALE;
+  const wPt = cv.width * 72/dpi, hPt = cv.height * 72/dpi;
   const enc = new TextEncoder();
   const parts = []; const offsets = []; let pos = 0;
   const push = s => { const b = (s instanceof Uint8Array) ? s : enc.encode(s); parts.push(b); pos += b.length; };
@@ -10147,7 +10153,7 @@ function exportDataPlot(kind, w='star'){
   const live = _pEl(w,'canvas');
   if(!live || !DATA) return;
   const stw = PLOT_STATE[w];
-  const W = live.clientWidth || 492, H = PLOT_CANVAS_H, scale = 3;   // 3× → crisp in print
+  const W = live.clientWidth || 492, H = PLOT_CANVAS_H, scale = PLOT_EXPORT_SCALE;
   const cv = document.createElement('canvas');
   cv.width = W*scale; cv.height = H*scale;
   const ctx = cv.getContext('2d');
