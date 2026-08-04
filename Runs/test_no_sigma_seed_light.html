@@ -846,7 +846,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       <div class="slider-row cb-filter-row">
         <button class="tog" id="cloud-cb-clip" onclick="toggleCbFilterGray('cloud')" title="Out-of-range voxels: hidden or greyed out">hidden</button>
         <span id="cloud-ekin" class="hint" style="display:none;flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
-          title="Total kinetic energy of the field in the active reference frame — integrated over the default mask"></span>
+          title="Total kinetic energy of the field in the active reference frame — integrated over the whole grid, independent of the mask"></span>
         <button class="tog" id="cloud-cb-reset" onclick="resetCbFilterSel('cloud')" style="margin-left:auto;display:none;" title="Reset the range handles to full">⟲ full</button>
       </div>
       <div class="slider-row cb-minmax" data-cbl="cloud"></div>
@@ -2777,11 +2777,10 @@ function scanMax(key){
 // baked mask bool: the mask is computed HERE (mass_density > level), and the
 // level is adjustable via two LINKED sliders (Field + Cloud section) — one
 // shared threshold for field markers, streamlines AND the density cloud.
-// The kinetic-energy integral deliberately does NOT follow the slider: it uses
-// the FIXED exported default level (v._fixedMask), so the readout stays stable
-// and the unconstrained field outside the calibrated mask (esp. box edges)
-// never enters the sum. Old exports (baked v.mask, no mass_density): the
-// sliders hide and the mask stays baked.
+// The kinetic-energy integral follows neither the slider nor the default
+// level: it sums over ALL voxels (see kineticEnergyIntegral), so no part of
+// the stellar mass is cut away. Old exports (baked v.mask, no mass_density):
+// the sliders hide and the mask stays baked.
 function _defaultMassLevel(){ return DATA?.meta?.mask_level ?? null; }
 let _peakCache = {sig:null, mass:0, stars:0};
 function _densityPeaks(){
@@ -4409,13 +4408,15 @@ function _energyRange(){
   return _energyCache;
 }
 
-// Total kinetic energy E_kin = Σ ½·ρ·|v|² · V_voxel over the FIXED default
-// mask (v._fixedMask = mass_density > meta.mask_level; NOT the interactive
-// mask slider): the readout stays comparable while the slider moves, and the
-// unconstrained field outside the calibrated mask (esp. the box edges) never
-// leaks into the sum. ρ prefers the exported KDE MASS density (mass_density,
-// M☉/pc³ — like plot_data.py's masked integral); legacy exports fall back to
-// v.density with their baked mask. Cached by frame signature (mask is fixed).
+// Total kinetic energy E_kin = Σ ½·ρ·|v|² · V_voxel over ALL voxels — no mask
+// at all (August 2026, user's decision; it used to run over the fixed default
+// mask). Any mask throws away part of the stellar mass: the KDE density
+// reaches beyond the cut, so a masked sum under-counts the energy and the
+// number would depend on where the cut sits. Summing everything keeps the
+// readout a property of the run, not of a threshold, and it stays independent
+// of the mask slider as before. ρ prefers the exported KDE MASS density
+// (mass_density, M☉/pc³); legacy exports fall back to v.density. Cached by
+// frame signature.
 let _ekinCache = { sig:null, val:0 };
 function kineticEnergyIntegral(){
   const r = activeRefVec();
@@ -4426,7 +4427,6 @@ function kineticEnergyIntegral(){
     const sp = DATA.meta?.spacing;
     const vol = DATA.meta?.voxel_volume ?? (sp ? sp[0]*sp[1]*sp[2] : 1);
     DATA.voxels.forEach(v => {
-      if(!v._fixedMask) return;
       const evx=(v.vx??0)-r.x, evy=(v.vy??0)-r.y, evz=(v.vz??0)-r.z;
       sum += 0.5 * (v.mass_density ?? v.density ?? 0) * (evx*evx + evy*evy + evz*evz);
     });

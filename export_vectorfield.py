@@ -388,6 +388,11 @@ def _eta_from_posterior(parameters, samples, gaia, n_stars):
 
     def has_rv_mask(ruwe_thr, buggy_integral, err_max):
         rv, rve = rv_g.copy(), rve_g.copy()
+        # ruwe_thr: Zahl, Array (positionsabhängige Abfrage) oder Unsinn aus einem
+        # alten Parameterfile (None / der STRING "None" = keine Schwelle)
+        if isinstance(ruwe_thr, str):
+            try: ruwe_thr = float(ruwe_thr)
+            except ValueError: ruwe_thr = None
         if dsk.get("filter_ruwe") and ruwe_thr is not None:
             bad = ruwe_g > ruwe_thr
             rv[bad] = np.nan; rve[bad] = np.nan
@@ -549,8 +554,16 @@ def process_field(cfg):
 
     if REPO == "taurus":
         # RUWE-Schwelle für den rv_used-Fallback (final_run-Ära hat den Key nicht
-        # im Parameterfile — dort war 1.4 in stellar_data.py hart verdrahtet)
+        # im Parameterfile — dort war 1.4 in stellar_data.py hart verdrahtet).
+        # Alte Parameterfiles tragen hier auch mal None oder den STRING "None"
+        # (= keine Schwelle) — beides darf den Export nicht abbrechen.
         RUWE_THRESHOLD = parameters["data"]["data_set_kwargs"].get("ruwe_threshold", 1.4)
+        try:
+            RUWE_THRESHOLD = float(RUWE_THRESHOLD)
+        except (TypeError, ValueError):
+            print(f"rv_used: ruwe_threshold={RUWE_THRESHOLD!r} ist keine Zahl — "
+                  f"RUWE-Cut übersprungen.")
+            RUWE_THRESHOLD = np.inf
         # RV-Outlier-Filter (Integral-Wahrscheinlichkeit innerhalb [rv_min, rv_max])
         rv_min       = parameters["data"]["data_set_kwargs"]["rv_min"]
         rv_max       = parameters["data"]["data_set_kwargs"]["rv_max"]
