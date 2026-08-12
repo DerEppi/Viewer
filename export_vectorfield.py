@@ -1107,9 +1107,9 @@ else:
 # regulären Gitter, also werden KEINE xyz/val-Listen mehr exportiert (~60 MB
 # JSON), sondern EIN dichtes Uint8-Array als base64 (~8 MB): 0 = unter Cutoff,
 # 1..255 = log-quantisiert zwischen val_cut und val_max. Der Viewer
-# (buildDustCloud) rekonstruiert Positionen aus grid.origin/spacing/shape und
-# dequantisiert zurück nach val/val_max (Shader-Attribut "dens"). Werte über
-# val_max (99.5. Perzentil) clampen auf 255 — wie vorher über val_max geclampt.
+# (buildDustCloud, seit Aug 2026 Raymarching) lädt das Array als 3D-Textur
+# (grid.origin/spacing/shape = Geometrie) und dequantisiert im Shader. Werte
+# über val_max (99.5. Perzentil) clampen auf 255.
 _dust_path = _find_asset("dustmap_edenhofer.npz")
 dustmap_object = None
 if _dust_path is not None:
@@ -1127,7 +1127,7 @@ if _dust_path is not None:
         _t = (np.log(_dens[_sel]) - np.log(_cut)) / (np.log(_vmax) - np.log(_cut))
         _q[_sel] = 1 + np.round(np.clip(_t, 0.0, 1.0) * 254).astype(np.uint8)
         _b64 = base64.b64encode(_q.ravel(order="C").tobytes()).decode("ascii")
-        dustmap_object = {"name":"Dust (Edenhofer 2024)","type":"dust_cloud",
+        dustmap_object = {"name":"","type":"dust_cloud",
                           "grid":{"origin":[float(v) for v in _d_origin],
                                   "spacing":[float(v) for v in _d_spacing],
                                   "shape":[int(v) for v in _dens.shape]},
