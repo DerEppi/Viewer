@@ -37,6 +37,44 @@ import os
 import sys
 from pathlib import Path
 
+# ── Batch-Light-Export ────────────────────────────────────────────────────────
+# `python export_vectorfield.py batch` exportiert für JEDEN Eintrag die
+# Light-Version nach Viewer/Runs/<run>_light.html — Venv je Pipeline wird
+# automatisch gewählt (Subprozess), die Hauptdateien (vectorfield_viewer_data
+# .html/_light.html) bleiben unangetastet. Key "T" = TaurusVelocityField,
+# "C" = ClaudeVelocityField. index.html-Einträge bleiben Handarbeit.
+BATCH_RUNS = {
+    "T": ["parameters_old", "ruwe_test", "test_new_param"],
+    "C": ["test_no_sigma_seed", "test_no_sigma_seed2", "test_with_sigma"],
+}
+
+if len(sys.argv) > 1 and sys.argv[1].strip().lower() == "batch":
+    import subprocess
+    _VIEWER = Path(__file__).resolve().parent
+    _WS     = _VIEWER.parent
+    _CFG = {"T": ("taurus", _WS / "TaurusVelocityField/.venv/bin/python"),
+            "C": ("claude", _WS / "ClaudeVelocityField/.venv/bin/python")}
+    fails, done = [], []
+    for tag, runs in BATCH_RUNS.items():
+        key = str(tag).strip().upper()[:1]
+        if key not in _CFG:
+            sys.exit(f"BATCH_RUNS-Key {tag!r}: muss mit 'T' oder 'C' beginnen.")
+        repo_long, venv_py = _CFG[key]
+        if not venv_py.exists():
+            sys.exit(f"Venv fehlt: {venv_py}")
+        for run in runs:
+            print(f"\n═══ [{key}] {run} ═══", flush=True)
+            r = subprocess.run([str(venv_py), str(Path(__file__).resolve()),
+                                repo_long, run, "--light-to-runs"])
+            (fails if r.returncode else done).append(f"[{key}] {run}")
+    print(f"\nBatch fertig: {len(done)} ok" + (f", FEHLGESCHLAGEN: {fails}" if fails else ""))
+    for name in done:
+        run = name.split("] ", 1)[1]
+        p = _VIEWER / "Runs" / f"{run}_light.html"
+        if p.exists():
+            print(f"  {p.name}  ({p.stat().st_size/1e6:.1f} MB)")
+    sys.exit(1 if fails else 0)
+
 import numpy as np
 import pandas as pd
 from scipy.special import erf
@@ -44,8 +82,11 @@ from scipy.interpolate import RegularGridInterpolator
 from astropy.coordinates import Galactic, ICRS
 import astropy.units as u_ap
 
-if len(sys.argv) > 1:
-    REPO = sys.argv[1]
+# Flags (z. B. --light-to-runs vom Batch-Treiber) von den Positionsargumenten trennen
+LIGHT_TO_RUNS = "--light-to-runs" in sys.argv[1:]
+_args = [a for a in sys.argv[1:] if not a.startswith("--")]
+if _args:
+    REPO = _args[0]
 REPO = str(REPO).strip().lower()   # case-insensitiv: "Taurus"/"CLAUDE"/… ok
 if REPO not in ("taurus", "claude"):
     sys.exit(f"REPO muss 'taurus' oder 'claude' sein, nicht {REPO!r}")
@@ -109,8 +150,16 @@ FIELDS_BY_REPO = {
     ],
 }
 FIELDS = FIELDS_BY_REPO[REPO]
-if len(sys.argv) > 2:
-    FIELDS[0]["result_name"] = sys.argv[2]
+if len(_args) > 1:
+    FIELDS[0]["result_name"] = _args[1]
+
+# Batch-Modus (--light-to-runs): NUR die Light-Version schreiben, direkt nach
+# Viewer/Runs/<run>_light.html — die Hauptdateien bleiben der aktuelle Hauptrun.
+if LIGHT_TO_RUNS:
+    SAVE_JSON         = False
+    SAVE_HTML_LIGHT   = True
+    HTML_OUTPUT       = None
+    HTML_OUTPUT_LIGHT = VIEWER_DIR / "Runs" / f"{FIELDS[0]['result_name']}_light.html"
 
 # Referenz-Assets (Local-Bubble-/Dustmap-npz): eigener Ordner zuerst, dann die
 # saves/values beider Repos (dort liegen die bereits berechneten Dateien).
@@ -291,6 +340,123 @@ def _region_kinematics(l, b, d_pc, pm_l_cosb, pm_b, vr):
            float(vel.d_y.to(u_ap.km/u_ap.s).value),
            float(vel.d_z.to(u_ap.km/u_ap.s).value)]
     return [round(p,2) for p in pos], [round(v,2) for v in uvw]
+
+
+# =============================================================================
+# Modell-Power-Spektren (Amplituden-Modell des Forward-Modells, pro Sample)
+# =============================================================================
+# Beide Pipelines modellieren jede Geschwindigkeitskomponente als nifty-
+# CorrelatedField; das inferierte AMPLITUDEN-Spektrum a_c(k) ist Teil des
+# Forward-Modells (Latents {c}_fluctuations/_loglogavgslope/_spectrum) und pro
+# Posterior-Sample auswertbar — genau die glatten Kurven aus Hutschenreuter+
+# 2026 Fig. 4 (dünne Sample-Linien + Mittel), statt der verrauschten FFT-
+# Schalenmittel des Posterior-Means.
+#
+# Normierung: numerisch verifiziert gilt E|FFT_k|² = a(k)²/dV² (FFT =
+# unnormierte DFT, dV = Voxelvolumen; auf 3 Gittern geprüft, unabhängig von
+# Shape/Padding). Der Viewer zeichnet als FFT-Schätzer E_c(k) =
+# ½·mean_shell|FFT|², also exportieren wir P_c(k) = ½·a_c(k)²/dV² — beide
+# Kurven liegen damit auf DERSELBEN y-Skala. (Der FFT-Schätzer bleibt trotzdem
+# systematisch darunter: er sieht nur die maskierten Voxel, zero-gepaddet.)
+#
+# Slope: nifty non_parametric_kind="amplitude" (Default beider Pipelines) →
+# der loglogavgslope-Latent parametrisiert das AMPLITUDEN-Spektrum, die
+# Power-Spektrum-Steigung ist das DOPPELTE. Exportiert wird die Power-Konvention
+# (passt zur gezeichneten Kurve a², wie "p.s. slope" in Hutschenreuter Tab. 1).
+
+def _model_spectra(parameters, samples):
+    """→ meta.model_spectra-Dict oder None (Fehler werden geloggt, nie fatal)."""
+    try:
+        import jax
+        import nifty.re as jft
+
+        tree = samples.samples.tree
+        fmk  = parameters["model"]["field_model_kwargs"]
+        corr = fmk["correlation_params"]["main"]
+        distances = tuple(float(d) for d in parameters["geometry"]["distances"])
+        dV = float(np.prod(distances))
+
+        # Latent-Präfixe aus dem Posterior (robust gegen gedriftete Parameter-
+        # files): "x_loglogavgslope" (claude), "x_main_…" (taurus),
+        # "main_…" (single_power_spectrum, beide Repos).
+        prefixes = sorted(k[: -len("_loglogavgslope")] for k in tree
+                          if k.endswith("_loglogavgslope"))
+        comp_of = {"x": "vx", "y": "vy", "z": "vz", "m": "all"}
+        if not prefixes or any(p[0] not in comp_of for p in prefixes):
+            print(f"model spectra: unerwartete Latent-Präfixe {prefixes} — übersprungen.")
+            return None
+
+        n_total = None
+        k_out, components = None, {}
+        for p in prefixes:
+            comp = comp_of[p[0]]
+            # Gitter des CorrelatedField = Shape des xi-Latents (Checkpoint ist
+            # ground truth — zero_pad_pixels im Parameterfile driftet gern).
+            nshape = tuple(int(s) for s in np.shape(tree[f"{p}_xi"])[-3:])
+            cfm = jft.CorrelatedFieldMaker(f"{p}_")
+            cfm.add_fluctuations(nshape, distances, **corr["fluctuations"])
+            cfm.set_amplitude_total_offset(offset_mean=0.0, offset_std=(1.0, 0.5))
+            cfm.finalize()
+            amp = cfm.fluctuations[0]
+            hg  = cfm._target_grids[0].harmonic_grid
+            ml   = np.asarray(hg.mode_lengths)        # k [1/pc], 0 = Zeromode
+            mult = np.asarray(hg.mode_multiplicity)
+
+            A = np.asarray(jax.vmap(amp)(samples.samples))   # (n_samples, n_k)
+            P = 0.5 * A**2 / dV**2                           # E_c(k)-Konvention des Viewers
+            n_total = P.shape[0]
+
+            # Log-k-Binning auf ≤64 Punkte (Multiplizitäts-gewichtet): die Zahl
+            # der unikaten Modenlängen wächst mit dem Gitter in die Zehntausende,
+            # die Kurve ist aber glatt — 64 log-Bins reichen fürs Zeichnen.
+            sel = ml > 0
+            lk, w, Pv = np.log(ml[sel]), mult[sel].astype(float), P[:, sel]
+            nb = min(64, len(lk))
+            edges = np.linspace(lk.min(), lk.max() + 1e-12, nb + 1)
+            idx = np.clip(np.digitize(lk, edges) - 1, 0, nb - 1)
+            wsum = np.bincount(idx, weights=w, minlength=nb)
+            keep = wsum > 0
+            kb = np.exp(np.bincount(idx, weights=w * lk, minlength=nb)[keep] / wsum[keep])
+            Pb = np.vstack([np.bincount(idx, weights=w * row, minlength=nb)[keep] / wsum[keep]
+                            for row in Pv])                   # (n_samples, n_bins)
+
+            if k_out is None:
+                k_out = kb
+            elif len(kb) != len(k_out) or not np.allclose(kb, k_out):
+                print("model spectra: Komponenten auf verschiedenen k-Gittern — übersprungen.")
+                return None
+
+            # Sample-Linien fürs Zeichnen auf ≤30 deckeln (gleichmäßig gezogen)
+            rows = np.linspace(0, Pb.shape[0] - 1, min(30, Pb.shape[0])).astype(int)
+            # Slope: der Latent ist STANDARDISIERT (xi-Raum); physikalisch wird
+            # er über den NormalPrior des cf-Modells: mean + std·xi. ×2 = Power-
+            # Konvention (der Latent parametrisiert das Amplituden-Spektrum).
+            sl_m, sl_s = (float(v) for v in corr["fluctuations"]["loglogavgslope"])
+            sl = sl_m + sl_s * np.asarray(tree[f"{p}_loglogavgslope"], dtype=float).ravel()
+            components[comp] = {
+                "P":     [_col_sig(Pb[r], 4) for r in rows],
+                "mean":  _col_sig(Pb.mean(axis=0), 4),
+                "slope": [round(2.0 * float(sl.mean()), 3),
+                          round(2.0 * float(sl.std()), 3)],
+            }
+        shared = "all" in components
+        print(f"model spectra: {'1 geteiltes' if shared else str(len(components))} "
+              f"Spektrum(e), {len(k_out)} k-Bins, {n_total} Samples"
+              + (f" ({min(30, n_total)} exportiert)" if n_total > 30 else "")
+              + ", slopes " + ", ".join(f"{c}={v['slope'][0]}±{v['slope'][1]}"
+                                        for c, v in components.items()))
+        return {
+            "k": _col_sig(k_out, 5),
+            "shared": shared,
+            "n_samples": int(n_total),
+            "components": components,
+            "note": ("P_c(k) = 0.5*amp_c(k)^2/dV^2 (same scale as the viewer's "
+                     "FFT shell estimate); slope = power-spectrum convention "
+                     "(2x the nifty amplitude loglogavgslope latent)"),
+        }
+    except Exception as exc:
+        print(f"model spectra: nicht rekonstruierbar — {type(exc).__name__}: {exc}")
+        return None
 
 
 # =============================================================================
@@ -728,6 +894,9 @@ def process_field(cfg):
     _params_dump, _params_note = _parameters_dump(result_name, parameters)
     print(f"run info: minisanity + parameters ({_params_note.split(',')[0]})")
 
+    # ── Modell-Power-Spektren (Posterior-Samples des Amplituden-Modells) ─────
+    model_spectra = _model_spectra(parameters, samples)
+
     # ── Voxel-Spalten aufbauen ───────────────────────────────────────────────
     # SPALTENFORMAT (Juli 2026): ein Array pro Größe statt eines Dicts pro Voxel.
     # Die 18 Feldnamen standen vorher in JEDEM der ~26k Voxel — allein das waren
@@ -828,6 +997,10 @@ def process_field(cfg):
                 "distances": [float(v) for v in BOX_DISTANCES],
                 "spacing":   _kde_eval_spacing(BOX_SHAPE, BOX_DISTANCES),
             },
+            # Inferierte Amplituden-Spektren des Forward-Modells (Sample-Linien
+            # + Mittel + Slope je Komponente) — None, wenn nicht rekonstruierbar
+            # (der Viewer zeigt dann nur den FFT-Schätzer). S. _model_spectra.
+            **({"model_spectra": model_spectra} if model_spectra else {}),
             "curl_min": round(curl_min,5), "curl_max": round(curl_max,5),
             "div_min":  round(div_min,5),  "div_max":  round(div_max,5),
             "std_min":  round(std_min,4),  "std_max":  round(std_max,4),
@@ -1017,8 +1190,9 @@ DATA_BLOCK  = f"const EMBEDDED_DATA = {json_str};"
 if PLACEHOLDER not in html:
     print(f"FEHLER: Platzhalter nicht in {HTML_TEMPLATE}!"); exit(1)
 html = html.replace(PLACEHOLDER, DATA_BLOCK)
-with open(HTML_OUTPUT, "w", encoding="utf-8") as f: f.write(html)
-print(f"Gespeichert: {HTML_OUTPUT}  ({os.path.getsize(HTML_OUTPUT)/1e6:.1f} MB)")
+if HTML_OUTPUT is not None:   # Batch-Modus (--light-to-runs) schreibt nur die Light-Datei
+    with open(HTML_OUTPUT, "w", encoding="utf-8") as f: f.write(html)
+    print(f"Gespeichert: {HTML_OUTPUT}  ({os.path.getsize(HTML_OUTPUT)/1e6:.1f} MB)")
 
 if SAVE_HTML_LIGHT:
     ro_nd = {k:v for k,v in reference_objects.items() if k!="dustmap"}

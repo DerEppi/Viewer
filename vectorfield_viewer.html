@@ -1405,7 +1405,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
       <div class="toggle-row" style="flex:1;">
         <button class="tog on" id="fplot-type-hist" onclick="setPlotType('hist','field')">Histogram</button>
         <button class="tog" id="fplot-type-scatter" onclick="setPlotType('scatter','field')">Scatter 2D</button>
-        <button class="tog" id="fplot-type-power" onclick="setPlotType('power','field')" title="Spherically-averaged 3D FFT power spectrum P(k) — |v| → total kinetic-energy spectrum E(k), vx/vy/vz → that component's E_c(k) separately">Power spec. (test)</button>
+        <button class="tog" id="fplot-type-power" onclick="setPlotType('power','field')" title="Power spectra — |v| → total kinetic-energy spectrum E(k), vx/vy/vz → that component's E_c(k); inferred model spectra (posterior samples) when the export carries them, plus the FFT shell estimate">Power spec.</button>
         <button class="tog" id="fplot-style-btn" onclick="toggleStylePop('field',this)" style="margin-left:auto;" title="Plot style preset — opens the style list (current one marked)">Style</button>
         <button class="tog" id="fplot-grid-btn" onclick="togglePlotGrid('field')">Grid</button>
         <select id="fplot-style-select" style="display:none;" onchange="setPlotStyle(this.value,'field')">
@@ -1507,6 +1507,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
          same plot (like the reference-line chips). Shown only in power mode. -->
     <div class="prow sub" id="fplot-spec-row" style="display:none;">
       <label>Spectra</label>
+      <button class="tog" id="fplot-pssrc-btn" onclick="cyclePsSource()" style="display:none;"
+        title="Which velocity spectra to draw: the run's inferred model spectra (thin posterior samples + thick mean, as in Hutschenreuter et al. 2026 Fig. 4), the FFT shell estimate of the posterior-mean field (dots), or both. Only in exports that carry model spectra.">Model+FFT</button>
       <button class="tog" onclick="addPsOverlay()" title="Overlay another field's power spectrum on the same plot">+ spectrum</button>
       <div id="fplot-spec-chips" class="p-lchips"></div>
       <button class="tog" id="fplot-spec-clear" onclick="clearPsOverlays()" style="margin-left:auto;flex-shrink:0;display:none;" title="Remove all overlaid spectra">✕ all</button>
@@ -1688,7 +1690,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
           <tr><td>Color by</td><td>Same controls as the 3D colorbars: range handles, <em>hidden/greyed</em>, min/max row with ⇄ / ⤓ / Auto, and the <strong>∅</strong> button.</td></tr>
           <tr><td>Groups</td><td>(Star window) Opens the same <strong>Star groups</strong> window the 3D view uses. Starting <em>+ new group</em> from here draws in <strong>this plot</strong>: a box over the points in the scatter, or bar by bar in the histogram (click = one bar, right-drag = several). Switching between the two mid-drawing keeps what is already marked.</td></tr>
           <tr><td>Star positions</td><td>Galactic x/y/z [pc] are available as plot axes and colour field (2D only — in 3D they would just paint a gradient).</td></tr>
-          <tr><td>Power spec.</td><td>(Field window) Spherically averaged 3D FFT power spectrum, log-log on logarithmic k-shells. <em>|v|</em> = total E(k) = ½ Σ|FFT(v<sub>c</sub>)|², <em>vx/vy/vz</em> = that component's E<sub>c</sub>(k) (they sum to the total), scalars = |FFT(f)|². <em>+ spectrum</em> overlays another field as a second curve, <em>✕ all</em> clears them. (Binning and slope lines follow Hutschenreuter et al. 2026.)</td></tr>
+          <tr><td>Power spec.</td><td>(Field window) Spherically averaged 3D FFT power spectrum, log-log on logarithmic k-shells. <em>|v|</em> = total E(k) = ½ Σ|FFT(v<sub>c</sub>)|², <em>vx/vy/vz</em> = that component's E<sub>c</sub>(k) (they sum to the total), scalars = |FFT(f)|². <em>+ spectrum</em> overlays another field as a second curve, <em>✕ all</em> clears them. Exports since Aug 2026 also carry the run's <strong>inferred model spectra</strong> (thin posterior-sample lines + thick mean per velocity component, with the model's power-spectrum slope in legend/caption, à la Hutschenreuter et al. 2026 Fig. 4/Table 1); the <em>Model/FFT/Model+FFT</em> button picks the curves. The caption also gives a least-squares slope of the FFT estimate.</td></tr>
           <tr><td>Lines</td><td><em>+ line</em> adds a dashed reference line: one value field with an <em>x =</em> / <em>y =</em> toggle and a colour. In the power spectrum it is a <strong>slope line</strong> instead (value = log-log slope, default Kolmogorov −11/3), drawn through the low-k end. Chips next to the button edit or remove single lines, <em>✕ all</em> removes all. Each mode keeps its own set; lines follow zoom/flip/log and appear in exports.</td></tr>
           <tr><td>Isochrones</td><td>(Star window) In a colour-magnitude diagram (<em>BP−RP</em> or <em>G−RP</em> vs <em>abs. G mag</em>) an <em>Isochrones</em> row appears: <em>+ isochrone</em> overlays a pre-main-sequence isochrone of a chosen age (0.5–15 Myr), colour-coded and labelled in a legend. Curves from BHAC15 (Baraffe et al. 2015, Gaia bands).</td></tr>
           <tr><td>Style</td><td>Button next to <em>Grid</em>: preset list for the 2D plots (theme, seaborn, matplotlib-light, …). Colormap sits under <em>Color by</em>; grid, bin count and plot colour keep their rows.</td></tr>
@@ -2081,7 +2083,8 @@ const PLOT_STATE = {
            axOv:{ xmn:null, xmx:null, ymn:null, ymx:null },
            fitRange:null,
            lines:{ hist:[], scatter:[], power:[] },
-           psOverlays:[] },     // extra power-spectrum curves overlaid on the primary (x-select): {field, color|null} — fieldPlot blob
+           psOverlays:[],       // extra power-spectrum curves overlaid on the primary (x-select): {field, color|null} — fieldPlot blob
+           psSource:'both' },   // power mode curves: 'model' (inferred spectra, posterior samples+mean) | 'fft' (shell estimate) | 'both' — fieldPlot blob; ignored without meta.model_spectra
 };
 // Plot-window id helpers + style sheets — up HERE (not in the plot section)
 // because the SETTINGS_TABLE setters (fieldPlot/plotStyle/plotFit) touch them
@@ -6902,7 +6905,8 @@ const SETTINGS_TABLE = [
                axOv:{ ...f.axOv },
                fitRange:f.fitRange ? [...f.fitRange] : null,
                lines:f.lines,
-               psOverlays:f.psOverlays.map(o=>({ field:o.field, color:o.color })) }; },
+               psOverlays:f.psOverlays.map(o=>({ field:o.field, color:o.color })),
+               psSource:f.psSource }; },
     set:v=>{ if(!v || typeof v !== 'object') return;
       const f = PLOT_STATE.field;
       if(typeof v.grid === 'boolean') f.grid = v.grid;
@@ -6932,6 +6936,7 @@ const SETTINGS_TABLE = [
       if(Array.isArray(v.psOverlays)) f.psOverlays = v.psOverlays
         .filter(o => o && typeof o.field === 'string')
         .map(o => ({ field:o.field, color:/^#[0-9a-f]{6}$/i.test(o.color||'') ? o.color.toLowerCase() : null }));
+      if(['model','fft','both'].includes(v.psSource)) f.psSource = v.psSource;
       f._prefsPending = true;
       _togSync('fplot-grid-btn', f.grid);
       _selSync('fplot-style-select', f.style);
@@ -8057,6 +8062,51 @@ document.addEventListener('mousedown', e => {
 // Auto colours (distinct from the primary's plot colour) when no colour is set.
 const _PS_PALETTE = ['#e6550d','#31a354','#3182bd','#756bb1','#d6616b','#8ca252','#e7ba52','#843c39'];
 function _psAutoColor(i){ return _PS_PALETTE[((i%_PS_PALETTE.length)+_PS_PALETTE.length)%_PS_PALETTE.length]; }
+// ── Inferred model spectra (meta.model_spectra, Aug 2026) ────────────────────
+// Exports carry the forward model's inferred amplitude spectra per velocity
+// component: k grid + per-posterior-sample power rows + mean + the model's
+// slope parameter (power convention). Same y-scale as the FFT shell estimate
+// (P = ½·amp²/dV², verified in the export). vmag = Σ over the components.
+function _modelSpec(){ return (DATA && DATA.meta && DATA.meta.model_spectra) || null; }
+function _modelSpecFor(field){
+  const MS = _modelSpec(); if(!MS || !Array.isArray(MS.k)) return null;
+  const C = MS.components || {};
+  if(field === 'vmag'){
+    const parts = MS.shared ? [C.all, C.all, C.all] : [C.vx, C.vy, C.vz];
+    if(parts.some(p => !p || !Array.isArray(p.mean))) return null;
+    const n = Math.min(...parts.map(p => (p.P || []).length));
+    const rows = [];
+    for(let s = 0; s < n; s++)
+      rows.push(MS.k.map((_, i) => parts.reduce((a, p) => a + (+p.P[s][i] || 0), 0)));
+    const mean = MS.k.map((_, i) => parts.reduce((a, p) => a + (+p.mean[i] || 0), 0));
+    return { k: MS.k, rows, mean, slope: null };   // no single slope for the total
+  }
+  const c = C[field] || (MS.shared && ['vx','vy','vz'].includes(field) ? C.all : null);
+  if(!c || !Array.isArray(c.mean)) return null;
+  return { k: MS.k, rows: c.P || [], mean: c.mean,
+           slope: Array.isArray(c.slope) && c.slope.length === 2 ? c.slope : null };
+}
+function cyclePsSource(){
+  const f = PLOT_STATE.field;
+  f.psSource = f.psSource === 'both' ? 'model' : f.psSource === 'model' ? 'fft' : 'both';
+  _syncPsSourceBtn(); renderPlot('field'); saveSettings();
+}
+function _syncPsSourceBtn(){
+  const b = document.getElementById('fplot-pssrc-btn'); if(!b) return;
+  const has = !!_modelSpec();
+  b.style.display = has ? '' : 'none';
+  if(has) b.textContent = { model:'Model', fft:'FFT', both:'Model+FFT' }[PLOT_STATE.field.psSource] || 'Model+FFT';
+}
+// least-squares log-log slope of a shell spectrum (analysis shortcut for the
+// caption; k/P pairs with either value ≤0 are skipped)
+function _psLsSlope(k, P){
+  let n=0, sx=0, sy=0, sxx=0, sxy=0;
+  for(let i=0;i<k.length;i++){ const kv=+k[i], pv=+P[i]; if(!(kv>0)||!(pv>0)) continue;
+    const x=Math.log10(kv), y=Math.log10(pv); n++; sx+=x; sy+=y; sxx+=x*x; sxy+=x*y; }
+  if(n < 3) return null;
+  const d = n*sxx - sx*sx;
+  return d !== 0 ? (n*sxy - sx*sy)/d : null;
+}
 // fields whose spectrum can be overlaid = all field-plot quantities
 function _psSpecFields(){ return Object.keys(FPLOT_FIELDS); }
 // first field not already plotted (primary x-select + existing overlays),
@@ -8935,7 +8985,7 @@ function setPlotType(t, w='star'){
   if(_plineTarget && _plineTarget.w === w) closePlotLineEditor();
   renderPlotLinesUI(w);
   // power-spectrum overlays (field window only): row visible in power mode
-  if(w === 'field'){ show('spec-row', t === 'power'); if(t !== 'power' && _pspecTarget != null) closePsEditor(); renderPsChips(); }
+  if(w === 'field'){ show('spec-row', t === 'power'); if(t !== 'power' && _pspecTarget != null) closePsEditor(); renderPsChips(); _syncPsSourceBtn(); }
   // CMD isochrones (star window only): row visible in a colour-magnitude scatter
   if(w === 'star'){ _refreshIsoRow(); renderIsoChips(); }
   syncPlotColorWidgets(w);   // theme auto colour differs between hist/scatter
@@ -9463,18 +9513,30 @@ function drawDataPlot(w, ctx, W, H, interactive){
     (stw.psOverlays||[]).forEach((o,i)=>{ if(o.field && !defs.some(d=>d.field===o.field))
       defs.push({ field:o.field, primary:false, color:o.color, ci:i }); });
     const series = defs.map(d => Object.assign({}, d, _getPowerSpectrum(d.field)));
+    // inferred model spectra (posterior samples + mean; Aug 2026): attached per
+    // series when the export carries them and the source toggle wants them.
+    // Fields outside the forward model (curl, density, …) always keep the FFT.
+    const psrc = _modelSpec() ? (stw.psSource || 'both') : 'fft';
+    series.forEach(s => { s.model = psrc !== 'fft' ? _modelSpecFor(s.field) : null;
+      s.drawFFT = !s.model || psrc !== 'model'; });
     const prim = series[0];
     if(!prim.k || prim.k.length === 0){ drawFrame(); axLabel('k [1/pc]', 'x'); return `0 modes`; }
     let xmn=Infinity, xmx=-Infinity, ymn=Infinity, ymx=-Infinity;   // combined over ALL series
-    series.forEach(s => s.k.forEach((kv,i)=>{ const pv=s.P[i];
+    const scanKP = (ks,Ps) => ks.forEach((kv,i)=>{ const pv=+Ps[i]; kv=+kv;
       if(kv>0){ if(kv<xmn)xmn=kv; if(kv>xmx)xmx=kv; }
-      if(pv>0){ if(pv<ymn)ymn=pv; if(pv>ymx)ymx=pv; } }));
+      if(pv>0){ if(pv<ymn)ymn=pv; if(pv>ymx)ymx=pv; } });
+    series.forEach(s => {
+      if(s.drawFFT) scanKP(s.k, s.P);
+      if(s.model){ s.model.rows.forEach(r => scanKP(s.model.k, r)); scanKP(s.model.k, s.model.mean); }
+    });
     if(!(xmx>0)){ drawFrame(); axLabel('k [1/pc]', 'x'); return `0 modes`; }
     if(!(ymn>0)) ymn = ymx>0 ? ymx/1e6 : 1;   // all-zero guard
     if(xmn===xmx){ xmn*=0.9; xmx*=1.1; } if(ymn===ymx){ ymn*=0.9; ymx*=1.1; }
-    // slope-line anchor: the PRIMARY spectrum's first plotted shell (low-k end)
+    // slope-line anchor: the PRIMARY's first plotted point (model mean when
+    // drawn — it reaches further down in k — else the first FFT shell)
     let ak = null, aP = null;
-    prim.k.forEach((kv,i)=>{ if(ak === null && kv > 0 && prim.P[i] > 0){ ak = kv; aP = prim.P[i]; } });
+    const anchorSrc = prim.model ? [prim.model.k, prim.model.mean] : [prim.k, prim.P];
+    anchorSrc[0].forEach((kv,i)=>{ if(ak === null && +kv > 0 && +anchorSrc[1][i] > 0){ ak = +kv; aP = +anchorSrc[1][i]; } });
     // power spectra are read log-log; force it (positive by construction)
     stw.ax = { mode:'power', x0, x1, y0, y1, xmn, xmx, ymn, ymx, flipX:false, flipY:false, axLogX:true, axLogY:true, k0:ak, P0:aP };
     drawFrame(); gridLines(); xTicks(xmn, xmx, false, true); yTicks(ymn, ymx, false, true);
@@ -9482,29 +9544,45 @@ function drawDataPlot(w, ctx, W, H, interactive){
     const syp = pv => y1 - _axFrac(pv, ymn, ymx, true)*(y1-y0);
     // primary in the PLOT colour like its dots; overlays in their own colour
     const scol = s => s.primary ? col.pt : (s.color || _psAutoColor(s.ci));
-    series.forEach(s => {
-      const c = scol(s);
-      ctx.strokeStyle = c; ctx.lineWidth = 1.6; ctx.globalAlpha = 0.95;
+    const strokeCurve = (ks, Ps, lw, alpha) => {
+      ctx.lineWidth = lw; ctx.globalAlpha = alpha;
       ctx.beginPath(); let started=false;
-      s.k.forEach((kv,i)=>{ const pv=s.P[i]; if(!(kv>0)||!(pv>0)){ started=false; return; }
+      ks.forEach((kv,i)=>{ const pv=+Ps[i]; kv=+kv; if(!(kv>0)||!(pv>0)){ started=false; return; }
         const sx=sxk(kv), sy=syp(pv); if(!started){ ctx.moveTo(sx,sy); started=true; } else ctx.lineTo(sx,sy); });
       ctx.stroke(); ctx.globalAlpha = 1;
-      ctx.fillStyle = c;
-      s.k.forEach((kv,i)=>{ const pv=s.P[i]; if(!(kv>0)||!(pv>0)) return;
-        const sx=sxk(kv), sy=syp(pv); ctx.beginPath(); ctx.arc(sx, sy, 2.0, 0, 2*Math.PI); ctx.fill(); });
+    };
+    series.forEach(s => {
+      const c = scol(s);
+      ctx.strokeStyle = c;
+      if(s.model){
+        // Hutschenreuter+ 2026 style: every posterior sample as a thin
+        // translucent line, the posterior mean on top as the thick curve
+        s.model.rows.forEach(r => strokeCurve(s.model.k, r, 0.8, 0.15));
+        strokeCurve(s.model.k, s.model.mean, 2.0, 0.95);
+      }
+      if(s.drawFFT){
+        strokeCurve(s.k, s.P, s.model ? 1.0 : 1.6, s.model ? 0.65 : 0.95);
+        ctx.fillStyle = c;
+        s.k.forEach((kv,i)=>{ const pv=s.P[i]; if(!(kv>0)||!(pv>0)) return;
+          const sx=sxk(kv), sy=syp(pv); ctx.beginPath(); ctx.arc(sx, sy, 2.0, 0, 2*Math.PI); ctx.fill(); });
+      }
     });
     drawPlotRefLines(w, ctx, col);
-    // legend (only with overlays) — swatch + field label, so PNG/PDF exports say
-    // which curve is which
-    if(series.length > 1){
-      const rows = series.map(s => ({ c:scol(s), t:src.label(s.field) }));
-      // occupancy = every plotted spectrum point (the axes always span the full
-      // series here — the power mode has no zoom viewport)
+    // legend — with overlays (which curve is which), or single-curve when the
+    // model slope adds information; slope = the model's inferred power-spectrum
+    // slope parameter (à la Hutschenreuter+ 2026 Table 1)
+    const fmtSlope = sl => `s ${_fmtTick(sl[0])}±${_fmtTick(sl[1])}`;
+    if(series.length > 1 || (prim.model && prim.model.slope)){
+      const rows = series.map(s => ({ c:scol(s),
+        t: src.label(s.field) + (s.model && s.model.slope ? ` (${fmtSlope(s.model.slope)})` : '') }));
+      // occupancy = every plotted point (the axes always span the full series
+      // here — the power mode has no zoom viewport)
       const samples = [];
-      series.forEach(s => s.k.forEach((kv,i) => { const pv = s.P[i];
-        if(kv > 0 && pv > 0) samples.push([_axFrac(kv,xmn,xmx,true), 1-_axFrac(pv,ymn,ymx,true)]); }));
+      const occ = (ks,Ps) => ks.forEach((kv,i) => { const pv = +Ps[i];
+        if(+kv > 0 && pv > 0) samples.push([_axFrac(+kv,xmn,xmx,true), 1-_axFrac(pv,ymn,ymx,true)]); });
+      series.forEach(s => { if(s.drawFFT) occ(s.k, s.P); if(s.model) occ(s.model.k, s.model.mean); });
       const sig = ['ps', w, series.map(s=>s.field).join(','), rows.length,
-                   prim.k.length, _rangeSig()].join('|');
+                   prim.k.length, psrc, _rangeSig()].join('|');
       _drawPlotLegend(ctx, col, rows, stw.ax, sig, samples);
     }
     // energy spectra: E(k) for the |v| total, E_x/E_y/E_z(k) for one component
@@ -9514,8 +9592,17 @@ function drawDataPlot(w, ctx, W, H, interactive){
              : allScalar ? 'P(k)' : 'E(k), P(k)';
     axLabel('k [1/pc] (log)', 'x'); axLabel(yl + ' (log)', 'y');
     const extra = series.length>1 ? ` + ${series.length-1} overlay${series.length>2?'s':''}` : '';
-    return `${prim.k.length} k-shells · ${prim.mode==='energy' ? 'kinetic-energy' : 'power'} spectrum of ${src.label(xf)}${extra}`
-         + `${series.length===1 && prim.mode==='energy' ? (prim.comp ? ' (single component)' : ' (Σ components)') : ''} · mask · ${refFrameMode} frame`;
+    const nsmp = prim.model ? (_modelSpec().n_samples || prim.model.rows.length) : 0;
+    const parts = [];
+    if(prim.model) parts.push(`model spectrum (${Math.min(nsmp, prim.model.rows.length)} samples + mean)`
+      + (prim.model.slope ? `, slope ${prim.model.slope[0]}±${prim.model.slope[1]}` : ''));
+    if(prim.drawFFT){
+      const ls = _psLsSlope(prim.k, prim.P);
+      parts.push(`${prim.k.length} k-shells (FFT of mean field, mask)` + (ls != null ? `, LS slope ${ls.toFixed(2)}` : ''));
+    }
+    return `${prim.mode==='energy' ? 'kinetic-energy' : 'power'} spectrum of ${src.label(xf)}`
+         + `${series.length===1 && prim.mode==='energy' ? (prim.comp ? ' (single component)' : ' (Σ components)') : ''}${extra}`
+         + ` · ${parts.join(' · ')} · ${refFrameMode} frame`;
   }
 
   if(stw.type === 'hist'){
