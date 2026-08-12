@@ -1690,7 +1690,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
           <tr><td>Color by</td><td>Same controls as the 3D colorbars: range handles, <em>hidden/greyed</em>, min/max row with ⇄ / ⤓ / Auto, and the <strong>∅</strong> button.</td></tr>
           <tr><td>Groups</td><td>(Star window) Opens the same <strong>Star groups</strong> window the 3D view uses. Starting <em>+ new group</em> from here draws in <strong>this plot</strong>: a box over the points in the scatter, or bar by bar in the histogram (click = one bar, right-drag = several). Switching between the two mid-drawing keeps what is already marked.</td></tr>
           <tr><td>Star positions</td><td>Galactic x/y/z [pc] are available as plot axes and colour field (2D only — in 3D they would just paint a gradient).</td></tr>
-          <tr><td>Power spec.</td><td>(Field window) Spherically averaged 3D FFT power spectrum, log-log on logarithmic k-shells. <em>|v|</em> = total E(k) = ½ Σ|FFT(v<sub>c</sub>)|², <em>vx/vy/vz</em> = that component's E<sub>c</sub>(k) (they sum to the total), scalars = |FFT(f)|². <em>+ spectrum</em> overlays another field as a second curve, <em>✕ all</em> clears them. Exports since Aug 2026 also carry the run's <strong>inferred model spectra</strong> (thin posterior-sample lines + thick mean per velocity component, with the model's power-spectrum slope in legend/caption, à la Hutschenreuter et al. 2026 Fig. 4/Table 1); the <em>Model/FFT/Model+FFT</em> button picks the curves. The caption also gives a least-squares slope of the FFT estimate.</td></tr>
+          <tr><td>Power spec.</td><td>(Field window) Spherically averaged 3D FFT power spectrum, log-log on logarithmic k-shells. <em>|v|</em> = total E(k) = ½ Σ|FFT(v<sub>c</sub>)|², <em>vx/vy/vz</em> = that component's E<sub>c</sub>(k) (they sum to the total), scalars = |FFT(f)|². <em>+ spectrum</em> overlays another field as a second curve, <em>✕ all</em> clears them. Exports since Aug 2026 also carry the run's <strong>inferred model spectra</strong> (thin posterior-sample lines + thick mean per velocity component, with the model's power-spectrum slope in legend/caption, à la Hutschenreuter et al. 2026 Fig. 4/Table 1); the <em>Model/FFT/Model+FFT</em> button picks the curves. Legend and caption name how many posterior samples the mean rests on — runs end on different sample counts, and an older export that drew only a subset of them says so. The caption also gives a least-squares slope of the FFT estimate.</td></tr>
           <tr><td>Lines</td><td><em>+ line</em> adds a dashed reference line: one value field with an <em>x =</em> / <em>y =</em> toggle and a colour. In the power spectrum it is a <strong>slope line</strong> instead (value = log-log slope, default Kolmogorov −11/3), drawn through the low-k end. Chips next to the button edit or remove single lines, <em>✕ all</em> removes all. Each mode keeps its own set; lines follow zoom/flip/log and appear in exports.</td></tr>
           <tr><td>Isochrones</td><td>(Star window) In a colour-magnitude diagram (<em>BP−RP</em> or <em>G−RP</em> vs <em>abs. G mag</em>) an <em>Isochrones</em> row appears: <em>+ isochrone</em> overlays a pre-main-sequence isochrone of a chosen age (0.5–15 Myr), colour-coded and labelled in a legend. Curves from BHAC15 (Baraffe et al. 2015, Gaia bands).</td></tr>
           <tr><td>Style</td><td>Button next to <em>Grid</em>: preset list for the 2D plots (theme, seaborn, matplotlib-light, …). Colormap sits under <em>Color by</em>; grid, bin count and plot colour keep their rows.</td></tr>
@@ -8168,6 +8168,16 @@ function _modelSpecFor(field){
   return { k: MS.k, rows: c.P || [], mean: c.mean,
            slope: Array.isArray(c.slope) && c.slope.length === 2 ? c.slope : null };
 }
+// "40 posterior samples" / "40 posterior samples (30 shown)". The mean and the
+// slope rest on ALL of the run's samples. Current exports also DRAW all of them
+// (the ≤30 line cap was dropped in Aug 2026), but files baked before that carry
+// fewer lines than samples — so the number of drawn lines is never the answer,
+// and neither is a constant: runs end on different final sample counts.
+function _psSampleNote(model){
+  const drawn = model.rows.length;
+  const n = (_modelSpec() || {}).n_samples || drawn;   // legacy exports: lines only
+  return `${n} posterior sample${n===1?'':'s'}` + (drawn < n ? ` (${drawn} shown)` : '');
+}
 function cyclePsSource(){
   const f = PLOT_STATE.field;
   f.psSource = f.psSource === 'both' ? 'model' : f.psSource === 'model' ? 'fft' : 'both';
@@ -9509,8 +9519,11 @@ function _drawPlotLegend(ctx, col, rows, ax, sig, samples){
   ctx.fillRect(lx, ly, lw, lh); ctx.globalAlpha = 1;
   ctx.strokeStyle = col.axis; ctx.globalAlpha = 0.5; ctx.strokeRect(lx+0.5, ly+0.5, lw, lh); ctx.globalAlpha = 1;
   rows.forEach((r,i) => { const ry = ly + 10 + 13*i;
-    ctx.strokeStyle = r.c; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(lx+6, ry); ctx.lineTo(lx+22, ry); ctx.stroke();
+    // c:null = a plain note row (no curve of its own, e.g. the sample count)
+    if(r.c){
+      ctx.strokeStyle = r.c; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(lx+6, ry); ctx.lineTo(lx+22, ry); ctx.stroke();
+    }
     ctx.fillStyle = col.lab; ctx.textAlign = 'left'; ctx.fillText(r.t, lx+28, ry); });
 }
 
@@ -9654,9 +9667,16 @@ function drawDataPlot(w, ctx, W, H, interactive){
     // model slope adds information; slope = the model's inferred power-spectrum
     // slope parameter (à la Hutschenreuter+ 2026 Table 1)
     const fmtSlope = sl => `s ${_fmtTick(sl[0])}±${_fmtTick(sl[1])}`;
-    if(series.length > 1 || (prim.model && prim.model.slope)){
-      const rows = series.map(s => ({ c:scol(s),
-        t: src.label(s.field) + (s.model && s.model.slope ? ` (${fmtSlope(s.model.slope)})` : '') }));
+    // curve rows only where they carry information (several curves, or the
+    // single curve's model slope) — but a drawn model ALWAYS gets its sample
+    // count: the caption never reaches the PNG/PDF export, and a figure showing
+    // posterior spread has to say how many samples that spread is over. A lone
+    // |v| model curve therefore gets a note-only legend, not a redundant label.
+    const legRows = series.length > 1 || (prim.model && prim.model.slope);
+    if(legRows || prim.model){
+      const rows = legRows ? series.map(s => ({ c:scol(s),
+        t: src.label(s.field) + (s.model && s.model.slope ? ` (${fmtSlope(s.model.slope)})` : '') })) : [];
+      if(prim.model) rows.push({ c:null, t:_psSampleNote(prim.model) });
       // occupancy = every plotted point (the axes always span the full series
       // here — the power mode has no zoom viewport)
       const samples = [];
@@ -9674,9 +9694,8 @@ function drawDataPlot(w, ctx, W, H, interactive){
              : allScalar ? 'P(k)' : 'E(k), P(k)';
     axLabel('k [1/pc] (log)', 'x'); axLabel(yl + ' (log)', 'y');
     const extra = series.length>1 ? ` + ${series.length-1} overlay${series.length>2?'s':''}` : '';
-    const nsmp = prim.model ? (_modelSpec().n_samples || prim.model.rows.length) : 0;
     const parts = [];
-    if(prim.model) parts.push(`model spectrum (${Math.min(nsmp, prim.model.rows.length)} samples + mean)`
+    if(prim.model) parts.push(`model spectrum, mean over ${_psSampleNote(prim.model)}`
       + (prim.model.slope ? `, slope ${prim.model.slope[0]}±${prim.model.slope[1]}` : ''));
     if(prim.drawFFT){
       const ls = _psLsSlope(prim.k, prim.P);

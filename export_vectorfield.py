@@ -426,8 +426,14 @@ def _model_spectra(parameters, samples):
                 print("model spectra: Komponenten auf verschiedenen k-Gittern — übersprungen.")
                 return None
 
-            # Sample-Linien fürs Zeichnen auf ≤30 deckeln (gleichmäßig gezogen)
-            rows = np.linspace(0, Pb.shape[0] - 1, min(30, Pb.shape[0])).astype(int)
+            # ALLE Sample-Linien (User-Entscheid Aug 2026). Der frühere ≤30-
+            # Deckel sparte bei einem 40-Sample-Run 15 KB von 12 MB und kostete
+            # dafür die vollständige Streuung im Bild — kein guter Tausch. Läuft
+            # doch einmal ein Run mit sehr vielen Samples auf (die Linien
+            # verschmieren dann optisch zur Fläche), ist HIER die Stelle für eine
+            # neue Schranke; der Viewer kommt mit beidem klar und schreibt die
+            # gezeichnete Zahl dann wieder neben n_samples (s. _psSampleNote).
+            rows = np.arange(Pb.shape[0])
             # Slope: der Latent ist STANDARDISIERT (xi-Raum); physikalisch wird
             # er über den NormalPrior des cf-Modells: mean + std·xi. ×2 = Power-
             # Konvention (der Latent parametrisiert das Amplituden-Spektrum).
@@ -441,8 +447,7 @@ def _model_spectra(parameters, samples):
             }
         shared = "all" in components
         print(f"model spectra: {'1 geteiltes' if shared else str(len(components))} "
-              f"Spektrum(e), {len(k_out)} k-Bins, {n_total} Samples"
-              + (f" ({min(30, n_total)} exportiert)" if n_total > 30 else "")
+              f"Spektrum(e), {len(k_out)} k-Bins, {n_total} Samples (alle exportiert)"
               + ", slopes " + ", ".join(f"{c}={v['slope'][0]}±{v['slope'][1]}"
                                         for c, v in components.items()))
         return {
