@@ -1,4 +1,4 @@
-# Taurus Vectorfield Viewer — Claude Code Briefing (Stand: August 2026)
+# Taurus Vectorfield Viewer — Claude Code Briefing (Stand: Oktober 2026)
 
 Doc für den 3D-Viewer in **`Viewer/`** (Workspace-Root, repo-übergreifend); liegt im
 Viewer-Repo selbst als `CLAUDE.md` (Workspace-Index: `../.claude/CLAUDE.md`). Nur Dauerhaftes: Regeln, Architektur-Wegweiser (wo was im Code
@@ -15,9 +15,11 @@ GELÖSCHT — nur die gebackenen `vectorfield_viewer_data*.html` im Taurus-Repo 
 (stehende Regel: nicht löschen).
 - `Viewer/vectorfield_viewer.html` — Three.js r128 Viewer (~7000 Zeilen), das **Template**
   (ohne Daten). EIN Template für beide Repos.
-- `Viewer/export_vectorfield.py` — EIN Export für BEIDE Repos. `REPO = "taurus"|"claude"`
-  oben im Skript; CLI überschreibt (case-insensitiv):
-  `python export_vectorfield.py [taurus|claude] [result_name]`.
+- `Viewer/export_vectorfield.py` — EIN Export für BEIDE Repos. Was exportiert wird, steht in
+  der Liste **`DATASETS`** (pro Repo in `DATASETS_BY_REPO`): ein Eintrag pro Region
+  (`name`, `run` — `None` = nur Sterne —, optional `stars`, `masses`, `mask_level`); alle
+  landen in EINER Datei (s. „Mehrere Datensätze"). `REPO = "taurus"|"claude"` oben; CLI
+  `python export_vectorfield.py [taurus|claude] [run]` = genau dieser eine Run.
   `python export_vectorfield.py batch` = Light-Versionen aller `BATCH_RUNS` nach `Viewer/Runs/`
   (s. „Export-Pipeline").
   - taurus: `Runs/<n>/results/last.pkl` + `Parameters/<n>.py`, repo-eigene simple_functions,
@@ -28,8 +30,8 @@ GELÖSCHT — nur die gebackenen `vectorfield_viewer_data*.html` im Taurus-Repo 
     σ_eff = √(σ_gaia² + σ_int² [+ σ_rv_jitter² auf rv]) wie in der Likelihood
     (inferierte Werte → Posterior-Mittel des jeweiligen Latents); eta (noch) nicht
     rekonstruiert (andere Latent-Struktur) → Felder leer, Viewer blendet sie aus.
-    `mask_level` im FIELDS-Eintrag. **Venv `ClaudeVelocityField/.venv`.**
-  - `mask_level`: FIELDS-Eintrag → `posterior_plotting.density_mask_level` → 0.001 (alte
+    `mask_level` im DATASETS-Eintrag. **Venv `ClaudeVelocityField/.venv`.**
+  - `mask_level`: DATASETS-Eintrag → `posterior_plotting.density_mask_level` → 0.001 (alte
     taurus-Parameterfiles haben die Sektion nicht immer).
   - **Alte taurus-Runs exportieren:** `Parameters/<n>.py` driftet von dem Run ab, den es
     erzeugt hat (s. Memory „Run-Config-Archäologie"). Bricht `apply_models` mit einem
@@ -58,12 +60,18 @@ GELÖSCHT — nur die gebackenen `vectorfield_viewer_data*.html` im Taurus-Repo 
 - `Viewer/generate_local_bubble.py`, `sample_dustmap.py` (+ `L19_map_inner_final.fits`) —
   Asset-Generatoren (Pfade __file__-relativ, Output → `Viewer/saves/values/`).
 - `Viewer/vectorfield_data.json` — JSON-Export für den Drag&Drop-Schnelltest.
-- `Viewer/index.html` — Landing Page (GitHub Pages). Oben zwei Karten auf die
+- `Viewer/index.html` — Landing Page (GitHub Pages). Ganz oben „Current version" → die
+  Root-Datei `vectorfield_viewer_data.html` (fortlaufender Stand, Mehrregionen-Viewer, ALLE
+  Features inkl. Dustmap — User-Wunsch Okt 2026; jeder Export aktualisiert sie). Die
+  Root-`_light.html` entsteht weiter, ist aber nicht mehr verlinkt. Darunter zwei Karten auf die
   EINGEFRORENE Thesis-Version `Runs/test_no_sigma_full.html` / `Runs/test_no_sigma_light.html`
   ([C] test_no_sigma; Okt. 2026 aus den Root-Dateien umbenannt, damit Template-Umbauten
   die Landing Page nicht verändern — NICHT überschreiben), unten „Other runs"
   aus `Viewer/Runs/`. Namensschema: `<run>_light.html`; **verlinkt wird dort nur die
-  LIGHT-Version** (User-Entscheid) — Full/Light-Wahl gibt es nur oben für den Hauptrun.
+  LIGHT-Version** (User-Entscheid) — die Wahl gibt es nur oben für den Hauptrun.
+  **Wording auf der Seite (User-Wunsch Okt 2026): NIE „Full/Light", sondern „Compact"
+  (= _light, empfohlen) und „Compact + dust map"** (= _full) — die Dustmap ist fremde
+  Vergleichsdaten (Edenhofer 2024), nicht Teil der Arbeit. Dateinamen bleiben (eingefroren).
   Neuer Run: exportieren, Light-Datei nach `Runs/`, Eintrag ergänzen (Name, Pipeline-Tag,
   EIN beschreibender Satz, Link).
 - `TaurusVelocityField/plot_data.py` ist Quelle für v_ref, sun_motion, pm/rv-Projektion
@@ -83,8 +91,10 @@ GELÖSCHT — nur die gebackenen `vectorfield_viewer_data*.html` im Taurus-Repo 
    → erzeugt `Viewer/vectorfield_viewer_data.html` (~12–24 MB; ersetzt `/* __EMBEDDED_DATA__ */`;
    BEIDE Modi schreiben dieselbe Datei — das [T]/[C]-Tag im Viewer sagt, was drin ist).
    Kurzer Smoke-Test der echten Datei (Harness-Snippet anhängen, headless).
-   Die Root-Dateien `vectorfield_viewer_data.html`/`_light.html` sind ARBEITSDATEIEN des
-   Exports (jeder Export überschreibt sie; index.html verlinkt sie nicht mehr). Die
+   Die Root-Dateien `vectorfield_viewer_data.html`/`_light.html` schreibt jeder Export neu;
+   `_data.html` ist die „Current version" der Landing Page. **`Viewer/Runs/` ist das Archiv der
+   BSc-Thesis-Aufnahmen** — alle dortigen Dateien bleiben eingefroren, `_guard_output()` im
+   Export bricht ab, bevor er eine bestehende Datei dort überschreibt (auch `batch`). Die
    Thesis-Hauptversion liegt eingefroren unter `Runs/test_no_sigma_{full,light}.html`.
 4. Ohne Export ist der Viewer leer; zum Schnelltest JSON per Drag&Drop laden.
 
@@ -95,8 +105,9 @@ GELÖSCHT — nur die gebackenen `vectorfield_viewer_data*.html` im Taurus-Repo 
 - **Feste Test-Infrastruktur:** `python3 tests/make_test.py` baut Mini-Datensatz + Diagnose-Harness
   nach `/mnt/c/Temp/vfvtest/test.html` (Verzeichnis ist DAUERHAFT, nicht löschen — Chrome-Profil
   `prof/` bleibt für localStorage-Roundtrips). Phasen per `?phase=N` (1 Funktionstests, 2 Save→
-  Reload-Roundtrip, 3+ visuelle Checks, 8 = Marker-Formen `&glyph=…`, 9 = Dust-Raymarch-
-  Smoke-Test mit Pixel-Readback; Docstring hat die fertigen Chrome-Kommandos).
+  Reload-Roundtrip, 3+ visuelle Checks, 8 = Marker-Formen `&glyph=…`, 9 = Raymarch-
+  Smoke-Test mit Pixel-Readback: Dust beide Blendings + Threshold + Slice, Cloud-Volume beide
+  Blendings, `&shot=cloud` lässt die Cloud fürs Bild an; Docstring hat die Chrome-Kommandos).
   - **Sektions-Filter:** die Phase-1-Blöcke sind `SEC('titel', () => {…})`-Sektionen;
     `bash tests/run_tests.sh <muster>[,<muster>…]` fährt NUR passende Sektionen (Substring)
     in einem WEGWERF-Profil (`prof_only`) — Schnellmodus fürs Iterieren an EINEM Feature.
@@ -136,6 +147,14 @@ Heliozentrisch galaktisch-kartesisch (x,y,z in pc), Sonne bei (0,0,0), Taurus-Bo
    localStorage-Write (400 ms) hängen hinterher. Gilt auch für abgeleitete Anzeigen
    (Zahlen-Label, Statuszeilen, Colorbar-Enden) — sie sind Teil dessen, was der Regler
    steuert.
+2b. **Slider ändern Bestehendes, statt neu zu bauen** (stehende User-Regel, Okt 2026): ein
+   Live-Pfad baut Meshes/Materialien/Texturen NICHT bei jedem Schritt komplett neu, sondern
+   verändert, was schon da ist — Reihenfolge der Wahl: Uniform setzen → Attribut-/Textur-
+   Daten in place überschreiben (`needsUpdate`) → nur die Geometrie tauschen → erst zuletzt
+   ein kompletter Neubau (nur bei Look-/Gitterwechsel). Besonders: **nie pro Event ein neues
+   ShaderMaterial** (dispose des alten → three.js kompiliert das Programm neu, ~20 ms →
+   Ruckeln; Fall Density-Cloud-Strength, s. Build-Funktionen). Beim Bau eines neuen Sliders
+   den Pfad in einem Perf-Snippet mit echten Daten messen (Ziel: wenige ms pro Schritt).
 3. `depthWrite:true` für Punkt-Shells, sonst verdecken sie Axis-Labels. `G.axes` renderOrder=200.
 4. Lazy bauen: Layer werden nur konstruiert, wenn ihr Toggle an ist; Builder brechen bei
    verstecktem Layer nach dem Aufräumen ab; Reveal-Toggles bauen bei leerer Gruppe.
@@ -145,6 +164,19 @@ Heliozentrisch galaktisch-kartesisch (x,y,z in pc), Sonne bei (0,0,0), Taurus-Bo
 7. Opacity-only Updates in place (`applyStarAlpha()`, Dust-Uniforms uOpacity/uGamma,
    `applyStreamAlpha()`).
 8. Versteckte Partikel nicht ticken (`vis.streams`-Guard in `animate()`).
+
+## Interface-Größe (`uiScale`, Okt 2026)
+Menü-Text ist 7–10 CSS-px → auf DPR-1-Bildschirmen (großer Monitor, 100 % Skalierung)
+pixelig. `applyUiScale()` setzt CSS `zoom` auf `<html>` (+ `--uiz`), State `uiScale`
+(null = auto `_autoUiScale()` ≈ 1.5/DPR in 0.25-Stufen, 1…1.5; sonst `UI_SCALES`),
+effektiv `UIZ`. Button `#uiscale-btn` („Aa …") im Header, `cycleUiScale` (Shift = zurück),
+persistiert global (`uiScale`). Renderer-Pixelratio und Plot-Canvas-DPR × UIZ.
+**⚠️ Regel für JEDEN Positionierungs-Code:** unter Zoom liefern getBoundingClientRect/
+clientX/innerWidth VISUELLE px, `style.left`/offsetWidth sind LAYOUT-px → immer
+`_bcr(el)`, `_cx(e)/_cy(e)`, `_vw()/_vh()` (liefern Layout-px), nie die Rohwerte; CSS-vh/vw
+als `calc(… / var(--uiz))`. Nur reine Deltas (Kamera-Drehen `prevM`) bleiben roh.
+Headless-Chrome hat DPR 1 → **die Tests laufen mit Auto-Zoom 150 %** (gewollt, prüft die
+Helfer mit); Harness-Code, der Koordinaten an Viewer-Fns übergibt, nimmt ebenfalls `_bcr`.
 
 ## ⭐ Headless-Browser-Test via WINDOWS-CHROME
 **Firefox-Headless ist KAPUTT** (Snap hängt endlos) — Windows-Chrome via WSL-Interop nutzen:
@@ -172,6 +204,12 @@ ruft `initScene()` synchron, greift auf top-level `let`/`const` zu (gleicher glo
   (Peak-Dichten 0.022651/0.086940, Maske 1817 Voxel, E_kin 2.821e39 J bei test_no_sigma).
   **Neue Settings-Keys IMMER als Save→Reload-Roundtrip testen** (leeres localStorage übersieht
   TDZ-Fehler).
+- **⚠️ `alert()`/`confirm()` blockiert Headless-Chrome endgültig** (kein Dump, auch nicht
+  mit `--timeout`, der Lauf hängt) — Tests, die einen Pfad mit möglichem alert berühren,
+  stubben `window.alert`. Hängt ein Lauf: NUR die Test-Chromes beenden (PowerShell
+  `Get-CimInstance Win32_Process … CommandLine -like '*vfvtest*' | Stop-Process`), **NIE
+  `taskkill /IM chrome.exe`** — das schließt auch den Chrome des Users. Hängende Instanzen
+  halten sonst das Profil gesperrt → Folgeläufe liefern leere Dumps.
 - **Testdaten-Fallen:** `meta.extent` CENTER-basiert (erste/letzte Voxel-Zentren) — kantenbasiert
   verschiebt `maskAt()` um ½ Voxel und Streamlines sterben. Voxel brauchen `ix/iy/iz`. Die fixe
   Diagnose-Box kann als weißes Geister-Rechteck doppelt-compositen — ignorieren.
@@ -194,6 +232,27 @@ ruft `initScene()` synchron, greift auf top-level `let`/`const` zu (gleicher glo
 Builds in try/catch), `buildObjects()`, `buildDustCloud()`/`buildLocalBubble()`
 (eigene Gruppen; Slider via Shader-Uniforms), `buildCloud()` (density frame-unabhängig,
 energy_density live), `buildArrows()`, `buildStreamlines()`, `buildStars()`.
+- **Density-Cloud „Render as" Volume|Points** (`cloudRender`, per Satz, Default 'volume',
+  Okt 2026): Volume = `_cloudVolumeMesh()` — RGBA-`DataTexture3D` (ein Texel pro Voxel,
+  R = geformte Dichte frac^gamma wie die Sprites, G = R·Grau-Flag premultipliziert) +
+  1D-Colormap-Textur; Raymarcher wie die Dustmap (½ Voxel/Schritt, ≤256 Samples, Farbe aus
+  der INTERPOLIERTEN Dichte, `CLOUD_SIGMA`/Voxel). `cloudPoints` hält BEIDE Looks (Points
+  oder Mesh) — Toggle/Style-Swap/Intensity (`uOpacity`) bleiben ein Pfad. **Rebuilds
+  verwenden Objekt + Material WIEDER** (Volume: `_fillCloudVolume`/`_fillCloudCmap`
+  schreiben die Texel in place; Points: nur Geometrie tauschen); `_disposeCloud()` nur bei
+  Look- oder Gitterwechsel (`userData.sig`). Grund: neues ShaderMaterial + dispose des
+  alten → three.js verwirft das Programm (Refcount 0) und kompiliert neu, ~20 ms pro
+  Schritt → Strength-Slider ruckelte (jetzt ~1.5 ms). Strength ist rAF-koalesziert
+  (`_scheduleCloudRebuild`/`_cloudRafId`, in `_flushDeferred`). Ohne WebGL2 → Points.
+  **Allgemein: ShaderMaterials in Live-Pfaden nie pro Event neu bauen.**
+  **„Over axes"** (`cloudCoverAxes`, per Satz, Default an, nur Volume): `_applyCloudBlend()`
+  setzt die Cloud-GRUPPE auf renderOrder 250 (> Box 100/Achsen 200 — in r128 zählt die
+  Gruppen-renderOrder vor der des Objekts) und premultiplied-over-Blending (Custom ONE /
+  ONE_MINUS_SRC_ALPHA, Shader-Uniform `uPremul`) in BEIDEN Styles → die Wolke absorbiert
+  Box/Achsen dahinter; über schwarzem Grund identisch zum additiven Glow. Ohne Depth-Test
+  verdeckt sie Achsenstücke VOR der Wolke genauso (gleicher Trade-off wie Dust). Aus/Points:
+  renderOrder 3 + `glowBlending()`. Läuft bei jedem Build und im Style-Swap (nur
+  Blending/Uniforms, kein Programmwechsel).
 - Density-Cloud: EIN `cloudStrength`-Slider (ersetzt Point size/Glow gamma/Cutoff):
   size ∝ √strength, gamma = 0.6/strength (in `buildCloud`); fester Floor 0.01 statt Cutoff
   (Sichtbarkeits-Cut macht der Colorbar-Regler). Legacy-Saves: params-Setter leitet
@@ -239,10 +298,35 @@ mit Bildschirmpixeln statt Punktzahl).
   Szene; mit Depth-Test würde jedes opake Objekt in der Box ein Loch in den Staub stanzen
   (BackSide-Fragmente liegen an der HINTEREN Boxwand). Dafür leuchtet der Staub additiv
   auch „vor" Objekten — bewusster Trade-off ohne Depth-Compositing.
-- Slider: `dustOpacity` (globaler Dichte-Multiplikator) + `dustGamma` („Dust contrast",
-  Transfer-Gamma 0.4–2.5; ersetzt den alten „Dust size") — beide reine Uniform-Updates in
-  `setObjParam` (early return, kein buildObjects), persistiert im `objParams`-Blob
-  (Alt-Saves mit `dustSizeScale` werden stillschweigend ignoriert).
+- Slider: `dustOpacity` (globaler Dichte-Multiplikator, **LOG-Regler** 0 = aus, 1…1000 =
+  0.001…1 über `dustOpacityFromSlider/ToSlider`, Exakteingabe via `setDustOpacityExact`;
+  linear waren nur die ersten Prozent nutzbar), `dustCut` („Dust threshold" 0–0.9: Shader
+  zieht die log-Dichte ab und skaliert neu → diffuser Staub verschwindet, gegen
+  „überfüllt") + `dustGamma` („Dust contrast", 0–5) — alle reine Uniform-Updates in
+  `setObjParam` (Map key→Uniform, early return, Save debounced), persistiert im
+  `objParams`-Blob. Defaults 0.05 / 0 / 2.5 (JS = HTML; vorher stand JS auf 0.5/1.0).
+- **Slice (Okt 2026):** nur eine Scheibe der Dustmap sichtbar — `objParams.dustSliceOn/
+  dustSliceAxis ('x'|'y'|'z')/dustSlicePos (pc heliozentrisch, null = Mitte von
+  `sceneExtent()`)/dustSliceWidth` (im objParams-Blob persistiert). REINES Uniform-Update:
+  der Shader schneidet den Strahl mit der beschnittenen Box `uClipMin/uClipMax`, die
+  Texturkoordinaten nutzen weiter `uBoxMin/uBoxMax` → Ziehen ohne Rebuild. `_applyDustSlice()`
+  (auch am Ende von `buildDustCloud`) setzt Uniforms + den Rahmen `dustSliceOutline`
+  (Einheitswürfel-Kanten, nur scale/position). `dustSliceRange()` klemmt Breite ≥ 1 Voxel und
+  Mitte in die Box. UI `_syncDustSliceUI(skipEl)` — Slider-Bereiche brauchen die Daten, darum
+  zusätzlich aus `refreshDustmapSection()`; Achsenwechsel setzt die Position auf null.
+  Zeilen (User-Wunsch): Position → Width → Sweep speed → eigene Zeile mit Toggle „▶ Sweep“/
+  „■ Stop“; KEIN ⟲-Reset-Knopf für die Position. „Border“-Toggle in der Slice-Zeile
+  (`objParams.dustSliceBorder`, Default an) blendet nur den Rahmen aus.
+  Grid-Helfer `_dustGrid(dm)`/`_dustBounds(dm)` (q8 + Legacy). Gedacht als Vorlage für ein
+  späteres Feld-Slicing.
+  **▶ Sweep** (`toggleDustSweep`/`stopDustSweep`, Button `#dust-slice-sweep`): Mitte läuft
+  EINMAL Start → oberes Ende → unteres Ende → Start (`_dustSweepPos`), innerhalb
+  [lo+w/2, hi−w/2]; zeitbasiert aus `animate()` (`_tickDustSweep(now)`), pro Frame nur
+  Uniforms/Rahmen/Labels, Save erst am Ende. `objParams.dustSweepSpeed` (pc/s, Slider;
+  Wechsel mitten im Lauf verankert die Uhr neu). Stoppt bei Positions-Slider, Achse,
+  Slice aus. **`_dustSweep` steht im STATE-Block** — `animate()` läuft schon beim Parse
+  einmal synchron (TDZ). Headless liefert unter `--virtual-time-budget` kaum rAF-Frames →
+  Sweep im Test über `_tickDustSweep(t)` bzw. einen manuellen `animate()`-Aufruf prüfen.
 - Kein WebGL2 → `refreshDustmapSection()` versteckt die ganze Dust-Sektion,
   `buildDustCloud` bricht mit console.warn ab.
 - **Legacy xyz/val** (alte Drag&Drop-JSONs): `_dustGridFromLegacy()` voxelisiert einmalig
@@ -603,7 +687,12 @@ Neues Popup = EIN Tabelleneintrag.
 (position:fixed). `cdrop-sync`-Event nach programmatischen Value-Änderungen. Für Plot-Selects und
 Sidebar-„Color by"; 3-Einträge-Selects bleiben nativ.
 
-### Settings-Persistenz (`localStorage['vfv_settings']`)
+### Settings-Persistenz (`localStorage['vfv_settings_v2']`)
+**Eigener Key seit Okt 2026** (`SETTINGS_KEY`): die eingefrorenen Runs/-Seiten teilen auf
+GitHub Pages den Origin und behalten `vfv_settings` (`LEGACY_SETTINGS_KEY`) für sich — der neue
+Viewer importiert ihn nur, solange der eigene Key fehlt, und schreibt ihn nie. Reset schreibt
+`'{}'` (removeItem würde neu importieren). Payload = flache Keys (global + Datensatz 1, wie
+bisher) + `datasets: {name → ds:true-Einträge}` + `activeDataset`.
 **Tabellengetrieben:** `SETTINGS_TABLE` = `{key, get, set}`; neues Setting = EIN Eintrag.
 `loadSettings()` läuft SYNCHRON beim Parse (vor initScene), danach `_postRestoreSync()`
 UNCONDITIONAL. Star-Plot als Legacy-Einzelkeys + Blob **`plot2d`**, Field-Plot als EIN Blob
@@ -649,6 +738,16 @@ Sektionen (`collapsedSections`), Slider-Doppelklick (`wireSliderTyping`), Objekt
 `makeTextSprite` passt die Canvas-Breite an die Textlänge an (Zweierpotenz gegen
 WebGL1-NPOT-Blackout, Höhe fix 128), `userData.textAspect`; `addObjectLabel` setzt die
 Quad-Breite = baseH·textAspect (lange Namen verbreitern statt clippen).
+**Live-Video (Camera path „Live", Okt 2026):** `startLiveRecording()` nimmt auf, was
+`animate()` rendert (Auto-Rotation, Slice-Sweep, Kamera, Slider …) bis `stopLiveRecording()`
+(roter `#rec-bar` oben mit Timer + ■ Stop; ⬇ bzw. Taste S → `openScreenshotModal()` stoppt
+eine laufende Aufnahme). Pro Frame (`_liveRecFrame`, Hook in `animate()` NACH dem Render)
+wird das WebGL-Canvas in ein Frame-Canvas FESTER Größe (Viewgröße beim Start) kopiert —
+Größenänderung mitten in der Aufnahme wird gelettert, die Videogröße bleibt; Colorbars per
+`compositeColorbarsOnto`. Keine Sidebar-/Auflösungsänderung (Live-Pfad versteckt Duration +
+Resolution). **`_liveRec` im STATE-Block** (animate-TDZ). Headless: MediaRecorder liefert
+unter virtueller Zeit KEINE Daten (auch der 360°-Pfad nicht) → Inhalt nur im echten Browser
+prüfbar; die Tests prüfen Start/Stop/UI/Letterbox.
 **Info-Modal (Taste I):** eigenes Overlay `#info-overlay`/`#info-modal` neben dem Help — teilt
 CSS, aber EIGENE IDs (doppelte IDs brachen den `querySelector`-Test). Inhalt aus
 `meta.run_info`: „Loaded Result", letzter minisanity-Block, Parameter-Dump (`_fillRunInfo()` in
@@ -660,7 +759,8 @@ Reihenfolge: ZUERST die Einstellungen (Navigation … Screenshot), DANACH Fließ
 Result, About, Reference Objects, Reset). Einträge kurz.
 
 ## Export-Pipeline
-`export_vectorfield.py` ist Multi-Feld-fähig (`FIELDS`-Liste, `process_field()` rechnet selbst:
+`export_vectorfield.py`: `DATASETS`-Liste, `process_dataset()` rechnet selbst (ohne `run` nur den
+Sternkatalog; fehlende optionale CSV-Spalten → leer, Pflicht nur source_id + X/Y/Z):
 NIFTy-Samples, Curl/Div, Residuen, KDE-Maske, Modell-Spektren). Schalter oben: `SAVE_JSON`,
 `SAVE_HTML_LIGHT`, `LIGHT_LB_LEVELS`.
 - **Batch-Light-Export:** `python export_vectorfield.py batch` (beliebiges Python — der
@@ -673,7 +773,18 @@ NIFTy-Samples, Curl/Div, Residuen, KDE-Maske, Modell-Spektren). Schalter oben: `
   `LIGHT_LB_LEVELS` (=2) gröbsten Local-Bubble-Stufen (NSIDE 8/16) → ~2.2 MB.
   Viewer-seitig nichts nötig: `refreshLocalBubbleSlider()` leitet Slider-Max aus
   `lbubbleNsides()` ab und klemmt einen gespeicherten Index fest.
-- **Voxel-SPALTENFORMAT, `data.voxel_columns` statt `data.voxels`:** ein Array pro Größe
+- **Datenformat 2 (Okt 2026):** `{format:2, datasets:[{name, meta, stars, voxels?}],
+  reference_objects}`. `stars` = ein Array pro Größe (leere Spalten entfallen; vorher standen
+  die ~37 Schlüssel in jedem Stern = 222 von 373 KB), `voxels` = je Spalte `_q16`: uint16 +
+  base64 mit `lo`/`step` (65535 = kein Wert; Stufe ≤ 4e-4 km/s, feiner als die alte Rundung
+  1e-3; 1.06 → 0.42 MB). Viewer: `_normalizeData()` dekodiert in die gewohnten Strukturen
+  (`real_stars`-Objekte, `voxel_columns`), alles dahinter unverändert; altes flaches Format
+  (meta/voxels|voxel_columns/real_stars) läuft durch. Ohne Massen: `meta.mask_kind="stars"`,
+  `mask_level` in Sterne/pc³ (Default 4.4 % des Peaks). Außerdem entfernt der Export ganze
+  `//`-Kommentarzeilen aus dem Haupt-`<script>` (`_strip_comment_lines`, −160 KB; sicher: in
+  Template-Literalen stehen nur GLSL-Kommentare) — make_test.py backt mit derselben Funktion.
+  Taurus light: 2.18 → 1.17 MB.
+- **Voxel-Spalten (`voxel_columns`, intern nach dem Dekodieren):** ein Array pro Größe
   (`vx/vy/vz`, `std_x/y/z`), C-Order über (ix,iy,iz), Index `(ix*ny+iy)*nz+iz`. NICHT mehr
   übertragen, weil im Viewer exakt reproduzierbar: `x/y/z` + `ix/iy/iz` (aus
   `meta.extent`/`meta.spacing`) und `curl_x/y/z` + `div` (np.gradient-Äquivalent aus vx/vy/vz).
@@ -772,28 +883,53 @@ Vor großen Änderungen ggf. selbst eine Kopie ziehen.
 
 ---
 
-## Zweites Vektorfeld — geplante Architektur (offen)
-Umsetzung erst, wenn das zweite NIFTy-Feld vorliegt und das Go besteht.
-
-**Export:** bereits Multi-Feld-fähig — zweiter `FIELDS`-Eintrag reicht (`result_name`, `star_csv`,
-`label`); `reference_objects` bleibt einmalig außerhalb der Feld-Schleife.
-
-**Viewer (noch NICHT umgesetzt):**
-- Datenstruktur `FIELDS = [{voxels, real_stars, meta, label}, …]`, `reference_objects` shared.
-- **UX (vom User festgelegt):** Feld-Tab oben in der Sidebar wählt, für welches Feld die
-  Einstellungen gelten; BEIDE Felder gleichzeitig sichtbar (Sichtbarkeit per Toggle im Feld-Menü);
-  `activeFieldIdx` persistiert. Objects/Auto-Rotate/Video global.
-- Pro Feld: `G.arrows0/1` etc., eigene params/vis/colormaps/Overrides/refFrameMode; Builder
-  bekommen Feld-Index; `buildAll()` iteriert.
-- **Beim selben Umbau erledigen (zurückgestellter Refactor):** `buildArrows` und
-  `buildStarVectorArrows` duplizieren die Cone+Shaft-InstancedMesh-Konstruktion — in einen
-  gemeinsamen Helper ziehen, wenn die Builder ohnehin angefasst werden.
-
-## Geplant (nächste Session)
-
-- Viewer auf MEHRERE Felder erweitern (export_vectorfield.py hat schon die `FIELDS`-Liste).
-- Nur-Daten-Modus: Sterne ohne rekonstruiertes Feld laden können — die gesamte Feld-Logik
-  (Pfeile, Maske, Div/Curl, Residuen, Spektren, Feld-UI) greift nur, wenn Feldwerte
-  vorhanden sind.
-- Vorbereitung erledigt: Thesis-Hauptversion nach `Runs/test_no_sigma_{full,light}.html`
-  umbenannt, index.html verlinkt dorthin.
+## Mehrere Datensätze (Regionen) + Nur-Sterne-Modus (Okt 2026)
+**Prinzip: Funktionen einmal, Zustand pro Datensatz.** `DS[i] = {name, data, hasField, st, G,
+root}` (STATE-Block). Die Globals (DATA, Settings, Caches, Meshes, `G.arrows/streams/stars/
+cloud/box/axes`) halten IMMER den Zustand von `DS[dsCur]`; `withDataset(i, fn)` tauscht Satz i
+ein, führt fn aus, tauscht zurück. `dsActive` = der Satz, den die Sidebar bearbeitet
+(außerhalb von withDataset gilt dsCur === dsActive). Sektion „DATA SETS" im Template.
+- **Tauschlisten:** `DS_SET` (Settings-lets, neu gebunden), `DS_INPLACE` (Setting-OBJEKTE, in
+  place kopiert, weil Closures sie halten — `wireCbFilter` hält `cbFilter[layer]`; die
+  gelisteten Unter-Keys `params.autoRotSpeed`, `vis.objects` bleiben global), `DS_RUNTIME`
+  (Caches/Meshes, `_dsFreshRuntime()`), `DS_GROUPS` (eigene Gruppen je Satz unter `root`,
+  gleiche renderOrder). Zugriff über `Function()`-Accessoren (top-level lets sind global).
+  **Neue per-Satz-Variable = Name in die passende Liste**, sonst teilen alle Sätze sie.
+  `_starCatCache` wird beim Tausch geleert. Global: Objects, Kamera/Bookmarks, 3D-Style,
+  Plot-Fenster (zeigen den aktiven Satz), eigene Sterngruppen (per source_id auf alle Sätze).
+- **`forEachDataset(fn)`** = alle Sätze, der AKTIVE zuletzt; `buildAll()` → globale Builder
+  einmal + `buildDatasetLayers()` je Satz. Sidebar-Schreiber in Buildern
+  (`updateColorbar/updateStreamColorbar/updateCloudColorbar`, `_syncStarColorWidget`,
+  `star-info`) sind mit **`_uiCtx()`** gesperrt, solange ein nicht-aktiver Satz eingetauscht
+  ist. Globale Pfade, die Satz-Layer anfassen (setViewerStyle, Custom-Style-Farben,
+  customGroupsChanged, animate→tickParticles), laufen über forEachDataset.
+- **Wechsel `setActiveDataset(i)`:** `_flushDeferred()` (offene rAF-/debounce-Rebuilds gehören
+  dem ALTEN Satz — `debounce` merkt sich dafür fn, `flushDebounces()`), Swap, `_syncDatasetUI()`
+  (= Sidebar komplett aus dem Zustand: `_syncDsWidgets` + `_postRestoreSync` + Dropdowns +
+  Maske + `_syncFieldAvailability`), Plot-Sessionzustand/Pins zurück.
+- **Settings pro Satz:** SETTINGS_TABLE-Einträge mit `ds:true`; gespeichert unter dem NAMEN
+  (`_dsSavedBlobs`, auch für Sätze, die nicht in der Datei sind). Satz 1 startet aus den
+  flachen (restaurierten) Keys, weitere aus `_DS_DEFAULTS` (Snapshot direkt VOR
+  `loadSettings()`) mit eigener Sternfarbe (`DS_STAR_COLORS`); `_applyDsBlob()` wendet einen
+  gespeicherten Satz mit DATA=null an (wie der Parse-Time-Restore — Setter bauen nichts).
+- **Globales unsichtbares Gitter:** `sceneExtent()` = Vereinigung aller Sätze → Start-Kamera +
+  Größe der Referenzobjekte. Jeder Feld-Satz behält eigenes Gitter, Grid-Box und Achsen.
+  Kamera-Presets rahmen den aktiven Satz; „⌖ Fly to" (`flyToDataset`) fliegt hin, Blick entlang
+  der (1,1,1)-Diagonale. Wechseln bewegt die Kamera nicht.
+- **Picking:** `_pickDataset()` = Satz mit dem nächsten Treffer (Pfeil/Stern) entlang des Rays,
+  Hover (`_hoverAt`) und Klick (`_clickPick`) laufen in dessen Kontext; Sternsuche über alle
+  Sätze (aktiver zuerst). Info-Karten tragen den Satznamen (`_dsSuffix`).
+- **Nur Sterne (`run=None`, `hasField()` false):** `DATA.voxels = []`, `meta.extent` aus den
+  Sternen, `meta.spacing` = Gitterabstand der Feld-Sätze (sonst 1/40 der Ausdehnung) für
+  Sterngrößen. Alle Feld-Builder inkl. Achsen/Box brechen ab; `_syncFieldAvailability()`
+  versteckt Feld-Toggles, Reference Frame, Mask, Field-Plot und „RV used"; Sterne beim Laden
+  an. Settings werden nur ausgeblendet, nie verändert.
+- **Ohne Massen (`_noMass()`, meta.mask_kind "stars"):** Maske/KDE nur über die Sterndichte
+  (`recomputeMaskDensity` ohne md), „By mass" + Cloud-Felder ρ/½ρv² ausgeblendet,
+  cloudField → stellar_density.
+- Wechsler `#section-datasets` (nur bei ≥2 Sätzen), Help-Eintrag „Data sets". HUD-Tag:
+  `_syncRunTag()` („Taurus · [C] test_no_sigma" bei mehreren Sätzen).
+- **Tests:** `tests/make_test.py` baut zusätzlich `test_multi.html` (Alpha Feld+Massen, Beta Feld
+  ohne Massen woanders, Gamma nur Sterne, Format 2); `run_tests.sh` fährt beide (Multi mit
+  `--virtual-time-budget`, prüft auch das Auto-Init-Re-Init). Feldpfeile und Sternvektoren
+  teilen `_vectorGlyphMeshes()` (Cone+Shaft-Helper).

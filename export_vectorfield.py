@@ -4,9 +4,13 @@ export_vectorfield.py  (Viewer/ — gemeinsamer Export für BEIDE Repos)
 Berechnet alle Feldgrößen direkt aus den NIFTy-Ergebnissen und bettet sie in
 die HTML-Vorlage (Viewer/vectorfield_viewer.html) ein.
 
-    REPO unten wählen ("taurus" | "claude") — oder per CLI überschreiben:
-      ../TaurusVelocityField/.venv/bin/python export_vectorfield.py taurus
-      ../ClaudeVelocityField/.venv/bin/python export_vectorfield.py claude [result_name]
+    Was exportiert wird, steht in der Liste DATASETS unten (ein Eintrag pro
+    Region; run=None = nur Sterne, kein Feld). Alle Einträge landen in EINER
+    Datei; der Viewer wechselt oben in der Sidebar zwischen ihnen.
+
+      ../ClaudeVelocityField/.venv/bin/python export_vectorfield.py          (DATASETS)
+      ../ClaudeVelocityField/.venv/bin/python export_vectorfield.py claude <run>
+      ../TaurusVelocityField/.venv/bin/python export_vectorfield.py taurus [<run>]
 
     taurus → TaurusVelocityField (Thesis-Runs, alte Pipeline):
              Runs/<name>/results/last.pkl + Parameters/<name>.py,
@@ -20,17 +24,17 @@ die HTML-Vorlage (Viewer/vectorfield_viewer.html) ein.
              bleiben leer und der Viewer blendet sie aus.
              Venv: ClaudeVelocityField/.venv
 
-Erzeugt: Viewer/vectorfield_viewer_data.html. meta.repo ("T"/"C") +
-result_name zeigt der Viewer als "[T] final_run" (HUD + Help → Loaded Result).
-
-Für mehrere Felder: FIELDS-Liste erweitern (selbe Logik, anderer result_name
-/ star_csv / masses_csv). Reference-Objekte (Sonne, Shells, Regionen, Dustmap)
-bleiben global außerhalb der Feld-Schleife.
+Erzeugt: Viewer/vectorfield_viewer_data.html (+ _light.html ohne Dustmap).
+Datenformat 2: {"format":2, "datasets":[{name, meta, stars, voxels?}],
+"reference_objects"} — Sterne als Spalten, Voxel 16-Bit-quantisiert (_q16).
+Die Dateien in Viewer/Runs/ sind eingefrorene BSc-Thesis-Aufnahmen: der Export
+überschreibt dort nie eine bestehende Datei (_guard_output).
 """
 
 # ── Repo-Wahl ─────────────────────────────────────────────────────────────────
 REPO = "claude"          # "taurus" | "claude"  (CLI-Argument 1 überschreibt)
 
+import base64
 import json
 import math
 import os
@@ -43,6 +47,9 @@ from pathlib import Path
 # automatisch gewählt (Subprozess), die Hauptdateien (vectorfield_viewer_data
 # .html/_light.html) bleiben unangetastet. Key "T" = TaurusVelocityField,
 # "C" = ClaudeVelocityField. index.html-Einträge bleiben Handarbeit.
+# Viewer/Runs/ ist das Archiv der BSc-Thesis-Aufnahmen: schon vorhandene Dateien
+# überschreibt der Export nie (_guard_output) — die Einträge unten sind damit
+# eingefroren, neue Runs bekommen eine neue Datei.
 BATCH_RUNS = {
     "T": ["parameters_old", "ruwe_test", "test_new_param"],
     "C": ["test_no_sigma_seed", "test_no_sigma_seed2", "test_with_sigma"],
@@ -126,32 +133,37 @@ HTML_OUTPUT_LIGHT      = VIEWER_DIR / "vectorfield_viewer_light.html"
 # Light-Version: ohne Dustmap und nur mit den N gröbsten Local-Bubble-Stufen
 LIGHT_LB_LEVELS        = 2
 
-# ── Feld-Konfiguration je Repo (CLI-Argument 2 überschreibt result_name) ───────
-# Alle Felder teilen dieselbe Logik; reference_objects sind global.
-FIELDS_BY_REPO = {
-    "taurus": [
-        dict(
-            result_name = "final_run",
-            star_csv    = "Data/taurus_core_sigma_age-Feb-2025-luhman-comparison.csv",
-            masses_csv  = "Data/Chronos.csv",
-            label       = "Taurus",
-        ),
-    ],
+# ── Datensätze (ein Eintrag pro Region; Reihenfolge = Wechsler im Viewer) ──────
+#   name        Anzeigename im Viewer-Wechsler. Eindeutig — der Viewer speichert
+#               seine Einstellungen unter diesem Namen.
+#   run         Run-Ordner (claude: Runs/<run>, taurus: Runs/<run>/results).
+#               None = nur Sterne: kein Feld, keine Maske/Achsen/Residuen.
+#   stars       Stern-CSV (repo-relativ). Mit run optional: claude nimmt dann
+#               die Datei aus der Run-Config (data.filename). Fremde Kataloge
+#               dürfen Spalten auslassen (fehlende Werte bleiben leer); Pflicht
+#               sind nur source_id und X/Y/Z.
+#   masses      Chronos-Massen-CSV (optional, per source_id zugeordnet). Ganz
+#               ohne Massen maskiert der Viewer über die Sterndichte.
+#   mask_level  Default-Maskenschwelle (optional, nur mit run): M☉/pc³ mit
+#               Massen, sonst Sterne/pc³.
+DATASETS_BY_REPO = {
     "claude": [
-        dict(
-            result_name = "test_no_sigma",
-            star_csv    = "Data/taurus_core_sigma_age-Feb-2025-luhman-comparison.csv",
-            masses_csv  = "../Chronos/Masses/results.csv",
-            label       = "Taurus",
-            # KDE-Massendichte-Schwelle für die Viewer-Maske (die neuen Configs
-            # haben keine posterior_plotting-Sektion mehr; Wert wie plot_data.py)
-            mask_level  = 0.001,
-        ),
+        dict(name="Taurus", run="test_no_sigma",
+             masses="../Chronos/Masses/results.csv",
+             # Wert wie plot_data.py (die neuen Configs haben keine
+             # posterior_plotting-Sektion mehr)
+             mask_level=0.001),
+        # dict(name="Perseus", run=None, stars="Data/perseus.csv"),
+    ],
+    "taurus": [
+        dict(name="Taurus", run="final_run",
+             stars="Data/taurus_core_sigma_age-Feb-2025-luhman-comparison.csv",
+             masses="Data/Chronos.csv"),
     ],
 }
-FIELDS = FIELDS_BY_REPO[REPO]
-if len(_args) > 1:
-    FIELDS[0]["result_name"] = _args[1]
+DATASETS = DATASETS_BY_REPO[REPO]
+if len(_args) > 1:   # CLI `<repo> <run>`: genau dieser eine Run
+    DATASETS = [dict(DATASETS[0], run=_args[1])]
 
 # Batch-Modus (--light-to-runs): NUR die Light-Version schreiben, direkt nach
 # Viewer/Runs/<run>_light.html — die Hauptdateien bleiben der aktuelle Hauptrun.
@@ -159,7 +171,22 @@ if LIGHT_TO_RUNS:
     SAVE_JSON         = False
     SAVE_HTML_LIGHT   = True
     HTML_OUTPUT       = None
-    HTML_OUTPUT_LIGHT = VIEWER_DIR / "Runs" / f"{FIELDS[0]['result_name']}_light.html"
+    HTML_OUTPUT_LIGHT = VIEWER_DIR / "Runs" / f"{DATASETS[0]['run']}_light.html"
+
+
+def _guard_output(path):
+    """Viewer/Runs/ ist das Archiv der BSc-Thesis-Aufnahmen (Thesis-Hauptversion
+    test_no_sigma_{full,light} + die übrigen Runs der Landing Page). Eine dort
+    bereits liegende Datei wird NIE überschrieben — auch nicht vom Batch-Modus."""
+    if path is None:
+        return
+    path = Path(path).resolve()
+    if path.parent == (VIEWER_DIR / "Runs").resolve() and path.exists():
+        sys.exit(f"ABBRUCH: {path.name} ist eine eingefrorene Thesis-Aufnahme in "
+                 f"Viewer/Runs/ und wird nicht überschrieben.")
+
+_guard_output(HTML_OUTPUT)
+_guard_output(HTML_OUTPUT_LIGHT if SAVE_HTML_LIGHT else None)
 
 # Referenz-Assets (Local-Bubble-/Dustmap-npz): eigener Ordner zuerst, dann die
 # saves/values beider Repos (dort liegen die bereits berechneten Dateien).
@@ -638,335 +665,349 @@ def _eta_from_posterior(parameters, samples, gaia, n_stars):
 # Pro-Feld-Verarbeitung
 # =============================================================================
 
-def process_field(cfg):
+def _q16(arr):
+    """Voxel-Spalte → 16-Bit-Quantisierung als base64 (Code 65535 = kein Wert).
+
+    Statt ~8 Byte Dezimaltext pro Wert 2 Byte binär (base64: 2.7 Byte): die
+    sechs Spalten eines 26k-Gitters schrumpfen von ~1.06 MB auf ~0.42 MB. Die
+    Stufe (max−min)/65534 liegt bei den Taurus-Runs unter 4e-4 km/s — feiner als
+    die frühere Rundung auf 1e-3. Dekodiert im Viewer von _decodeQ16().
     """
-    Lädt NIFTy-Ergebnisse und Sterndaten, berechnet alle abgeleiteten Größen,
-    gibt das fertige Feld-Dict zurück (voxel_columns, real_stars, meta).
+    a = np.asarray(arr, dtype=float).ravel()
+    fin = np.isfinite(a)
+    lo = float(a[fin].min()) if fin.any() else 0.0
+    hi = float(a[fin].max()) if fin.any() else 0.0
+    step = (hi - lo) / 65534 if hi > lo else 1.0
+    q = np.full(a.shape, 65535, dtype="<u2")
+    q[fin] = np.round((a[fin] - lo) / step).clip(0, 65534).astype("<u2")
+    return {"lo": lo, "step": step, "b64": base64.b64encode(q.tobytes()).decode("ascii")}
+
+
+# Sternfelder, die der Viewer als Farbe/Plotachse anbietet (nur die mit Werten).
+STAR_COLOR_FIELDS = [
+    "age", "rv", "pmra", "pmdec", "mass", "mass_err", "extinction", "ruwe",
+    "pmra error", "pmdec error", "rv error",
+    "pmra residual", "pmdec residual", "rv residual",
+    "pmra residual weighted", "pmdec residual weighted",
+    "rv residual weighted", "rv residual eta weighted",
+    "eta", "eta std", "log10 eta",
+    "U", "V", "W", "BP-RP", "G-RP", "abs_g_mag",
+]
+
+# Default-Maskenschwelle ohne Massen, als Anteil am Peak der Sterndichte: bei
+# test_no_sigma liegt die Massen-Schwelle 0.001 M☉/pc³ bei 4.4 % des Peaks.
+MASK_PEAK_FRAC_NO_MASS = 0.044
+
+
+def process_dataset(cfg):
     """
-    result_name = cfg["result_name"]
-    print(f"\n── Feld: {cfg['label']} ({result_name}) ──")
+    Ein DATASETS-Eintrag → {name, meta, stars[, voxels]}. Sterne als Spalten
+    (ein Array pro Größe, leere Spalten entfallen), Voxel als _q16-Spalten.
+    Ohne run nur der Sternkatalog — kein Feld, keine Maske, keine Residuen.
+    """
+    name, run = cfg["name"], cfg.get("run")
+    print(f"\n── Datensatz: {name} ({run or 'nur Sterne'}) ──")
 
-    # ── NIFTy-Samples laden ──────────────────────────────────────────────────
-    if REPO == "taurus":
-        parameters = load_parameters(f"Parameters.{result_name}")
-        samples    = load_samples(f"Runs/{result_name}/results")
-    else:
-        # neue Pipeline: parameters_used.txt im Run-Ordner ist die Wahrheit
-        parameters = load_parameters(f"Runs/{result_name}")
-        samples    = load_samples(f"Runs/{result_name}")
-    model      = load_models(parameters)
-    v_mean, v_std = apply_models(model, samples)
+    parameters = samples = None
+    if run is not None:
+        if REPO == "taurus":
+            parameters = load_parameters(f"Parameters.{run}")
+            samples    = load_samples(f"Runs/{run}/results")
+        else:
+            # neue Pipeline: parameters_used.txt im Run-Ordner ist die Wahrheit
+            parameters = load_parameters(f"Runs/{run}")
+            samples    = load_samples(f"Runs/{run}")
+    star_csv = cfg.get("stars")
+    if star_csv is None:
+        if parameters is None or REPO != "claude":
+            sys.exit(f"{name}: 'stars' fehlt — Stern-CSV im DATASETS-Eintrag angeben.")
+        star_csv = str(Path("Data") / parameters["data"]["filename"])
+    print(f"Sterne: {star_csv}")
 
-    geo = parameters["geometry"]
-    BOX_ORIGIN    = geo["origin"]
-    BOX_SHAPE     = geo["shape"]
-    BOX_DISTANCES = geo["distances"]
+    # ── Sternkatalog ─────────────────────────────────────────────────────────
+    Taurus_core = pd.read_csv(star_csv, dtype={"source_id": str})
+    n_st = len(Taurus_core)
+    for c in ("source_id", "X", "Y", "Z"):
+        if c not in Taurus_core.columns:
+            sys.exit(f"{name}: Pflichtspalte {c!r} fehlt in {star_csv}.")
 
-    xyz = [
-        np.linspace(BOX_ORIGIN[i],
-                    BOX_ORIGIN[i] + BOX_SHAPE[i] * BOX_DISTANCES[i],
-                    num=BOX_SHAPE[i], endpoint=False)
-        for i in range(3)
-    ]
-    nx, ny, nz = BOX_SHAPE
+    def col(c):
+        """Optionale numerische Spalte; fehlt sie (anderer Katalog), NaN."""
+        if c in Taurus_core.columns:
+            return pd.to_numeric(Taurus_core[c], errors="coerce").values.astype(float)
+        return np.full(n_st, np.nan)
 
-    vx, vy, vz         = v_mean
-    vx_std, vy_std, vz_std = v_std
-    print(f"Grid: {nx}×{ny}×{nz} = {nx*ny*nz} Voxel")
-
-    # ── Sterndaten ───────────────────────────────────────────────────────────
-    Taurus_core     = pd.read_csv(cfg["star_csv"], dtype={"source_id": str})
-    _star_ids       = Taurus_core["source_id"].astype(np.int64).values
+    _star_ids = Taurus_core["source_id"].astype(np.int64).values
     # Chronos-Massen per source_id alignen (Zeilenreihenfolge nicht garantiert)
-    Chronos         = (pd.read_csv(Path(cfg["masses_csv"]).resolve())
-                       .set_index("source_id").reindex(_star_ids))
-    mass            = Chronos["mass_solar"].values
-    # Massen-Fehlerbereich (mass_hi − mass_lo, positiv) als zusätzliches
-    # 2D-Plot-Färbe-/Achsenfeld im Viewer.
-    mass_lo         = Chronos["mass_lo"].values
-    mass_hi         = Chronos["mass_hi"].values
-    # Photometrie (aus Chronos, zeilengleich zum Star-CSV): Gaia-Farben + abs. G,
-    # als zusätzliche Färbe-/Plot-Felder im Viewer.
-    bp_rp           = Chronos["BP-RP"].values
-    g_rp            = Chronos["G-RP"].values
-    abs_g_mag       = Chronos["abs_g_mag"].values
+    masses_csv = cfg.get("masses")
+    if masses_csv and Path(masses_csv).resolve().exists():
+        Chronos = (pd.read_csv(Path(masses_csv).resolve())
+                   .set_index("source_id").reindex(_star_ids))
+        mcol = lambda c: (Chronos[c].values.astype(float) if c in Chronos.columns
+                          else np.full(n_st, np.nan))
+    else:
+        if masses_csv:
+            print(f"Hinweis: Massen-CSV {masses_csv} nicht gefunden — ohne Massen.")
+        mcol = lambda c: np.full(n_st, np.nan)
+    mass    = mcol("mass_solar")
+    mass_lo = mcol("mass_lo")
+    mass_hi = mcol("mass_hi")
+    has_masses = bool(np.isfinite(mass).any())
+    # Photometrie aus Chronos (zeilengleich alignt), sonst aus dem Stern-CSV
+    def phot(c):
+        m = mcol(c)
+        return m if np.isfinite(m).any() else col(c)
+    bp_rp, g_rp, abs_g_mag = phot("BP-RP"), phot("G-RP"), phot("abs_g_mag")
 
-    star_x   = Taurus_core["X"].values
-    star_y   = Taurus_core["Y"].values
-    star_z   = Taurus_core["Z"].values
-    star_age = Taurus_core["age_myr"].values
-    pmra     = Taurus_core["pmra"].values
-    pmdec    = Taurus_core["pmdec"].values
-    rv       = Taurus_core["radial_velocity"].values
-    pmra_err = Taurus_core["pmra_error"].values
-    pmdec_err= Taurus_core["pmdec_error"].values
-    rv_err   = Taurus_core["radial_velocity_error"].values
-    ruwe     = Taurus_core["ruwe"].values
-    av       = Taurus_core["av"].values
+    star_x, star_y, star_z = col("X"), col("Y"), col("Z")
+    pmra, pmdec, rv = col("pmra"), col("pmdec"), col("radial_velocity")
+    pmra_err, pmdec_err, rv_err = col("pmra_error"), col("pmdec_error"), col("radial_velocity_error")
+    ruwe = col("ruwe")
+    source_id = Taurus_core["source_id"].values
     # Gruppennamen (kategorisch, '-' = keiner Gruppe zugeordnet): Luhman-Census und
-    # SigMA-Clustering. Optional — ältere Stern-CSVs haben die Spalten nicht, dann
-    # blendet der Viewer die jeweilige Farb-/Filteroption aus.
-    name_luhman = (Taurus_core["name_luhman"].values
-                   if "name_luhman" in Taurus_core.columns else None)
-    name_sigma  = (Taurus_core["name_sigma"].values
-                   if "name_sigma" in Taurus_core.columns else None)
-    star_U   = Taurus_core["U"].values.astype(float)
-    star_V   = Taurus_core["V"].values.astype(float)
-    star_W   = Taurus_core["W"].values.astype(float)
-    source_id= Taurus_core["source_id"].values
+    # SigMA-Clustering. Optional — fehlt die Spalte, blendet der Viewer die
+    # jeweilige Farb-/Filteroption aus.
+    name_luhman = Taurus_core["name_luhman"].values if "name_luhman" in Taurus_core.columns else None
+    name_sigma  = Taurus_core["name_sigma"].values  if "name_sigma"  in Taurus_core.columns else None
 
     # Reine PM-Geschwindigkeit (rv=0) — für ALLE Sterne verfügbar, auch ohne
-    # RV-Messung (anders als U/V/W oben). Viewer-Option "PM only" bei den
-    # UVW-Pfeilen, analog plot_data.py U_star_pm_only.
-    star_ra   = Taurus_core["ra"].values
-    star_dec  = Taurus_core["dec"].values
-    star_dist = 1000.0 / Taurus_core["parallax"].values.astype(float)   # pc
-    U_pm, V_pm, W_pm = _icrs_to_gal_uvw(star_ra, star_dec, star_dist, pmra, pmdec, np.zeros_like(pmra))
+    # RV-Messung (anders als U/V/W). Viewer-Modus "PM only" der Sternvektoren,
+    # analog plot_data.py U_star_pm_only.
+    star_dist = 1000.0 / col("parallax")   # pc
+    U_pm, V_pm, W_pm = _icrs_to_gal_uvw(col("ra"), col("dec"), star_dist,
+                                        pmra, pmdec, np.zeros(n_st))
 
-    if REPO == "taurus":
-        # RUWE-Schwelle für den rv_used-Fallback (final_run-Ära hat den Key nicht
-        # im Parameterfile — dort war 1.4 in stellar_data.py hart verdrahtet).
-        # Alte Parameterfiles tragen hier auch mal None oder den STRING "None"
-        # (= keine Schwelle) — beides darf den Export nicht abbrechen.
-        RUWE_THRESHOLD = parameters["data"]["data_set_kwargs"].get("ruwe_threshold", 1.4)
-        try:
-            RUWE_THRESHOLD = float(RUWE_THRESHOLD)
-        except (TypeError, ValueError):
-            print(f"rv_used: ruwe_threshold={RUWE_THRESHOLD!r} ist keine Zahl — "
-                  f"RUWE-Cut übersprungen.")
-            RUWE_THRESHOLD = np.inf
-        # RV-Outlier-Filter (Integral-Wahrscheinlichkeit innerhalb [rv_min, rv_max])
-        rv_min       = parameters["data"]["data_set_kwargs"]["rv_min"]
-        rv_max       = parameters["data"]["data_set_kwargs"]["rv_max"]
-        rv_min_prob  = parameters["data"]["data_set_kwargs"]["rv_min_prob_mass"]
-        rv_nan_ok    = ~np.isnan(rv) & ~np.isnan(rv_err)
-        rv_integral  = 0.5 * (
-            erf((rv_max - rv[rv_nan_ok]) / (np.sqrt(2) * rv_err[rv_nan_ok])) -
-            erf((rv_min - rv[rv_nan_ok]) / (np.sqrt(2) * rv_err[rv_nan_ok]))
-        )
-        rv_in_range          = np.full(rv_nan_ok.shape, False)
-        rv_in_range[rv_nan_ok] = rv_integral > rv_min_prob
-        rv_corrected         = rv.astype(float).copy()
-        rv_corrected[~rv_in_range] = np.nan
-        # rv_used = Filterkategorien (heutiger stellar_data.py-Stand): korrektes
-        # rv-Integral + filter_ruwe + filter_rv_error. Bewusst NICHT die eta-/
-        # Posterior-Menge — final_run-Ära-Runs liefen mit der fehlerhaften
-        # rv_integral-Formel; deren tatsächliche Sternmenge weicht ab (s. u.).
-        _dsk = parameters["data"]["data_set_kwargs"]
-        rv_good_mask = ~np.isnan(rv_corrected)
-        if _dsk.get("filter_ruwe", True):
-            rv_good_mask &= ruwe < RUWE_THRESHOLD
-        if _dsk.get("filter_rv_error") is not None:
-            rv_good_mask &= rv_err < _dsk["filter_rv_error"]
-    else:
-        # rv_used = die ECHTE Inferenz-Maske: derselbe Datenlader wie im Run
-        # (RUWE-Threshold, RV-Fenster/prob-mass, rv-error-Cut aus parameters_used) —
-        # eine Filter-Nachbildung könnte vom tatsächlich Verwendeten abweichen.
-        _data_cfg = dict(parameters["data"])
-        _data_cfg["path"] = str(REPO_ROOT / "Data") + "/"
-        sd = load_stellar_data(_data_cfg, parameters["geometry"])
-        rv_good_mask = (
-            pd.Series(sd.rv_valid, index=sd.source_id)
-            .reindex(_star_ids)          # Sterne außerhalb der Auswahl → False
-            .fillna(False)
-            .to_numpy(dtype=bool)
-        )
-
-    # ── Noise-Estimation eta ─────────────────────────────────────────────────
-    if REPO == "taurus":
-        # Gaia.csv ist die Datenquelle der Inferenz (das Stern-CSV enthält
-        # zusätzliche nicht-Gaia-rvs); Zeilen per source_id angleichen.
-        _gaia = pd.read_csv(os.path.join(os.path.dirname(cfg["star_csv"]) or ".", "Gaia.csv"),
-                            dtype={"source_id": str})
-        # source_id bleibt Index (nur zum Zeilen-Alignment gebraucht; die eta-
-        # Funktionen lesen nur Datenspalten). Kein reset_index → kein Spalten-
-        # Insert in den sehr breiten Gaia-Frame (löst sonst pandas' Fragmentation-
-        # PerformanceWarning aus).
-        _gaia = _gaia.set_index("source_id").loc[source_id]
-        eta_mean, eta_std, _eta_has_rv = _eta_from_posterior(
-            parameters, samples, _gaia, len(star_x))
-        # eta bleibt an die TATSÄCHLICHE Inferenz-Sternmenge gebunden (NaN außerhalb,
-        # zeilengleich zum Stern-CSV) und überschreibt rv_used NICHT — bei Runs mit
-        # dem rv_integral-Bug (final_run-Ära) weichen die Mengen ab.
-        if _eta_has_rv is not None and not np.array_equal(_eta_has_rv, rv_good_mask):
-            _n_f = int((rv_good_mask & ~_eta_has_rv).sum())
-            _n_e = int((_eta_has_rv & ~rv_good_mask).sum())
-            print(f"Hinweis: Inferenz-rv-Menge (eta) != Filterkategorien: "
-                  f"{_n_f} nur Filter / {_n_e} nur Inferenz — rv_used folgt den "
-                  f"Filterkategorien, eta bleibt None außerhalb der Inferenz-Menge.")
-    else:
-        # Neue Pipeline: andere Latent-Struktur (noise_estimate_exact/sampled) —
-        # Rekonstruktion hier (noch) nicht implementiert. Alle eta-Felder bleiben
-        # None, der Viewer blendet sie aus.
-        print("eta: Rekonstruktion für die neue Pipeline nicht implementiert — Felder bleiben leer.")
-        eta_mean = np.full(len(star_x), np.nan)
-        eta_std  = np.full(len(star_x), np.nan)
-    with np.errstate(invalid="ignore"):
-        log10_eta = np.log10(eta_mean)
-
-    # ── KDE-Dichte & Maske ────────────────────────────────────────────────────
-    _kde_kw = dict(box_origin=BOX_ORIGIN, box_shape=BOX_SHAPE,
-                   box_distances=BOX_DISTANCES,
-                   star_x=star_x, star_y=star_y, star_z=star_z, smooth=KDE_SMOOTH)
-    density      = calculate_mask(**_kde_kw, masses=None)
-    mass_density = calculate_mask(**_kde_kw, masses=mass)
-    mask_level   = cfg.get("mask_level")
-    if mask_level is None:  # alte Configs tragen den Wert in posterior_plotting
-        mask_level = parameters.get("posterior_plotting", {}).get(
-            "density_mask_level", 0.001)  # nicht jedes Parameterfile hat die Sektion
-    mask_bool    = mass_density > mask_level
-    mask_bool_flat = mask_bool.ravel()
-
-    # ── Referenzrahmen & Bulk-Velocity ────────────────────────────────────────
-    norm  = np.sum(mass_density)
-    v_ref = np.array([np.sum(mass_density * vx) / norm,
-                      np.sum(mass_density * vy) / norm,
-                      np.sum(mass_density * vz) / norm])
-
-    # ── Curl & Divergenz ──────────────────────────────────────────────────────
-    dx, dy, dz = BOX_DISTANCES
-    dvx_dx, dvx_dy, dvx_dz = np.gradient(vx, dx, dy, dz)
-    dvy_dx, dvy_dy, dvy_dz = np.gradient(vy, dx, dy, dz)
-    dvz_dx, dvz_dy, dvz_dz = np.gradient(vz, dx, dy, dz)
-    divergence = dvx_dx + dvy_dy + dvz_dz
-    curl_x = dvz_dy - dvy_dz
-    curl_y = dvx_dz - dvz_dx
-    curl_z = dvy_dx - dvx_dy
-    curl_mag = np.sqrt(curl_x**2 + curl_y**2 + curl_z**2)
-    std_mag  = np.sqrt(vx_std**2 + vy_std**2 + vz_std**2)
-
-    # ── Residuen ──────────────────────────────────────────────────────────────
-    X, Y, Z = np.meshgrid(xyz[0], xyz[1], xyz[2], indexing="ij")
-    x_flat = X.ravel(); y_flat = Y.ravel(); z_flat = Z.ravel()
-
-    pmra_field, pmdec_field, rv_field = gal_to_icrs(
-        x_flat, y_flat, z_flat, vx.ravel(), vy.ravel(), vz.ravel())
-    _interp_kw = dict(method="linear", bounds_error=False, fill_value=np.nan)
-    _star_pts  = np.column_stack([star_x, star_y, star_z])
-    pmra_at_stars  = RegularGridInterpolator(xyz, pmra_field.reshape(BOX_SHAPE),  **_interp_kw)(_star_pts)
-    pmdec_at_stars = RegularGridInterpolator(xyz, pmdec_field.reshape(BOX_SHAPE), **_interp_kw)(_star_pts)
-    rv_at_stars    = RegularGridInterpolator(xyz, rv_field.reshape(BOX_SHAPE),    **_interp_kw)(_star_pts)
-    pmra_residual  = np.abs(pmra  - pmra_at_stars)
-    pmdec_residual = np.abs(pmdec - pmdec_at_stars)
-    rv_residual    = np.abs(rv    - rv_at_stars)
-    rv_residual[~rv_good_mask] = np.nan
-
-    # Gewichtete Residuen.
-    # taurus: Residuum / Katalogfehler (bewusst OHNE sigma_int — so wurden die
-    #   alten Runs diagnostiziert); rv zusätzlich in Einheiten des eta-
-    #   inflationierten Fehlers sigma·sqrt(eta).
-    # claude: sigma_eff = sqrt(sigma_gaia² + sigma_int² [+ sigma_rv_jitter² auf
-    #   rv]) wie in der Likelihood (PM via kappa·d nach mas/yr projiziert);
-    #   INFERIERTE Werte (Prior-Dict in der Config) werden als Posterior-Mittel
-    #   des jeweiligen Latents gelesen. sigma_rv_jitter ist rv-only.
-    if REPO == "claude":
-        KAPPA = 4.740470463533
-
-        def _sigma_cfg(key):
-            val = parameters["model"].get(key, 0.0)
-            if isinstance(val, dict):
-                import nifty.re as jft
-                prior = jft.LogNormalPrior(val["mean"], val["std"], name=key, shape=())
-                val = float(np.mean([np.asarray(prior(s)) for s in samples]))
-                print(f"{key} inferiert -> Posterior-Mittel {val:.3f} km/s")
-            return float(val)
-
-        _si  = _sigma_cfg("sigma_int")
-        _jit = _sigma_cfg("sigma_rv_jitter")
-        _d_kpc     = 1.0 / Taurus_core["parallax"].values.astype(float)  # 1/mas = kpc
-        _s_int_mas = _si / (KAPPA * _d_kpc)
-        pmra_err_eff  = np.hypot(pmra_err,  _s_int_mas)
-        pmdec_err_eff = np.hypot(pmdec_err, _s_int_mas)
-        rv_err_eff    = np.hypot(np.hypot(rv_err, _si), _jit)
-        print(f"weighted residuals: sigma_eff mit sigma_int = {_si:.3f} km/s, "
-              f"sigma_rv_jitter = {_jit:.3f} km/s")
-    else:
-        pmra_err_eff, pmdec_err_eff, rv_err_eff = pmra_err, pmdec_err, rv_err
-    pmra_residual_w  = pmra_residual  / pmra_err_eff
-    pmdec_residual_w = pmdec_residual / pmdec_err_eff
-    rv_residual_w    = rv_residual    / rv_err_eff
-    rv_residual_eta  = rv_residual    / (rv_err_eff * np.sqrt(eta_mean))
-
-    print(f"v_ref = {v_ref}")
-
-    # ── Colorbar-Normierung ───────────────────────────────────────────────────
-    curl_min, curl_max = _minmax(curl_mag, mask_bool)
-    div_min,  div_max  = _minmax(divergence, mask_bool)
-    std_min,  std_max  = _minmax(std_mag, mask_bool)
-    density_min = float(np.nanmin(density))
-    density_max = float(np.nanmax(density))
-
-    _params_dump, _params_note = _parameters_dump(result_name, parameters)
-    print(f"run info: minisanity + parameters ({_params_note.split(',')[0]})")
-
-    # ── Modell-Power-Spektren (Posterior-Samples des Amplituden-Modells) ─────
-    model_spectra = _model_spectra(parameters, samples)
-
-    # ── Voxel-Spalten aufbauen ───────────────────────────────────────────────
-    # SPALTENFORMAT (Juli 2026): ein Array pro Größe statt eines Dicts pro Voxel.
-    # Die 18 Feldnamen standen vorher in JEDEM der ~26k Voxel — allein das waren
-    # 3.2 der 6.4 MB. Der Viewer baut daraus in `_hydrateVoxels()` wieder seine
-    # Voxel-Objekte, das Format ist also rein „on the wire".
-    # Reihenfolge = C-Order über (ix, iy, iz), Index = (ix*ny + iy)*nz + iz.
-    # NICHT exportiert, weil im Viewer exakt reproduzierbar:
-    #   x/y/z, ix/iy/iz  — aus meta.extent + meta.spacing + Arrayposition
-    #   curl_x/y/z, div  — np.gradient-Äquivalent aus vx/vy/vz (dieselben
-    #                      Randformeln; der Viewer rechnet sie beim Laden nach)
-    # Rundung: Geschwindigkeiten/Streuungen auf 3 Nachkommastellen (der Effekt
-    # auf curl/div liegt bei 5e-4 gegenüber Wertebereichen von ~±2), die beiden
-    # Dichten auf 5 SIGNIFIKANTE Stellen — siehe `_col_sig`.
-    voxel_columns = {
-        "vx": _col(vx, 3), "vy": _col(vy, 3), "vz": _col(vz, 3),
-        "std_x": _col(vx_std, 3), "std_y": _col(vy_std, 3), "std_z": _col(vz_std, 3),
-        # density/mass_density gehen NICHT mit: der Viewer rechnet beide KDEs
-        # beim Laden aus `meta.kde` (Rezept + Sternpositionen/-massen) selbst —
-        # er kann das ohnehin für Bandbreiten- und Gruppenwechsel und trifft die
-        # exportierten Werte auf 7e-7 bei Peak 0.087. Kostet dort ~18 ms und
-        # spart 0.42 MB, in der Light-Version knapp ein Fünftel.
+    num = {   # numerische Sternspalten (Viewer-Feldnamen)
+        "x": star_x, "y": star_y, "z": star_z,
+        "age": col("age_myr"), "ruwe": ruwe,
+        "pmra": pmra, "pmdec": pmdec, "rv": rv,
+        "mass": mass, "extinction": col("av"),
+        # positiver Fehlerbereich der Masse als zusätzliches Plotfeld
+        "mass_err": mass_hi - mass_lo,
+        "BP-RP": bp_rp, "G-RP": g_rp, "abs_g_mag": abs_g_mag,
+        "pmra error": pmra_err, "pmdec error": pmdec_err, "rv error": rv_err,
+        "U": col("U"), "V": col("V"), "W": col("W"),
+        "U_pm": U_pm, "V_pm": V_pm, "W_pm": W_pm,
     }
-    print(f"Maskenvoxel (Default-Level {mask_level}): {int(mask_bool_flat.sum())}")
+    extra = {}   # nicht-numerische Spalten
+    meta = {
+        "name": name, "label": name, "repo": REPO_TAG, "result_name": run,
+        "source": Path(star_csv).name,
+        "sun_motion_lsr": [round(float(c), 2) for c in SUN_MOTION_LSR],
+    }
+    voxels = None
 
-    # ── Sternobjekte ─────────────────────────────────────────────────────────
-    real_stars = []
-    for i in range(len(star_x)):
-        real_stars.append({
-            "source_id": _sid(source_id[i]),
-            "x": _f(star_x[i]), "y": _f(star_y[i]), "z": _f(star_z[i]),
-            "age": _f(star_age[i]), "ruwe": _f(ruwe[i]),
-            "pmra": _f(pmra[i]), "pmdec": _f(pmdec[i]), "rv": _f(rv[i]),
-            "mass": _f(mass[i]), "extinction": _f(av[i]),
-            # positiver Fehlerbereich der Masse (NaN → None via _f, wenn lo/hi fehlt)
-            "mass_err": _f(mass_hi[i] - mass_lo[i]),
-            "BP-RP": _f(bp_rp[i]), "G-RP": _f(g_rp[i]), "abs_g_mag": _f(abs_g_mag[i]),
-            "pmra error": _f(pmra_err[i]), "pmdec error": _f(pmdec_err[i]),
-            "rv error": _f(rv_err[i]),
-            "pmra residual": _f(pmra_residual[i]),
-            "pmdec residual": _f(pmdec_residual[i]),
-            "rv residual": _f(rv_residual[i]),
-            "pmra residual weighted": _f(pmra_residual_w[i]),
-            "pmdec residual weighted": _f(pmdec_residual_w[i]),
-            "rv residual weighted": _f(rv_residual_w[i]),
-            "rv residual eta weighted": _f(rv_residual_eta[i]),
-            "eta": _f(eta_mean[i]), "eta std": _f(eta_std[i]),
-            "log10 eta": _f(log10_eta[i]),
-            "U": _f(star_U[i]), "V": _f(star_V[i]), "W": _f(star_W[i]),
-            "U_pm": _f(U_pm[i]), "V_pm": _f(V_pm[i]), "W_pm": _f(W_pm[i]),
-            # rv_good (rv filtered by the inference mask) was dropped: it is just
-            # "rv" for the stars where rv_used is true, so the viewer reproduces
-            # it via the "RV used in inference" mask instead of a separate field.
-            "rv_used": bool(rv_good_mask[i]),
-            "name_luhman": _cat(name_luhman[i]) if name_luhman is not None else None,
-            "name_sigma":  _cat(name_sigma[i])  if name_sigma  is not None else None,
-        })
-    n_used = sum(1 for s in real_stars if s["rv_used"])
-    print(f"Sterne: {len(real_stars)},  Inference-verwendet: {n_used}")
+    if run is not None:
+        model      = load_models(parameters)
+        v_mean, v_std = apply_models(model, samples)
 
-    # ── voxel_volume für Energieintegral (live im Viewer berechnet) ───────────
-    voxel_volume = float(np.prod(BOX_DISTANCES))
+        geo = parameters["geometry"]
+        BOX_ORIGIN    = geo["origin"]
+        BOX_SHAPE     = geo["shape"]
+        BOX_DISTANCES = geo["distances"]
 
-    return {
-        "meta": {
-            "label":      cfg["label"],
+        xyz = [
+            np.linspace(BOX_ORIGIN[i],
+                        BOX_ORIGIN[i] + BOX_SHAPE[i] * BOX_DISTANCES[i],
+                        num=BOX_SHAPE[i], endpoint=False)
+            for i in range(3)
+        ]
+        nx, ny, nz = BOX_SHAPE
+
+        vx, vy, vz         = v_mean
+        vx_std, vy_std, vz_std = v_std
+        print(f"Grid: {nx}×{ny}×{nz} = {nx*ny*nz} Voxel")
+
+        if REPO == "taurus":
+            # RUWE-Schwelle für den rv_used-Fallback (final_run-Ära hat den Key nicht
+            # im Parameterfile — dort war 1.4 in stellar_data.py hart verdrahtet).
+            # Alte Parameterfiles tragen hier auch mal None oder den STRING "None"
+            # (= keine Schwelle) — beides darf den Export nicht abbrechen.
+            RUWE_THRESHOLD = parameters["data"]["data_set_kwargs"].get("ruwe_threshold", 1.4)
+            try:
+                RUWE_THRESHOLD = float(RUWE_THRESHOLD)
+            except (TypeError, ValueError):
+                print(f"rv_used: ruwe_threshold={RUWE_THRESHOLD!r} ist keine Zahl — "
+                      f"RUWE-Cut übersprungen.")
+                RUWE_THRESHOLD = np.inf
+            # RV-Outlier-Filter (Integral-Wahrscheinlichkeit innerhalb [rv_min, rv_max])
+            rv_min       = parameters["data"]["data_set_kwargs"]["rv_min"]
+            rv_max       = parameters["data"]["data_set_kwargs"]["rv_max"]
+            rv_min_prob  = parameters["data"]["data_set_kwargs"]["rv_min_prob_mass"]
+            rv_nan_ok    = ~np.isnan(rv) & ~np.isnan(rv_err)
+            rv_integral  = 0.5 * (
+                erf((rv_max - rv[rv_nan_ok]) / (np.sqrt(2) * rv_err[rv_nan_ok])) -
+                erf((rv_min - rv[rv_nan_ok]) / (np.sqrt(2) * rv_err[rv_nan_ok]))
+            )
+            rv_in_range          = np.full(rv_nan_ok.shape, False)
+            rv_in_range[rv_nan_ok] = rv_integral > rv_min_prob
+            rv_corrected         = rv.astype(float).copy()
+            rv_corrected[~rv_in_range] = np.nan
+            # rv_used = Filterkategorien (heutiger stellar_data.py-Stand): korrektes
+            # rv-Integral + filter_ruwe + filter_rv_error. Bewusst NICHT die eta-/
+            # Posterior-Menge — final_run-Ära-Runs liefen mit der fehlerhaften
+            # rv_integral-Formel; deren tatsächliche Sternmenge weicht ab (s. u.).
+            _dsk = parameters["data"]["data_set_kwargs"]
+            rv_good_mask = ~np.isnan(rv_corrected)
+            if _dsk.get("filter_ruwe", True):
+                rv_good_mask &= ruwe < RUWE_THRESHOLD
+            if _dsk.get("filter_rv_error") is not None:
+                rv_good_mask &= rv_err < _dsk["filter_rv_error"]
+        else:
+            # rv_used = die ECHTE Inferenz-Maske: derselbe Datenlader wie im Run
+            # (RUWE-Threshold, RV-Fenster/prob-mass, rv-error-Cut aus parameters_used) —
+            # eine Filter-Nachbildung könnte vom tatsächlich Verwendeten abweichen.
+            _data_cfg = dict(parameters["data"])
+            _data_cfg["path"] = str(REPO_ROOT / "Data") + "/"
+            sd = load_stellar_data(_data_cfg, parameters["geometry"])
+            rv_good_mask = (
+                pd.Series(sd.rv_valid, index=sd.source_id)
+                .reindex(_star_ids)          # Sterne außerhalb der Auswahl → False
+                .fillna(False)
+                .to_numpy(dtype=bool)
+            )
+
+        # ── Noise-Estimation eta ─────────────────────────────────────────────
+        if REPO == "taurus":
+            # Gaia.csv ist die Datenquelle der Inferenz (das Stern-CSV enthält
+            # zusätzliche nicht-Gaia-rvs); Zeilen per source_id angleichen.
+            # source_id bleibt Index (nur zum Zeilen-Alignment gebraucht; die eta-
+            # Funktionen lesen nur Datenspalten). Kein reset_index → kein Spalten-
+            # Insert in den sehr breiten Gaia-Frame (löst sonst pandas' Fragmentation-
+            # PerformanceWarning aus).
+            _gaia = pd.read_csv(os.path.join(os.path.dirname(star_csv) or ".", "Gaia.csv"),
+                                dtype={"source_id": str})
+            _gaia = _gaia.set_index("source_id").loc[source_id]
+            eta_mean, eta_std, _eta_has_rv = _eta_from_posterior(
+                parameters, samples, _gaia, n_st)
+            # eta bleibt an die TATSÄCHLICHE Inferenz-Sternmenge gebunden (NaN außerhalb,
+            # zeilengleich zum Stern-CSV) und überschreibt rv_used NICHT — bei Runs mit
+            # dem rv_integral-Bug (final_run-Ära) weichen die Mengen ab.
+            if _eta_has_rv is not None and not np.array_equal(_eta_has_rv, rv_good_mask):
+                _n_f = int((rv_good_mask & ~_eta_has_rv).sum())
+                _n_e = int((_eta_has_rv & ~rv_good_mask).sum())
+                print(f"Hinweis: Inferenz-rv-Menge (eta) != Filterkategorien: "
+                      f"{_n_f} nur Filter / {_n_e} nur Inferenz — rv_used folgt den "
+                      f"Filterkategorien, eta bleibt None außerhalb der Inferenz-Menge.")
+        else:
+            # Neue Pipeline: andere Latent-Struktur (noise_estimate_exact/sampled) —
+            # Rekonstruktion hier (noch) nicht implementiert. Alle eta-Felder bleiben
+            # leer (die Spalten entfallen), der Viewer blendet sie aus.
+            print("eta: Rekonstruktion für die neue Pipeline nicht implementiert — Felder bleiben leer.")
+            eta_mean = np.full(n_st, np.nan)
+            eta_std  = np.full(n_st, np.nan)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            log10_eta = np.log10(eta_mean)
+
+        # ── KDE-Dichte & Maske ───────────────────────────────────────────────
+        # Ohne Massen läuft alles (Maske, v_ref) über die Sterndichte; der
+        # Viewer liest das aus meta.mask_kind.
+        _kde_kw = dict(box_origin=BOX_ORIGIN, box_shape=BOX_SHAPE,
+                       box_distances=BOX_DISTANCES,
+                       star_x=star_x, star_y=star_y, star_z=star_z, smooth=KDE_SMOOTH)
+        density = calculate_mask(**_kde_kw, masses=None)
+        mask_level = cfg.get("mask_level")
+        if has_masses:
+            mask_kind    = "mass"
+            mass_density = calculate_mask(**_kde_kw, masses=np.nan_to_num(mass))
+            if mask_level is None:  # alte Configs tragen den Wert in posterior_plotting
+                mask_level = parameters.get("posterior_plotting", {}).get(
+                    "density_mask_level", 0.001)  # nicht jedes Parameterfile hat die Sektion
+        else:
+            mask_kind    = "stars"
+            mass_density = density
+            if mask_level is None:
+                mask_level = MASK_PEAK_FRAC_NO_MASS * float(np.nanmax(density))
+            print(f"Keine Massen — Maske über die Sterndichte, Level {mask_level:.3g} /pc³")
+        mask_bool = mass_density > mask_level
+
+        # ── Referenzrahmen & Bulk-Velocity ───────────────────────────────────
+        norm  = np.sum(mass_density)
+        v_ref = np.array([np.sum(mass_density * vx) / norm,
+                          np.sum(mass_density * vy) / norm,
+                          np.sum(mass_density * vz) / norm])
+
+        # ── Curl & Divergenz (nur für die Colorbar-Fallbacks; der Viewer
+        #    rechnet beides beim Laden aus vx/vy/vz nach) ───────────────────────
+        dx, dy, dz = BOX_DISTANCES
+        dvx_dx, dvx_dy, dvx_dz = np.gradient(vx, dx, dy, dz)
+        dvy_dx, dvy_dy, dvy_dz = np.gradient(vy, dx, dy, dz)
+        dvz_dx, dvz_dy, dvz_dz = np.gradient(vz, dx, dy, dz)
+        divergence = dvx_dx + dvy_dy + dvz_dz
+        curl_mag = np.sqrt((dvz_dy - dvy_dz)**2 + (dvx_dz - dvz_dx)**2 + (dvy_dx - dvx_dy)**2)
+        std_mag  = np.sqrt(vx_std**2 + vy_std**2 + vz_std**2)
+
+        # ── Residuen ─────────────────────────────────────────────────────────
+        X, Y, Z = np.meshgrid(xyz[0], xyz[1], xyz[2], indexing="ij")
+        pmra_field, pmdec_field, rv_field = gal_to_icrs(
+            X.ravel(), Y.ravel(), Z.ravel(), vx.ravel(), vy.ravel(), vz.ravel())
+        _interp_kw = dict(method="linear", bounds_error=False, fill_value=np.nan)
+        _star_pts  = np.column_stack([star_x, star_y, star_z])
+        _at = lambda f: RegularGridInterpolator(xyz, f.reshape(BOX_SHAPE), **_interp_kw)(_star_pts)
+        pmra_residual  = np.abs(pmra  - _at(pmra_field))
+        pmdec_residual = np.abs(pmdec - _at(pmdec_field))
+        rv_residual    = np.abs(rv    - _at(rv_field))
+        rv_residual[~rv_good_mask] = np.nan
+
+        # Gewichtete Residuen.
+        # taurus: Residuum / Katalogfehler (bewusst OHNE sigma_int — so wurden die
+        #   alten Runs diagnostiziert); rv zusätzlich in Einheiten des eta-
+        #   inflationierten Fehlers sigma·sqrt(eta).
+        # claude: sigma_eff = sqrt(sigma_gaia² + sigma_int² [+ sigma_rv_jitter² auf
+        #   rv]) wie in der Likelihood (PM via kappa·d nach mas/yr projiziert);
+        #   INFERIERTE Werte (Prior-Dict in der Config) werden als Posterior-Mittel
+        #   des jeweiligen Latents gelesen. sigma_rv_jitter ist rv-only.
+        if REPO == "claude":
+            KAPPA = 4.740470463533
+
+            def _sigma_cfg(key):
+                val = parameters["model"].get(key, 0.0)
+                if isinstance(val, dict):
+                    import nifty.re as jft
+                    prior = jft.LogNormalPrior(val["mean"], val["std"], name=key, shape=())
+                    val = float(np.mean([np.asarray(prior(s)) for s in samples]))
+                    print(f"{key} inferiert -> Posterior-Mittel {val:.3f} km/s")
+                return float(val)
+
+            _si  = _sigma_cfg("sigma_int")
+            _jit = _sigma_cfg("sigma_rv_jitter")
+            _d_kpc     = star_dist / 1000.0
+            _s_int_mas = _si / (KAPPA * _d_kpc)
+            pmra_err_eff  = np.hypot(pmra_err,  _s_int_mas)
+            pmdec_err_eff = np.hypot(pmdec_err, _s_int_mas)
+            rv_err_eff    = np.hypot(np.hypot(rv_err, _si), _jit)
+            print(f"weighted residuals: sigma_eff mit sigma_int = {_si:.3f} km/s, "
+                  f"sigma_rv_jitter = {_jit:.3f} km/s")
+        else:
+            pmra_err_eff, pmdec_err_eff, rv_err_eff = pmra_err, pmdec_err, rv_err
+        with np.errstate(invalid="ignore"):
+            num.update({
+                "pmra residual": pmra_residual, "pmdec residual": pmdec_residual,
+                "rv residual": rv_residual,
+                "pmra residual weighted": pmra_residual / pmra_err_eff,
+                "pmdec residual weighted": pmdec_residual / pmdec_err_eff,
+                "rv residual weighted": rv_residual / rv_err_eff,
+                "rv residual eta weighted": rv_residual / (rv_err_eff * np.sqrt(eta_mean)),
+                "eta": eta_mean, "eta std": eta_std, "log10 eta": log10_eta,
+            })
+        # rv_good (rv filtered by the inference mask) was dropped: it is just
+        # "rv" for the stars where rv_used is true, so the viewer reproduces it
+        # via the "RV used in inference" mask instead of a separate field.
+        extra["rv_used"] = [bool(b) for b in rv_good_mask]
+        print(f"v_ref = {v_ref}")
+        print(f"Maskenvoxel (Default-Level {mask_level:.3g}): {int(mask_bool.sum())}")
+
+        curl_min, curl_max = _minmax(curl_mag, mask_bool)
+        div_min,  div_max  = _minmax(divergence, mask_bool)
+        std_min,  std_max  = _minmax(std_mag, mask_bool)
+        _params_dump, _params_note = _parameters_dump(run, parameters)
+        print(f"run info: minisanity + parameters ({_params_note.split(',')[0]})")
+        # Inferierte Amplituden-Spektren des Forward-Modells (Sample-Linien
+        # + Mittel + Slope je Komponente) — None, wenn nicht rekonstruierbar
+        # (der Viewer zeigt dann nur den FFT-Schätzer). S. _model_spectra.
+        model_spectra = _model_spectra(parameters, samples)
+
+        meta.update({
             "shape":      [nx, ny, nz],
             "spacing": [
                 round(float(xyz[0][1]-xyz[0][0]), 3) if nx>1 else float(BOX_DISTANCES[0]),
@@ -978,23 +1019,17 @@ def process_field(cfg):
                 "y": [round(float(xyz[1][0]),2), round(float(xyz[1][-1]),2)],
                 "z": [round(float(xyz[2][0]),2), round(float(xyz[2][-1]),2)],
             },
-            "v_ref":          [round(float(v),4) for v in v_ref],
-            "sun_motion_lsr": [round(float(c),2) for c in SUN_MOTION_LSR],
-            "voxel_volume":   round(voxel_volume, 4),
-            # Default-Maskenschwelle (KDE-Massendichte): Startwert des Viewer-
-            # Sliders UND fixe Maske für das Energie-Integral. Die *_min/max
-            # darunter sind über die DEFAULT-Maske gerechnet (Fallback; der
-            # Viewer rechnet Auto-Ranges live über die aktuelle Maske).
-            "mask_level":     float(mask_level),
-            # KDE-Rezept der Massendichte, damit der Viewer sie LIVE neu rechnen
-            # kann (Bandbreite umstellen, nur ausgewählte Sterngruppen gewichten).
-            # `spacing` = Schrittweite des KDE-Auswertegitters (beide Repos:
-            # Feldknoten, origin + k·distances). Der Viewer LIEST sie, statt eine
-            # Konvention zu raten: vor Juli 2026 wertete das Taurus-Repo auf einem
-            # np.mgrid mit inklusiven Enden aus (Schritt shape/(shape-1)·distance),
-            # und der Viewer hatte genau diese Formel fest verdrahtet — bei
-            # Claude-Exporten rechnete er dadurch auf einem um bis zu 5 %
-            # gedehnten Gitter, die Live-KDE wich um das halbe Feld ab.
+            "v_ref":        [round(float(v),4) for v in v_ref],
+            "voxel_volume": round(float(np.prod(BOX_DISTANCES)), 4),
+            # Default-Maskenschwelle: Startwert des Viewer-Sliders UND fixe Maske
+            # für das Energie-Integral. mask_kind sagt, worauf sie sich bezieht
+            # ("mass" = M☉/pc³, "stars" = Sterne/pc³, wenn es keine Massen gibt).
+            "mask_level":   float(mask_level),
+            "mask_kind":    mask_kind,
+            # KDE-Rezept der Dichten, damit der Viewer sie LIVE neu rechnen kann
+            # (Bandbreite, Sterngruppen). `spacing` = Schrittweite des Auswerte-
+            # gitters (Feldknoten) — der Viewer liest sie, statt eine Konvention zu
+            # raten (s. CLAUDE.md, Bugfix Juli 2026).
             "kde": {
                 "smooth":    float(KDE_SMOOTH),
                 "origin":    [float(v) for v in BOX_ORIGIN],
@@ -1002,38 +1037,50 @@ def process_field(cfg):
                 "distances": [float(v) for v in BOX_DISTANCES],
                 "spacing":   _kde_eval_spacing(BOX_SHAPE, BOX_DISTANCES),
             },
-            # Inferierte Amplituden-Spektren des Forward-Modells (Sample-Linien
-            # + Mittel + Slope je Komponente) — None, wenn nicht rekonstruierbar
-            # (der Viewer zeigt dann nur den FFT-Schätzer). S. _model_spectra.
             **({"model_spectra": model_spectra} if model_spectra else {}),
+            # Fallbacks für leere Masken (der Viewer rechnet Auto-Ranges live)
             "curl_min": round(curl_min,5), "curl_max": round(curl_max,5),
             "div_min":  round(div_min,5),  "div_max":  round(div_max,5),
             "std_min":  round(std_min,4),  "std_max":  round(std_max,4),
-            "density_min": round(density_min,6), "density_max": round(density_max,6),
-            "result_name": result_name,
             # Technische Run-Info für das Info-Menü (Taste I) des Viewers:
             # letzter minisanity-Block + der Konfigurations-Dump des Runs.
             "run_info": {
-                "minisanity": _minisanity_tail(result_name),
+                "minisanity": _minisanity_tail(run),
                 "parameters": _params_dump,
                 "parameters_note": _params_note,
             },
-            # Quell-Repo des Runs: "T" = TaurusVelocityField, "C" =
-            # ClaudeVelocityField — der Viewer zeigt "[T] <result_name>".
-            "repo": REPO_TAG,
-            "star_color_fields": [
-                "age", "rv", "pmra", "pmdec", "mass", "mass_err", "extinction", "ruwe",
-                "pmra error", "pmdec error", "rv error",
-                "pmra residual", "pmdec residual", "rv residual",
-                "pmra residual weighted", "pmdec residual weighted",
-                "rv residual weighted", "rv residual eta weighted",
-                "eta", "eta std", "log10 eta",
-                "U", "V", "W", "BP-RP", "G-RP", "abs_g_mag",
-            ],
-        },
-        "voxel_columns": voxel_columns,
-        "real_stars": real_stars,
-    }
+        })
+        # Nur vx/vy/vz + Streuungen gehen mit — Positionen, Indizes, curl/div und
+        # die beiden KDE-Dichten rekonstruiert der Viewer exakt (_hydrateVoxels,
+        # _seedKdeDensities). Reihenfolge C-Order über (ix,iy,iz).
+        voxels = {k: _q16(a) for k, a in
+                  (("vx", vx), ("vy", vy), ("vz", vz),
+                   ("std_x", vx_std), ("std_y", vy_std), ("std_z", vz_std))}
+
+    # ── Sterne als Spalten ───────────────────────────────────────────────────
+    # Ein Array pro Größe statt eines Objekts pro Stern: die ~37 Schlüsselnamen
+    # standen sonst in JEDEM Stern (222 von 373 KB bei test_no_sigma). Leere
+    # Spalten (z. B. eta in der claude-Pipeline, Residuen ohne Feld) entfallen.
+    stars = {"source_id": [_sid(v) for v in source_id]}
+    for k, a in num.items():
+        vals = [_f(v) for v in a]
+        if any(v is not None for v in vals):
+            stars[k] = vals
+    for k, raw in (("name_luhman", name_luhman), ("name_sigma", name_sigma)):
+        if raw is not None:
+            vals = [_cat(v) for v in raw]
+            if any(v is not None for v in vals):
+                stars[k] = vals
+    stars.update(extra)
+    meta["star_color_fields"] = [f for f in STAR_COLOR_FIELDS if f in stars]
+    n_used = sum(extra.get("rv_used", []))
+    print(f"Sterne: {n_st}" + (f",  Inference-verwendet: {n_used}" if run else "")
+          + ("" if has_masses else ",  ohne Massen"))
+
+    out = {"name": name, "meta": meta, "stars": stars}
+    if voxels is not None:
+        out["voxels"] = voxels
+    return out
 
 
 # =============================================================================
@@ -1168,15 +1215,16 @@ if dustmap_object:
 # Felder verarbeiten und JSON zusammenbauen
 # =============================================================================
 
-processed_fields = [process_field(cfg) for cfg in FIELDS]
+datasets = [process_dataset(cfg) for cfg in DATASETS]
+_names = [d["name"] for d in datasets]
+if len(set(_names)) != len(_names):
+    sys.exit(f"DATASETS: Namen müssen eindeutig sein (Viewer-Settings hängen daran): {_names}")
 
-# Aktuell: einzelnes Feld in DATA (Abwärtskompatibel zum Viewer).
-# Für mehrere Felder: data["fields"] = processed_fields, Viewer-Anpassung nötig.
-field = processed_fields[0]
+# Format 2: alle Datensätze + die gemeinsamen Referenz-Objekte. Der Viewer liest
+# zusätzlich das alte flache Format (meta/voxels|voxel_columns/real_stars).
 data = {
-    "meta":              field["meta"],
-    "voxel_columns":     field["voxel_columns"],
-    "real_stars":        field["real_stars"],
+    "format":            2,
+    "datasets":          datasets,
     "reference_objects": reference_objects,
 }
 
@@ -1189,7 +1237,29 @@ if SAVE_JSON:
 # =============================================================================
 # HTML einbetten
 # =============================================================================
-with open(HTML_TEMPLATE, encoding="utf-8") as f: html = f.read()
+
+def _strip_comment_lines(html):
+    """Ganze //-Kommentarzeilen aus dem Haupt-<script> entfernen (~160 KB).
+
+    Sicher, weil nur Zeilen fallen, die mit // BEGINNEN: ein normales JS-String-
+    Literal kann nicht über Zeilen laufen, und in den mehrzeiligen Template-
+    Literalen (GLSL-Shader) sind solche Zeilen ebenfalls Kommentare. Das
+    Template selbst bleibt kommentiert; tests/make_test.py backt mit derselben
+    Funktion, die Tests laufen also auf genau dieser Fassung.
+    """
+    out, in_script = [], False
+    for line in html.split("\n"):
+        t = line.strip()
+        if t == "<script>":
+            in_script = True
+        elif t.startswith("</script>"):
+            in_script = False
+        if in_script and t.startswith("//"):
+            continue
+        out.append(line)
+    return "\n".join(out)
+
+with open(HTML_TEMPLATE, encoding="utf-8") as f: html = _strip_comment_lines(f.read())
 PLACEHOLDER = "/* __EMBEDDED_DATA__ */"
 DATA_BLOCK  = f"const EMBEDDED_DATA = {json_str};"
 if PLACEHOLDER not in html:
@@ -1197,7 +1267,7 @@ if PLACEHOLDER not in html:
 html = html.replace(PLACEHOLDER, DATA_BLOCK)
 if HTML_OUTPUT is not None:   # Batch-Modus (--light-to-runs) schreibt nur die Light-Datei
     with open(HTML_OUTPUT, "w", encoding="utf-8") as f: f.write(html)
-    print(f"Gespeichert: {HTML_OUTPUT}  ({os.path.getsize(HTML_OUTPUT)/1e6:.1f} MB)")
+    print(f"Gespeichert: {HTML_OUTPUT}  ({os.path.getsize(HTML_OUTPUT)/1e6:.2f} MB)")
 
 if SAVE_HTML_LIGHT:
     ro_nd = {k:v for k,v in reference_objects.items() if k!="dustmap"}
@@ -1218,4 +1288,4 @@ if SAVE_HTML_LIGHT:
     js_nd = json.dumps(d_nd, separators=(',',':'))
     html_nd = html.replace(DATA_BLOCK, f"const EMBEDDED_DATA = {js_nd};")
     with open(HTML_OUTPUT_LIGHT, "w", encoding="utf-8") as f: f.write(html_nd)
-    print(f"Gespeichert (ohne Dustmap): {HTML_OUTPUT_LIGHT}  ({os.path.getsize(HTML_OUTPUT_LIGHT)/1e6:.1f} MB)")
+    print(f"Gespeichert: {HTML_OUTPUT_LIGHT}  ({os.path.getsize(HTML_OUTPUT_LIGHT)/1e6:.2f} MB)")

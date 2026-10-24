@@ -63,23 +63,43 @@
   astrometry and radial velocities using Bayesian information field theory (NIFTy).
   Runs entirely in the browser — no installation, nothing is uploaded.</p>
 
-  <div class="cards">
-    <a class="card" href="Runs/test_no_sigma_full.html">
-      <h2>Full version →</h2>
-      <div class="badge">recommended on desktop</div>
-      <p>Everything: the velocity field and the stellar sample. Additionally the Edenhofer 3D dust map
-      and a model of the Local Bubble surface.</p>
-      <div class="meta">12 MB file</div>
-    </a>
+  <section style="margin-top:0">
+    <h3>Current version</h3>
+    <div class="cards">
+      <a class="card" href="vectorfield_viewer_data.html">
+        <h2>Continued work →</h2>
+        <div class="badge">updated after the thesis</div>
+        <p>The viewer as it develops further, with every feature: several regions in one file — a
+        switcher at the top of the menu selects the region the settings apply to — and regions with
+        stars only. Includes the 3D dust map of Edenhofer et al. (2024) for comparison and the Local
+        Bubble surface at full detail. Currently Taurus; further regions follow.</p>
+        <div class="meta">11 MB file</div>
+      </a>
+    </div>
+  </section>
 
+  <section>
+  <h3>Thesis version</h3>
+  <p style="margin:0 0 .9rem;color:var(--text2);font-size:.92rem;">
+    The run and viewer as shown in the bachelor's thesis, kept unchanged.</p>
+  <div class="cards">
     <a class="card" href="Runs/test_no_sigma_light.html">
-      <h2>Light version →</h2>
-      <div class="badge">faster to load</div>
-      <p>Same field and stellar data, but without the dust map and with less detail of the
-      Local Bubble surface which essentially are not important for the rest of the analysis.</p>
+      <h2>Compact →</h2>
+      <div class="badge">recommended</div>
+      <p>The reconstructed velocity field and the stellar sample — everything the thesis
+      analyses. The Local Bubble surface comes at reduced detail.</p>
       <div class="meta">2 MB file</div>
     </a>
+
+    <a class="card" href="Runs/test_no_sigma_full.html">
+      <h2>Compact + dust map →</h2>
+      <div class="badge">external data for comparison</div>
+      <p>The same viewer, plus the 3D dust map of Edenhofer et al. (2024) to compare the
+      reconstruction with the dust distribution, and the Local Bubble surface at full detail.</p>
+      <div class="meta">12 MB file</div>
+    </a>
   </div>
+  </section>
 
   <section>
     <h3>Features</h3>
@@ -93,13 +113,15 @@
           colour–magnitude diagrams, power spectra.</li>
       <li><b>Export</b> — screenshots and videos.</li>
     </ul>
+    <p style="margin:.4rem 0 0;color:var(--text2);font-size:.82rem;">
+      Press <b>H</b> or <b>?</b> inside the viewer for an overview of the controls and keyboard shortcuts.</p>
   </section>
 
   <section>
-    <h3>Other runs</h3>
+    <h3>Other runs (thesis snapshots)</h3>
     <p style="margin:0 0 .9rem;color:var(--text2);font-size:.92rem;">
-      The same viewer with a different reconstruction embedded, as light versions. Press <b>I</b> inside any of them
-      for its exact parameters and convergence record.</p>
+      The thesis viewer with a different reconstruction embedded, in the compact version, kept as they were at the
+      time of the thesis. Press <b>I</b> inside any of them for its exact parameters and convergence record.</p>
     <div class="runs">
 
       <div class="run">
