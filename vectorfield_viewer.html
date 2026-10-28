@@ -859,8 +859,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
             title="Continuous volume, raymarched like the dust map: the colour follows the density along each ray, no point structure">Volume</button>
           <button class="tog" id="tog-cloudr-points" onclick="setCloudRender('points')"
             title="One soft glowing sprite per grid voxel (the original look)">Points</button>
-          <button class="tog on" id="tog-cloud-cover" onclick="toggleCloudCover()" style="margin-left:auto;"
-            title="Volume drawn in front of the grid box and the axes: it hides what lies behind it instead of only glowing on top (off = axes stay visible through the cloud)">Over axes</button>
         </div>
       </div>
       <div class="slider-row" style="gap:6px;margin-bottom:2px;">
@@ -963,7 +961,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
           <span class="slider-val" id="sv-dustGamma">2.50</span>
         </div>
         <!-- slice (Oct 2026): only a slab of the dust map is drawn — axis, centre, width -->
-        <div class="slider-row" style="margin-top:6px;gap:5px;">
+        <div class="slider-row" style="margin-top:12px;gap:5px;">
           <label style="font-size:8px;color:var(--text3);width:100px;" title="Show only a slab of the dust map, perpendicular to the chosen axis; everything outside it is hidden.">Slice</label>
           <div class="toggle-row" style="flex:1;">
             <button class="tog" id="tog-dust-slice" onclick="toggleDustSlice()" title="Show only a slab of the dust map">Off</button>
@@ -989,7 +987,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
           <span class="slider-val" id="sv-dustSweepSpeed">40 pc/s</span>
         </div>
         <div class="toggle-row dust-slice-row" style="margin-top:4px;display:none;">
-          <button class="tog" id="dust-slice-sweep" onclick="toggleDustSweep()" title="Sweep: move the slab from its position up to the end of the axis, down to the other end and back (once). Click again to stop where it is. To record it: ⬇ → Video → Live.">▶ Sweep</button>
+          <button class="tog" id="dust-slice-sweep" onclick="toggleDustSweep()" title="Sweep: move the slab from its position up to the end of the axis, down to the other end and back — again and again until you click Stop, which halts it where it is. To record it: ⬇ → Video → Live.">▶ Sweep</button>
         </div>
       </div>
     </div>
@@ -1675,7 +1673,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
           <tr><td>Grid</td><td>The bounding box wireframe.</td></tr>
           <tr><td>Axes</td><td>Labelled X/Y/Z axes with ticks.</td></tr>
           <tr><td>Stars</td><td>The real stars (opens the Stars section).</td></tr>
-          <tr><td>Density Cloud</td><td>Glowing cloud of the stellar mass (or kinetic energy) density. <em>Render as</em>: <em>Volume</em> draws it as a continuous cloud (raymarched like the dust map, colour from the colormap along each ray), <em>Points</em> as one soft sprite per voxel. <em>Over axes</em> (volume) draws the cloud in front of the grid box and the axes, so they no longer show through it. <em>Strength</em> brightens the faint outskirts (and grows the points); <em>Intensity</em> is a gain on the alpha / density, not a 0–100 % opacity.</td></tr>
+          <tr><td>Density Cloud</td><td>Glowing cloud of the stellar mass (or kinetic energy) density. <em>Render as</em>: <em>Volume</em> draws it as a continuous cloud (raymarched like the dust map, colour from the colormap along each ray), <em>Points</em> as one soft sprite per voxel. The volume (like the dust map) ends at solid objects: axes, arrows and stars in front of it stay visible, those behind it lie in the haze. <em>Strength</em> brightens the faint outskirts (and grows the points); <em>Intensity</em> is a gain on the alpha / density, not a 0–100 % opacity.</td></tr>
           <tr><td>Objects</td><td>Literature objects around Taurus (see <em>Reference Objects</em> at the end).</td></tr>
           <tr><td>Aa</td><td>Button in the header: interface size (menu, windows, popups). <em>Auto</em> enlarges the interface on screens with few pixels per inch (e.g. a large monitor at 100 % scaling), where the small text would otherwise look pixelated; click steps through 100–200 %, Shift+click goes back. Works like the browser's own zoom (Ctrl +), which can be used instead.</td></tr>
           <tr><td>Style</td><td>Button in the header: colour presets for the 3D view, each shown with a preview of its colours. A preset sets the <em>background</em>, the three <em>axis colours</em> (and their labels), the <em>grid box</em>, the <em>label text</em> and the light/dark tint of the interface — nothing else; colormaps, star colours and the 2D plot windows keep their own settings. Screenshots and videos come out as shown.</td></tr>
@@ -1802,7 +1800,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:8px;height
           <tr><td>Per-Tau Shell</td><td>A spherical shell (radius ~78 pc) between Perseus and Taurus.</td></tr>
           <tr><td>Orion-Eridanus</td><td>A rough stand-in ellipsoid for the superbubble — illustrative shape only, no agreed geometry exists.</td></tr>
           <tr><td>Local Bubble</td><td>The irregular dust-traced cavity around the Sun. The detail slider picks its resolution.</td></tr>
-          <tr><td>Dust map</td><td>Local 3D dust density around the Sun, volume-rendered as a soft cloud (raymarched). <em>Opacity</em> scales the overall density on a logarithmic scale (0.001–1; most views want the lower half), <em>threshold</em> hides the faint diffuse dust so only the clouds remain, <em>contrast</em> shifts weight between cores and outskirts. <em>Slice</em> shows only a slab of it: pick the axis (X/Y/Z) the slab is perpendicular to, its <em>position</em> along that axis (heliocentric pc; starts at the centre of the field grid, also after switching the axis) and its <em>width</em>; a thin outline marks the slab (<em>Border</em> switches it off). <em>▶ Sweep</em> (under <em>Sweep speed</em>, in pc/s) moves the slab once from its position up the axis, down to the other end and back; <em>■ Stop</em> halts it where it is. To record it: ⬇ → Video → Live. A thin slab holds little dust — raise the opacity.</td></tr>
+          <tr><td>Dust map</td><td>Local 3D dust density around the Sun, volume-rendered as a soft cloud (raymarched); it ends at solid objects — axes, arrows and stars in front of the dust stay visible, those behind it lie in the haze. <em>Opacity</em> scales the overall density on a logarithmic scale (0.001–1; most views want the lower half), <em>threshold</em> hides the faint diffuse dust so only the clouds remain, <em>contrast</em> shifts weight between cores and outskirts. <em>Slice</em> shows only a slab of it: pick the axis (X/Y/Z) the slab is perpendicular to, its <em>position</em> along that axis (heliocentric pc; starts at the centre of the field grid, also after switching the axis) and its <em>width</em>; a thin outline marks the slab (<em>Border</em> switches it off). <em>▶ Sweep</em> (under <em>Sweep speed</em>, in pc/s) moves the slab from its position up the axis, down to the other end and back, over and over; <em>■ Stop</em> halts it where it is. To record it: ⬇ → Video → Live. A thin slab holds little dust — raise the opacity.</td></tr>
         </table>
       </div>
 
@@ -1889,8 +1887,6 @@ let cloudColormap = 'plasma';
 let cloudField = 'density';  // 'density' | 'energy_density'
 // 'volume' = raymarched like the dust map (Oct 2026), 'points' = glow sprites
 let cloudRender = 'volume';
-// volume only: drawn after (= over) grid box + axes, absorbing what lies behind
-let cloudCoverAxes = true;
 let starsVisible = false;
 // Star display mode, cycled by ONE button (cycleStarVectorMode): 'dots' = plain
 // dots coloured by the "Color by" field; 'uvw' = full 3D U/V/W velocity vectors
@@ -2017,6 +2013,7 @@ function adoptCbFilterRange(layer){
 let objParams = { shellPoints:1200, dustOpacity:0.05, lbubbleLevelIdx:99, dustGamma:2.5, dustCut:0, labelScale:1.0,
                   dustSliceOn:false, dustSliceAxis:'z', dustSlicePos:null, dustSliceWidth:50,   // pos null = field centre
                   dustSliceBorder:true, dustSweepSpeed:40 };   // pc/s of the ▶ slice sweep
+let _volMeshes = new Set();   // raymarched volume meshes (dust, volume cloud) → renderScene depth pass; TDZ: animate()
 let _liveRec = null;     // running live video recording (startLiveRecording); TDZ: animate()
 let _dustSweep = null;   // running ▶ slice sweep {t0, c0, a, b, len} (a/b = lowest/highest centre); TDZ: animate()
 const fmtLabelScale = s => s.toFixed(1)+'×';   // object-label size slider (linear 1×–5×)
@@ -2441,6 +2438,78 @@ canvas.addEventListener('wheel', e => {
   camUpdate();
 }, {passive:true});
 
+// ── Depth-correct volumes (Oct 2026) ───────────────────────────────────────
+// The raymarched volumes (dust map, volume cloud) end at the first solid
+// object: before the normal render, a DEPTH PREPASS draws the opaque scene into
+// _depthRT (depth texture, drawing-buffer size) and each volume shader stops
+// its ray at that depth (uDepth). Prepass skips the volumes themselves and
+// everything that writes no depth (glows, sprites/labels, outlines) — those
+// must not cut holes into the dust. Everything else is drawn with ITS OWN
+// material, only colorWrite switched off for the pass (render state, no
+// recompile): so the shell / Local-Bubble points enter the depth at their
+// visible size (an override material would make them 1-px dots, a sieve) and
+// instanced meshes keep their instancing. The main render stays untouched
+// (canvas MSAA kept). Without a visible volume renderScene() = plain render.
+// Volumes register themselves in _volMeshes (STATE block — animate() runs
+// during the parse, before the builders' lets exist).
+let _depthRT = null;
+const _dbSize = new THREE.Vector2(), _camFwd = new THREE.Vector3();
+function _shownInScene(o){ for(; o; o = o.parent){ if(!o.visible) return false; if(o === scene) return true; } return false; }
+function renderScene(){
+  const vols = [];
+  _volMeshes.forEach(m => { if(!m.parent) _volMeshes.delete(m); else if(_shownInScene(m)) vols.push(m); });
+  if(vols.length && renderer.capabilities.isWebGL2){
+    renderer.getDrawingBufferSize(_dbSize);
+    const w = Math.max(1, _dbSize.x|0), h = Math.max(1, _dbSize.y|0);
+    if(!_depthRT){
+      const dt = new THREE.DepthTexture(w, h);
+      dt.type = THREE.UnsignedIntType;
+      _depthRT = new THREE.WebGLRenderTarget(w, h, { depthTexture: dt, depthBuffer: true });
+    } else if(_depthRT.width !== w || _depthRT.height !== h) _depthRT.setSize(w, h);
+    const hidden = [], muted = new Map();   // material → its colorWrite
+    scene.traverseVisible(o => {
+      if(!o.material) return;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      if(_volMeshes.has(o) || o.isSprite || mats.some(m => m.depthWrite === false)) hidden.push(o);
+      else mats.forEach(m => { if(!muted.has(m)) muted.set(m, m.colorWrite); });
+    });
+    hidden.forEach(o => { o.visible = false; });
+    muted.forEach((cw, m) => { m.colorWrite = false; });
+    const prevTarget = renderer.getRenderTarget();
+    renderer.setRenderTarget(_depthRT);
+    renderer.clear(true, true, true);
+    try { renderer.render(scene, camera); }
+    finally {
+      renderer.setRenderTarget(prevTarget);
+      muted.forEach((cw, m) => { m.colorWrite = cw; });
+      hidden.forEach(o => { o.visible = true; });
+    }
+    camera.getWorldDirection(_camFwd);
+    vols.forEach(m => { const u = m.material.uniforms;
+      u.uDepth.value = _depthRT.depthTexture; u.uUseDepth.value = 1.0;
+      u.uRes.value.set(w, h); u.uNear.value = camera.near; u.uFar.value = camera.far; u.uCamFwd.value.copy(_camFwd); });
+  } else _volMeshes.forEach(m => { m.material.uniforms.uUseDepth.value = 0.0; });
+  renderer.render(scene, camera);
+}
+// uniforms + GLSL shared by both volume shaders (depth stop + premultiplied out)
+function _volDepthUniforms(){
+  return { uDepth:{value:null}, uUseDepth:{value:0.0}, uRes:{value:new THREE.Vector2(1,1)},
+           uNear:{value:0.1}, uFar:{value:10000}, uCamFwd:{value:new THREE.Vector3(0,0,-1)} };
+}
+const VOL_DEPTH_GLSL = `
+      uniform sampler2D uDepth;
+      uniform float uUseDepth, uNear, uFar;
+      uniform vec2 uRes;
+      uniform vec3 uCamFwd;
+      // distance along the (unit) view ray to the first solid object, or 1e30
+      float volDepthStop(vec3 dir){
+        if(uUseDepth < 0.5) return 1e30;
+        float d = texture(uDepth, gl_FragCoord.xy / uRes).r;
+        if(d >= 1.0) return 1e30;
+        float viewZ = 2.0 * uNear * uFar / (uFar + uNear - (2.0*d - 1.0) * (uFar - uNear));
+        return viewZ / max(dot(dir, uCamFwd), 1e-4);
+      }`;
+
 // ── interface size (see uiScale) ──────────────────────────────────────────
 function _bcr(el){
   const r = el.getBoundingClientRect();
@@ -2528,7 +2597,7 @@ function animate(){
   // matrix/color updates while invisible.
   if(DATA) forEachDataset(() => { if(streamMode==='animated' && vis.streams && hasField()) tickParticles(dt); });
   if(_dustSweep) _tickDustSweep(now);
-  renderer.render(scene,camera);
+  renderScene();
   if(_liveRec) _liveRecFrame(now);   // grab what was just rendered
 }
 
@@ -2735,7 +2804,7 @@ function _extentFromStars(stars){
 // DS_RUNTIME = caches, meshes and scratch of one set's layers. Everything not
 // listed (objects, camera, 3D style, plot windows, custom groups) is shared.
 const DS_SET = ('maskLevel maskDensityKind maskLevelStars maskLevelMass maskKdeFactor _kdeFactorRestored ' +
-  'maskUseGroups cloudColormap cloudField cloudRender cloudCoverAxes starsVisible starVectorMode starVectorGlyph refFrameMode ' +
+  'maskUseGroups cloudColormap cloudField cloudRender starsVisible starVectorMode starVectorGlyph refFrameMode ' +
   'arrowField arrowComponent fieldVectorGlyph fieldScalarGlyph streamMode starColorField ' +
   'starDisplayMask starColorSel starColorClipGray starShowNoData starGroupField uniformStarColor ' +
   'activeColormap streamColormap starColormap _starCbAx').split(' ');
@@ -4632,10 +4701,11 @@ function setDustSlice(which, v, el){
   debounce('saveSettings', saveSettings, 400);
 }
 // ▶ sweep: the slab centre runs from where it is up to the top of the axis,
-// down to the bottom and back to the start — once, at dustSweepSpeed pc/s.
+// down to the bottom and back to the start — repeated until ■ Stop, at
+// dustSweepSpeed pc/s.
 // The centre stays within [lo + w/2, hi − w/2], so the slab is never cut off
 // at the ends. Ticked from animate() (time-based); per frame only the uniforms,
-// the outline and the labels change, the save happens once at the end.
+// the outline and the labels change, the save happens on stop.
 // _dustSweep lives in the STATE block (animate() reads it from its first, synchronous call)
 // centre along the sweep path after s pc: c0 → b → a → c0
 function _dustSweepPos(sw, s){
@@ -4666,9 +4736,8 @@ function _syncDustSweepBtn(){
 function _tickDustSweep(now){
   const sw = _dustSweep;
   const s = (now - sw.t0) / 1000 * (objParams.dustSweepSpeed || 40);
-  objParams.dustSlicePos = _dustSweepPos(sw, Math.min(s, sw.len));
+  objParams.dustSlicePos = _dustSweepPos(sw, s % sw.len);   // endless: one cycle = len, until ■ Stop
   _syncDustSliceUI(); _applyDustSlice();
-  if(s >= sw.len) stopDustSweep();
 }
 // speed changes mid-sweep keep the slab where it is (re-anchor the clock)
 function setDustSweepSpeed(v){
@@ -4762,7 +4831,7 @@ function buildDustCloud(){
       uBoxMin:{value:boxMin}, uBoxMax:{value:boxMax},
       uClipMin:{value:boxMin.clone()}, uClipMax:{value:boxMax.clone()},   // = box, or the slice slab
       uStep:{value:Math.min(spacing[0],spacing[1],spacing[2])},
-      uAdditive:{value: bl===THREE.AdditiveBlending ? 1.0 : 0.0},
+      ..._volDepthUniforms(),
     },
     vertexShader:`
       varying vec3 vWorld;
@@ -4776,7 +4845,8 @@ function buildDustCloud(){
       varying vec3 vWorld;
       uniform sampler3D uTex;
       uniform vec3 uColor, uBoxMin, uBoxMax, uClipMin, uClipMax;
-      uniform float uOpacity, uGamma, uCut, uStep, uAdditive;
+      uniform float uOpacity, uGamma, uCut, uStep;
+      ${VOL_DEPTH_GLSL}
       void main(){
         vec3 dir = normalize(vWorld - cameraPosition);
         // slab intersection of the view ray with the CLIPPED box (= the volume
@@ -4786,7 +4856,7 @@ function buildDustCloud(){
         vec3 tb = (uClipMax - cameraPosition) * inv;
         vec3 tmin = min(ta, tb), tmax = max(ta, tb);
         float t0 = max(max(tmin.x, tmin.y), max(tmin.z, 0.0));  // 0 = camera inside
-        float t1 = min(min(tmax.x, tmax.y), tmax.z);
+        float t1 = min(min(min(tmax.x, tmax.y), tmax.z), volDepthStop(dir));   // stop at solid objects
         if(t1 <= t0) discard;
         // one voxel per step, capped at 160 samples per ray; dither the start
         // by a fraction of a step to break up slab banding
@@ -4812,22 +4882,24 @@ function buildDustCloud(){
         }
         float alpha = 1.0 - T;
         if(alpha < 0.003) discard;
-        // additive: the accumulated emission IS the contribution;
-        // normal (light styles): classic src-over with the same intensity
-        if(uAdditive > 0.5) fragColor = vec4(uColor * acc, 1.0);
-        else fragColor = vec4(uColor * (acc / max(alpha, 1e-4)), alpha);
+        // premultiplied src-over (both styles): emits uColor·acc, absorbs (1−alpha)
+        // of what lies behind — over a black background the old additive look
+        fragColor = vec4(uColor * acc, alpha);
       }`,
-    // depthTest OFF: the volume box encloses the whole scene (Taurus box,
-    // stars, …); with BackSide fragments its depth would be the FAR wall, and
-    // any opaque object inside the box would punch a black hole into the dust.
+    // depthTest OFF: the volume box encloses the whole scene; occlusion comes
+    // from the depth prepass instead (volDepthStop), drawn after everything
+    // else (G.dust renderOrder 250) so it can absorb what lies behind it
     transparent:true, depthWrite:false, depthTest:false,
-    side:THREE.BackSide, blending: bl,
+    side:THREE.BackSide, blending: THREE.CustomBlending, blendEquation: THREE.AddEquation,
+    blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
   });
   const geo = new THREE.BoxGeometry(boxMax.x-boxMin.x, boxMax.y-boxMin.y, boxMax.z-boxMin.z);
   dustVolume = new THREE.Mesh(geo, mat);
   dustVolume.position.set((boxMin.x+boxMax.x)/2, (boxMin.y+boxMax.y)/2, (boxMin.z+boxMax.z)/2);
   dustVolume.frustumCulled = false;   // BackSide box must survive camera-inside views
   G.dust.add(dustVolume);
+  _volMeshes.add(dustVolume);
+  G.dust.renderOrder = 250;   // after box (100) + axes (200): premultiplied-over needs them drawn
   dustSliceOutline = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)),
     new THREE.LineBasicMaterial({ color:col, transparent:true, opacity:0.45, depthWrite:false }));
   dustSliceOutline.frustumCulled = false;
@@ -5232,31 +5304,14 @@ function setCloudRender(m){
 }
 function _syncCloudRenderBtns(){
   ['volume','points'].forEach(k => document.getElementById('tog-cloudr-'+k)?.classList.toggle('on', k === cloudRender));
-  const cv = document.getElementById('tog-cloud-cover');
-  if(cv){ cv.classList.toggle('on', cloudCoverAxes); cv.style.display = cloudRender === 'volume' ? '' : 'none'; }
 }
-function toggleCloudCover(){
-  cloudCoverAxes = !cloudCoverAxes;
-  _syncCloudRenderBtns();
-  _applyCloudBlend();
-  saveSettings();
-}
-// "Over axes" (cloudCoverAxes, volume only): the cloud group is drawn AFTER the
-// box (100) and the axes (200) — renderOrder 250 — and composited
-// premultiplied-over (ONE, ONE_MINUS_SRC_ALPHA) in BOTH styles, so it absorbs
-// what lies behind it; over the black background that looks exactly like the
-// additive glow. Off, and for the points: the old order (3) + glowBlending().
-// Blending/uniforms only — no program change, so cheap on every rebuild.
+// Volume look: drawn after box (100) + axes (200) — renderOrder 250 — since it
+// composites premultiplied-over and stops at solid objects (depth prepass, see
+// renderScene). Points: the old order (3) and the style's glowBlending().
 function _applyCloudBlend(){
-  const cover = !!(cloudPoints && cloudPoints.isMesh && cloudCoverAxes);
-  G.cloud.renderOrder = cover ? 250 : DS_GROUPS.cloud;
-  if(!cloudPoints) return;
-  const m = cloudPoints.material, u = m.uniforms, bl = glowBlending();
-  if(cover){ m.blending = THREE.CustomBlending; m.blendEquation = THREE.AddEquation;
-             m.blendSrc = THREE.OneFactor; m.blendDst = THREE.OneMinusSrcAlphaFactor; }
-  else m.blending = bl;
-  if(u.uAdditive) u.uAdditive.value = (!cover && bl === THREE.AdditiveBlending) ? 1.0 : 0.0;
-  if(u.uPremul) u.uPremul.value = cover ? 1.0 : 0.0;
+  const vol = !!(cloudPoints && cloudPoints.isMesh);
+  G.cloud.renderOrder = vol ? 250 : DS_GROUPS.cloud;
+  if(cloudPoints && !vol) cloudPoints.material.blending = glowBlending();
 }
 // Volume look (Oct 2026): instead of one sprite per voxel, the field grid
 // becomes a 3D texture and a raymarcher like the dust map's integrates it —
@@ -5310,14 +5365,13 @@ function _cloudVolumeMesh(){
   const boxMin = new THREE.Vector3(ext.x[0]-sp[0]/2, ext.y[0]-sp[1]/2, ext.z[0]-sp[2]/2);
   const boxMax = new THREE.Vector3(ext.x[1]+sp[0]/2, ext.y[1]+sp[1]/2, ext.z[1]+sp[2]/2);
   const step = Math.min(sp[0], sp[1], sp[2]);
-  const bl = glowBlending();
   const mat = new THREE.ShaderMaterial({
     glslVersion: THREE.GLSL3,
     uniforms:{
       uTex:{value:tex}, uCmap:{value:cmap},
       uOpacity:{value:params.cloudAlpha}, uSigma:{value:CLOUD_SIGMA/step},
       uBoxMin:{value:boxMin}, uBoxMax:{value:boxMax}, uStep:{value:step},
-      uAdditive:{value: bl===THREE.AdditiveBlending ? 1.0 : 0.0}, uPremul:{value:0.0},
+      ..._volDepthUniforms(),
     },
     vertexShader:`
       varying vec3 vWorld;
@@ -5332,7 +5386,8 @@ function _cloudVolumeMesh(){
       uniform sampler3D uTex;
       uniform sampler2D uCmap;
       uniform vec3 uBoxMin, uBoxMax;
-      uniform float uOpacity, uSigma, uStep, uAdditive, uPremul;
+      uniform float uOpacity, uSigma, uStep;
+      ${VOL_DEPTH_GLSL}
       void main(){
         vec3 dir = normalize(vWorld - cameraPosition);
         vec3 inv = 1.0 / dir;
@@ -5340,7 +5395,7 @@ function _cloudVolumeMesh(){
         vec3 tb = (uBoxMax - cameraPosition) * inv;
         vec3 tmin = min(ta, tb), tmax = max(ta, tb);
         float t0 = max(max(tmin.x, tmin.y), max(tmin.z, 0.0));
-        float t1 = min(min(tmax.x, tmax.y), tmax.z);
+        float t1 = min(min(min(tmax.x, tmax.y), tmax.z), volDepthStop(dir));   // stop at solid objects
         if(t1 <= t0) discard;
         // half a voxel per step (the grid is coarse), ≤256 samples, dithered start
         float dt = max(0.5 * uStep, (t1 - t0) / 256.0);
@@ -5363,15 +5418,13 @@ function _cloudVolumeMesh(){
         }
         float alpha = 1.0 - T;
         if(alpha < 0.003) discard;
-        // premultiplied (Over axes) / additive (dark) / straight alpha (light)
-        if(uPremul > 0.5) fragColor = vec4(acc, alpha);
-        else if(uAdditive > 0.5) fragColor = vec4(acc, 1.0);
-        else fragColor = vec4(acc / max(alpha, 1e-4), alpha);
+        fragColor = vec4(acc, alpha);   // premultiplied src-over, see the dust volume
       }`,
-    // same compositing trade-off as the dust volume: no depth test (BackSide
-    // fragments sit on the far wall), so the cloud glows over objects inside
+    // same compositing as the dust volume: no depth test (BackSide fragments sit
+    // on the far wall) — the depth prepass stops the rays instead
     transparent:true, depthWrite:false, depthTest:false,
-    side:THREE.BackSide, blending: bl,
+    side:THREE.BackSide, blending: THREE.CustomBlending, blendEquation: THREE.AddEquation,
+    blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
   });
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(boxMax.x-boxMin.x, boxMax.y-boxMin.y, boxMax.z-boxMin.z), mat);
   mesh.position.set((boxMin.x+boxMax.x)/2, (boxMin.y+boxMax.y)/2, (boxMin.z+boxMax.z)/2);
@@ -5412,7 +5465,7 @@ function buildCloud(){
   const dspan = (dmax - dmin) || 1;
   if(wantVol){
     const strength = params.cloudStrength || 1;
-    if(!cloudPoints){ cloudPoints = _cloudVolumeMesh(); G.cloud.add(cloudPoints); }
+    if(!cloudPoints){ cloudPoints = _cloudVolumeMesh(); G.cloud.add(cloudPoints); _volMeshes.add(cloudPoints); }
     const u = cloudPoints.material.uniforms;
     _fillCloudVolume(u.uTex.value, def, dmin, dspan, Math.min(3, Math.max(0.15, 0.6 / strength)));
     _fillCloudCmap(u.uCmap.value);
@@ -7377,9 +7430,7 @@ function setViewerStyle(id){
   // millions of points, so update their materials without a geometry rebuild;
   // the glow sprites live in G.objects, which is cheap to rebuild.
   const bl = glowBlending();
-  if(dustVolume){  dustVolume.material.blending  = bl;
-    dustVolume.material.uniforms.uAdditive.value = (bl===THREE.AdditiveBlending) ? 1.0 : 0.0;
-    dustVolume.material.needsUpdate = true; }
+  // (the volumes composite premultiplied-over in every style — nothing to swap)
   // axes/box carry the style's colours, the labels its text colour; the colorbar
   // KDE strips are tinted with the theme accent (buildStars refreshes the star one)
   forEachDataset(() => {
@@ -7896,7 +7947,6 @@ const SETTINGS_TABLE = [
   { key:'streamColormap', ds:true, get:()=>streamColormap,      set:v=>{ if(v){ streamColormap = v; _selSync('colormap-stream', v); } } },
   { key:'starColormap', ds:true,   get:()=>starColormap,        set:v=>{ if(v){ starColormap   = v; _selSync('colormap-star', v); } } },
   { key:'cloudColormap', ds:true,  get:()=>cloudColormap,       set:v=>{ if(v){ cloudColormap  = v; _selSync('colormap-cloud', v); } } },
-  { key:'cloudCoverAxes', ds:true, get:()=>cloudCoverAxes,      set:v=>{ cloudCoverAxes = v !== false; _syncCloudRenderBtns(); } },
   { key:'cloudRender', ds:true,    get:()=>cloudRender,         set:v=>{ if(v === 'volume' || v === 'points'){ cloudRender = v; _syncCloudRenderBtns(); } } },
   { key:'cloudField', ds:true,     get:()=>cloudField,          set:v=>{ if(v){ cloudField     = v; _selSync('cloud-field-select', v); } } },
   { key:'streamExtent', ds:true,   get:()=>params.streamExtent, set:v=>{
@@ -11810,7 +11860,7 @@ function recordRotationVideo(){
       camPhi = startPhi + t * Math.PI * 2;
     }
     camUpdate();
-    renderer.render(scene, camera);
+    renderScene();
     if(useComposite){
       compositeColorbarsOnto(compCtx, canvas, selectedBars);
       if(videoTrack && videoTrack.requestFrame) videoTrack.requestFrame();
@@ -12113,13 +12163,13 @@ function applyExportSize(size){
   renderer.setSize(size.width, size.height, false);   // false = don't touch CSS size
   camera.aspect = size.width / size.height;
   camera.updateProjectionMatrix();
-  renderer.render(scene, camera);
+  renderScene();
   return () => {
     renderer.setPixelRatio(prevRatio);
     renderer.setSize(prevW, prevH, false);
     camera.aspect = prevAspect;
     camera.updateProjectionMatrix();
-    renderer.render(scene, camera);
+    renderScene();
   };
 }
 
@@ -12128,7 +12178,7 @@ function downloadScreenshot(){
   const restore = applyExportSize(exportSize);   // renders one frame at the target size
   let sourceCanvas = canvas, selectedBars = [];
   try {
-    if(!exportSize) renderer.render(scene, camera); // current-size path still needs a fresh frame
+    if(!exportSize) renderScene(); // current-size path still needs a fresh frame
     selectedBars = getSelectedColorbars();
     closeScreenshotModal();
 

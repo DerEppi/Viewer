@@ -127,6 +127,25 @@ GELÖSCHT — nur die gebackenen `vectorfield_viewer_data*.html` im Taurus-Repo 
 - Diese Doc aktuell halten; überholte Abschnitte löschen (der Index `../.claude/CLAUDE.md` lädt
   in jede Session und verweist hierher — bei Viewer-Arbeit diese Datei zuerst LESEN).
 
+## Tiefenkorrekte Volumen (Dust + Volume-Cloud, Okt 2026 — Default, KEIN Toggle)
+Volumen enden am ersten festen Objekt. **`renderScene()` ersetzt JEDES
+`renderer.render(scene,camera)`** (auch in der Harness!). Ist ein registriertes Volumen
+(`_volMeshes`, STATE-Block — animate-TDZ) sichtbar: Tiefen-PREPASS in `_depthRT`
+(DepthTexture, Drawing-Buffer-Größe, folgt applyExportSize): jedes Objekt mit SEINEM
+Material, nur `colorWrite=false` für den Pass (Render-State, kein Recompile; danach exakt
+restauriert, auch im finally). KEIN overrideMaterial — damit gehen die Shell-/Local-Bubble-
+PUNKTE in ihrer sichtbaren Größe in die Tiefe ein (Override = 1-px-Sieb) und liegen auch
+gegenüber dem Staub korrekt vor/hinter ihm. Ausgeblendet werden nur Volumen, Sprites und alles
+mit `depthWrite:false` (Glows/Labels/Cloud-Sprites/Partikel/Slice-Rahmen). Der Haupt-
+Render bleibt unverändert (Canvas-MSAA bleibt). Shader: `VOL_DEPTH_GLSL`/`volDepthStop(dir)`
+linearisiert die Tiefe (uNear/uFar/uCamFwd/uRes) → `t1 = min(t1, tHit)`; Uniforms aus
+`_volDepthUniforms()`. Compositing IMMER premultiplied-over (Custom ONE/ONE_MINUS_SRC_ALPHA,
+`vec4(color·acc, alpha)`) in allen Styles, Gruppen-renderOrder 250 (nach Box/Achsen) → der
+Staub absorbiert, was dahinter liegt (vor hellem Hintergrund dunkelt er also ab — gewollt).
+„Over axes" gibt es nicht mehr. Kein Volumen sichtbar → plain render, `uUseDepth=0`.
+Tests: phase 1 (Pass/Restore inkl. colorWrite/RT-Größe), phase 9 (weißes Quad UND
+Points-Objekt VOR dem Staub = unverändert, DAHINTER absorbiert).
+
 ## Koordinatensystem & Three.js
 Heliozentrisch galaktisch-kartesisch (x,y,z in pc), Sonne bei (0,0,0), Taurus-Box im Zentrum.
 **Three.js r128** — OrbitControls & CapsuleGeometry nicht verfügbar, kein ES-Module-Import
@@ -245,14 +264,7 @@ energy_density live), `buildArrows()`, `buildStreamlines()`, `buildStars()`.
   Schritt → Strength-Slider ruckelte (jetzt ~1.5 ms). Strength ist rAF-koalesziert
   (`_scheduleCloudRebuild`/`_cloudRafId`, in `_flushDeferred`). Ohne WebGL2 → Points.
   **Allgemein: ShaderMaterials in Live-Pfaden nie pro Event neu bauen.**
-  **„Over axes"** (`cloudCoverAxes`, per Satz, Default an, nur Volume): `_applyCloudBlend()`
-  setzt die Cloud-GRUPPE auf renderOrder 250 (> Box 100/Achsen 200 — in r128 zählt die
-  Gruppen-renderOrder vor der des Objekts) und premultiplied-over-Blending (Custom ONE /
-  ONE_MINUS_SRC_ALPHA, Shader-Uniform `uPremul`) in BEIDEN Styles → die Wolke absorbiert
-  Box/Achsen dahinter; über schwarzem Grund identisch zum additiven Glow. Ohne Depth-Test
-  verdeckt sie Achsenstücke VOR der Wolke genauso (gleicher Trade-off wie Dust). Aus/Points:
-  renderOrder 3 + `glowBlending()`. Läuft bei jedem Build und im Style-Swap (nur
-  Blending/Uniforms, kein Programmwechsel).
+  Compositing/Tiefe: s. „Tiefenkorrekte Volumen"; Points behalten renderOrder 3 + glowBlending.
 - Density-Cloud: EIN `cloudStrength`-Slider (ersetzt Point size/Glow gamma/Cutoff):
   size ∝ √strength, gamma = 0.6/strength (in `buildCloud`); fester Floor 0.01 statt Cutoff
   (Sichtbarkeits-Cut macht der Colorbar-Regler). Legacy-Saves: params-Setter leitet
@@ -290,14 +302,11 @@ mit Bildschirmpixeln statt Punktzahl).
   bei Transmittanz <0.02. Dequantisierung im Shader: d = max(v·255−1, 0)/254
   (log-normierte Dichte); Extinktion σ = d^uGamma · uOpacity · `DUST_SIGMA_SCALE`
   (String-Konstante direkt überm Builder, wird als GLSL-Literal interpoliert).
-- **Blending:** folgt `glowBlending()` — additiv (dark) gibt premultipliziertes
-  `vec4(uColor·acc, 1)`, normal (light) `vec4(acc/α, α)`; der Zweig hängt an der
-  Uniform `uAdditive`, die `setViewerStyle` zusammen mit `material.blending` in place
-  swappt (kein Rebuild).
+- **Blending + Tiefe:** s. Abschnitt „Tiefenkorrekte Volumen" (premultiplied-over, Prepass).
 - **depthTest:false + side:BackSide + frustumCulled:false:** die Box umschließt die ganze
   Szene; mit Depth-Test würde jedes opake Objekt in der Box ein Loch in den Staub stanzen
-  (BackSide-Fragmente liegen an der HINTEREN Boxwand). Dafür leuchtet der Staub additiv
-  auch „vor" Objekten — bewusster Trade-off ohne Depth-Compositing.
+  (BackSide-Fragmente liegen an der HINTEREN Boxwand) — die Verdeckung kommt stattdessen
+  aus dem Tiefen-Prepass.
 - Slider: `dustOpacity` (globaler Dichte-Multiplikator, **LOG-Regler** 0 = aus, 1…1000 =
   0.001…1 über `dustOpacityFromSlider/ToSlider`, Exakteingabe via `setDustOpacityExact`;
   linear waren nur die ersten Prozent nutzbar), `dustCut` („Dust threshold" 0–0.9: Shader
@@ -320,9 +329,10 @@ mit Bildschirmpixeln statt Punktzahl).
   Grid-Helfer `_dustGrid(dm)`/`_dustBounds(dm)` (q8 + Legacy). Gedacht als Vorlage für ein
   späteres Feld-Slicing.
   **▶ Sweep** (`toggleDustSweep`/`stopDustSweep`, Button `#dust-slice-sweep`): Mitte läuft
-  EINMAL Start → oberes Ende → unteres Ende → Start (`_dustSweepPos`), innerhalb
+  ENDLOS (User-Wunsch) Start → oberes Ende → unteres Ende → Start … (`_dustSweepPos(sw, s % len)`)
+  bis ■ Stop, innerhalb
   [lo+w/2, hi−w/2]; zeitbasiert aus `animate()` (`_tickDustSweep(now)`), pro Frame nur
-  Uniforms/Rahmen/Labels, Save erst am Ende. `objParams.dustSweepSpeed` (pc/s, Slider;
+  Uniforms/Rahmen/Labels, Save beim Stopp. `objParams.dustSweepSpeed` (pc/s, Slider;
   Wechsel mitten im Lauf verankert die Uhr neu). Stoppt bei Positions-Slider, Achse,
   Slice aus. **`_dustSweep` steht im STATE-Block** — `animate()` läuft schon beim Parse
   einmal synchron (TDZ). Headless liefert unter `--virtual-time-budget` kaum rAF-Frames →
@@ -856,7 +866,7 @@ Dustmap: Edenhofer 2024 · Sonnenbewegung LSR (11.1, 12.2, 7.3): Schönrich 2010
   (Composite-Pfad ruft `compositeColorbarsOnto()` pro Frame). Zeitbasiert (performance.now()).
 - **Glow unsichtbar im Light Mode:** AdditiveBlending sättigt gegen Weiß → `glowBlending()` =
   Additive (dark) / Normal (light), gesteuert vom `dark`-Flag des 3D-Styles; `setViewerStyle`
-  swappt Material-Blending in place (beim Dust-Volume zusätzlich die `uAdditive`-Uniform).
+  swappt Material-Blending in place (Volumen: immer premultiplied-over, kein Swap).
 - **GLSL3-ShaderMaterial (r128) hat KEIN `gl_FragColor`:** der GLSL3-Prefix von three r128
   definiert nur texture2D→texture u. ä., aber keinen FragColor-Alias — eigenes
   `out vec4 fragColor;` deklarieren. Fehlerbild: „'gl_FragColor' : undeclared identifier",
